@@ -1,0 +1,13 @@
+enclave {
+    trusted {
+        public uint32_t ecall_load_as_policies(uint32_t asn, [in, size = import_msg_size] void *import_msg, size_t import_msg_size, [in, size = export_msg_size] void *export_msg, size_t export_msg_size);
+        public uint32_t ecall_compute_route_by_msg_queue([in, size = msg_size] void *msg, size_t msg_size);
+        public uint32_t ecall_get_rs_ribs_num();
+        public uint32_t ecall_print_rs_ribs();
+    };
+
+    untrusted {
+        uint32_t ocall_send_route([in, size = msg_size] void *msg, size_t msg_size);
+        void ocall_print_string([in, string] const char *str);
+    };
+};
