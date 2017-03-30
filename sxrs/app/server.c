@@ -104,9 +104,10 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         if (h->fd == g_bgp_clnt_sfd) {
             handle_bgp_msg(s_msg);
         } else {
-            handle_pctrlr_msg(s_msg, h->fd, g_pctrlr_sfds, g_as_num);
+            handle_pctrlr_msg(s_msg, h->fd, &closure->id, g_pctrlr_sfds, g_as_num);
         }
         SAFE_FREE(s_msg);
+        // -----------------------------------------
     }
 }
 

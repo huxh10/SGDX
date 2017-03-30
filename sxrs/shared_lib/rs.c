@@ -195,6 +195,52 @@ uint32_t compute_route_by_msg_queue(bgp_dec_msg_t *p_bgp_msg, as_policy_t *p_pol
     return SUCCESS;
 }
 
+uint32_t update_active_parts(uint8_t *p_active_parts, const uint32_t *p_parts, uint32_t part_num, uint8_t oprt_type)
+{
+    if (!p_active_parts || !p_parts) return SUCCESS;
+    uint32_t i;
+    uint8_t v = (oprt_type == ANNOUNCE) ? 1 : 0;
+
+    for (i = 0; i < part_num; i++) {
+        p_active_parts[p_parts[i]] = v;
+    }
+
+    return SUCCESS;
+}
+
+
+uint32_t get_prefix_set(const char *prefix, uint8_t *p_active_parts, uint32_t num, rib_map_t *p_rib, uint32_t **pp_resp_set, uint32_t *p_resp_set_size)
+{
+    if (!pp_resp_set || *pp_resp_set || !p_resp_set_size|| !prefix) {
+        return SUCCESS;
+    }
+    rib_map_t *p_rib_entry = NULL;
+    route_node_t *p_tmp_rn = NULL;
+    *p_resp_set_size = 0;
+    uint32_t i = 0;
+
+    HASH_FIND_STR(p_rib, prefix, p_rib_entry);
+    if (!p_rib_entry) return SUCCESS;
+
+    p_tmp_rn = p_rib_entry->routes;
+    while (p_tmp_rn) {
+        if (p_active_parts[p_tmp_rn->next_hop]) (*p_resp_set_size)++;
+        p_tmp_rn = p_tmp_rn->next;
+    }
+    *pp_resp_set = malloc(*p_resp_set_size * sizeof(**pp_resp_set));
+    p_tmp_rn = p_rib_entry->routes;
+    while (p_tmp_rn) {
+        if (p_active_parts[p_tmp_rn->next_hop]) {
+            (*pp_resp_set)[i] = p_tmp_rn->next_hop;
+            i++;
+        }
+        p_tmp_rn = p_tmp_rn->next;
+    }
+    assert(i = *p_resp_set_size);
+
+    return NULL;
+}
+
 uint32_t get_rs_ribs_num(rib_map_t **pp_ribs, uint32_t num)
 {
     uint32_t i, count = 0;

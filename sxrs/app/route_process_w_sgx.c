@@ -67,6 +67,26 @@ void route_process_w_sgx_run(bgp_dec_msg_t *p_bgp_dec_msg)
     }
 }
 
+void process_w_sgx_update_active_parts(uint32_t asn, const uint32_t *p_parts, uint32_t part_num, uint8_t oprt_type)
+{
+    uint32_t call_status, ret_status;
+
+    call_status = enclave_ecall_update_active_parts(g_enclave_id, &ret_status, asn, p_parts, (size_t) part_num, oprt_type);
+    if (ret_status != SUCCESS) {
+        fprintf(stderr, "enclave_ecall_compute_route_by_msg_queue, errno: %d [%s]\n", ret_status, __FUNCTION__);
+    }
+}
+
+void process_w_sgx_get_prefix_set(uint32_t asn, const char *prefix)
+{
+    uint32_t call_status, ret_status;
+
+    call_status = enclave_ecall_get_prefix_set(g_enclave_id, &ret_status, asn, prefix);
+    if (ret_status != SUCCESS) {
+        fprintf(stderr, "enclave_ecall_compute_route_by_msg_queue, errno: %d [%s]\n", ret_status, __FUNCTION__);
+    }
+}
+
 /* OCall functions */
 void ocall_print_string(const char *str)
 {
@@ -91,4 +111,9 @@ uint32_t ocall_send_route(void *msg, size_t msg_size)
     SAFE_FREE(p_resp_dec_msgs);
 
     return SUCCESS;
+}
+
+uint32_t ocall_send_prefix_set(uint32_t *p_resp_set, size_t resp_set_size, uint32_t asn, char *prefix)
+{
+    handle_resp_set(asn, prefix, p_resp_set, resp_set_size);
 }

@@ -43,6 +43,12 @@ uint32_t ecall_load_as_policies(uint32_t asn, void *import_msg, size_t import_ms
     }
     g_p_policies[asn].asn = asn;
     g_p_policies[asn].total_num = total_num;
+    g_p_policies[asn].active_parts = malloc(total_num * sizeof *g_p_policies[asn].active_parts);
+    if (!g_p_policies[asn].active_parts) {
+        printf("malloc err: out of memory [%s]\n", __FUNCTION__);
+        return 10;
+    }
+    memset(g_p_policies[asn].active_parts, 0, total_num * sizeof *g_p_policies[asn].active_parts);
     g_p_policies[asn].import_policy = malloc(total_num * sizeof *g_p_policies[asn].import_policy);
     if (!g_p_policies[asn].import_policy) {
         printf("malloc err: out of memory [%s]\n", __FUNCTION__);
@@ -85,6 +91,27 @@ uint32_t ecall_compute_route_by_msg_queue(void *msg, size_t msg_size)
     resp_msg_size = write_resp_to_stream(&resp_msg, p_resp_dec_msgs, resp_msg_num);
     call_status = ocall_send_route(&ret_status, (void *) resp_msg, resp_msg_size);
     SAFE_FREE(resp_msg);
+    if (call_status == SGX_SUCCESS) {
+        if (ret_status != SGX_SUCCESS) return ret_status;
+    } else {
+        return call_status;
+    }
+}
+
+uint32_t ecall_update_active_parts(uint32_t asn, uint32_t *p_parts, size_t part_num, uint8_t oprt_type)
+{
+    return update_active_parts(g_p_policies[asn].active_parts, p_parts, part_num, oprt_type);
+}
+
+uint32_t ecall_get_prefix_set(uint32_t asn, char *prefix)
+{
+    uint32_t call_status, ret_status;
+    uint32_t *p_resp_set = NULL;
+    uint32_t resp_set_size = 0;
+
+    get_prefix_set((const char *) prefix, g_p_policies[asn].active_parts, g_num, g_pp_ribs[asn], &p_resp_set, &resp_set_size);
+    call_status = ocall_send_prefix_set(&ret_status, p_resp_set, (size_t) resp_set_size, asn, prefix);
+    SAFE_FREE(p_resp_set);
     if (call_status == SGX_SUCCESS) {
         if (ret_status != SGX_SUCCESS) return ret_status;
     } else {

@@ -16,6 +16,7 @@
 typedef struct {
     uint32_t asn;
     uint32_t total_num;
+    uint8_t *active_parts;
     uint8_t *import_policy;
     uint8_t *export_policy;
 } as_policy_t;

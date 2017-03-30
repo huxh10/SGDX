@@ -13,6 +13,28 @@
 #include "route_process_wo_sgx.h"
 #endif
 
+void handle_resp_set(uint32_t asn, const char *prefix, const uint32_t *p_resp_set, uint32_t resp_set_size)
+{
+    char *s_resp_set = NULL;
+    uint32_t i;
+    json_t *j_root = json_object();
+    json_t *j_msg = json_object();
+    json_t *j_resp_set = json_array();
+
+    for (i = 0; i < resp_set_size; i++) {
+        json_array_append(j_resp_set, json_integer(p_resp_set[i]));
+    }
+    json_object_set(j_msg, prefix, j_resp_set);
+    json_decref(j_resp_set);
+    json_object_set(j_root, "set", j_msg);
+    json_decref(j_msg);
+
+    s_resp_set = json_dumps(j_root, 0);
+    send_msg_to_pctrlr((const char *) s_resp_set, asn);
+    SAFE_FREE(s_resp_set);
+    json_decref(j_root);
+}
+
 void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
 {
     uint32_t i;
@@ -56,7 +78,7 @@ void handle_bgp_msg(char *msg)
     bgp_dec_msg_t bgp_dec_msg;
 
     // message parsing
-    json_loads(msg, 0, &j_err);
+    j_root = json_loads(msg, 0, &j_err);
     if (!j_root) {
         fprintf(stderr, "error: on line %d:%s [%s]\n", j_err.line, j_err.text, __FUNCTION__);
         json_decref(j_root);
@@ -200,7 +222,6 @@ void handle_bgp_msg(char *msg)
 #else
                 route_process_wo_sgx_run(&bgp_dec_msg);
 #endif
-
                 SAFE_FREE(bgp_dec_msg.p_route->prefix);
             }
             SAFE_FREE(bgp_dec_msg.p_route->next_hop);
@@ -223,15 +244,15 @@ void handle_bgp_msg(char *msg)
     return;
 }
 
-void handle_pctrlr_msg(char *msg, int src_sfd, int *pctrlr_sfds, int as_num)
+void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_sfds, int as_num)
 {
-    json_t *j_root, *j_msg_type, *j_asn, *j_announcement;
+    json_t *j_root, *j_msg_type, *j_asn, *j_announcement, *j_add_parts, *j_del_parts, *j_part_elmnt, *j_prefix;
     json_error_t j_err;
-    const char *msg_type, *announcement;
-    uint32_t asn;
+    const char *msg_type, *announcement, *prefix;
+    uint32_t asn, *p_parts, i;
 
     // message parsing
-    json_loads(msg, 0, &j_err);
+    j_root = json_loads(msg, 0, &j_err);
     if (!j_root) {
         fprintf(stderr, "error: on line %d:%s [%s]\n", j_err.line, j_err.text, __FUNCTION__);
         json_decref(j_root);
@@ -262,6 +283,8 @@ void handle_pctrlr_msg(char *msg, int src_sfd, int *pctrlr_sfds, int as_num)
         asn = json_integer_value(j_asn);
         assert(asn < as_num && asn >= 0);
         pctrlr_sfds[asn] = src_sfd;
+        assert(*p_src_id == -1);
+        *p_src_id = asn;
     } else if (!strcmp(msg_type, "bgp")) {
         j_announcement = json_object_get(j_root, "announcement");
         if (!json_is_string(j_announcement)) {
@@ -271,6 +294,61 @@ void handle_pctrlr_msg(char *msg, int src_sfd, int *pctrlr_sfds, int as_num)
         }
         announcement = json_string_value(j_announcement);
         send_msg_to_as(announcement);
+    } else if (!strcmp(msg_type, "participant")) {
+        j_add_parts = json_object_get(j_root, "add");
+        if (json_is_array(j_add_parts)) {
+            p_parts = malloc(json_array_size(j_add_parts) * sizeof *p_parts);
+            for (i = 0; i < json_array_size(j_add_parts); i++) {
+                j_part_elmnt = json_array_get(j_add_parts, i);
+                if (!json_is_integer(j_part_elmnt)) {
+                    fprintf(stderr, "fmt error: msg[add][%d] is not integer [%s]\n", i, __FUNCTION__);
+                    json_decref(j_add_parts);
+                    SAFE_FREE(p_parts);
+                }
+                // process msg
+#ifdef W_SGX
+                process_wo_sgx_update_active_parts(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), ANNOUNCE);
+#else
+                process_w_sgx_update_active_parts(*p_src_id, (const uint32_t *) p_parts, json_array_size(j_add_parts), ANNOUNCE);
+#endif
+                p_parts[i] = json_integer_value(j_part_elmnt);
+            }
+            SAFE_FREE(p_parts);
+        }
+        j_del_parts = json_object_get(j_root, "del");
+        if (json_is_array(j_del_parts)) {
+            p_parts = malloc(json_array_size(j_del_parts) * sizeof *p_parts);
+            for (i = 0; i < json_array_size(j_del_parts); i++) {
+                j_part_elmnt = json_array_get(j_del_parts, i);
+                if (!json_is_integer(j_part_elmnt)) {
+                    fprintf(stderr, "fmt error: msg[add][%d] is not integer [%s]\n", i, __FUNCTION__);
+                    json_decref(j_del_parts);
+                    SAFE_FREE(p_parts);
+                }
+                // process msg
+#ifdef W_SGX
+                process_wo_sgx_update_active_parts(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), WITHDRAW);
+#else
+                process_w_sgx_update_active_parts(*p_src_id, (const uint32_t *) p_parts, json_array_size(j_add_parts), WITHDRAW);
+#endif
+                p_parts[i] = json_integer_value(j_part_elmnt);
+            }
+            SAFE_FREE(p_parts);
+        }
+    } else if (!strcmp(msg_type, "set")) {
+        j_prefix = json_object_get(j_root, "prefix");
+        if (!json_is_string(j_prefix)) {
+            fprintf(stderr, "fmt error: msg[prefix] is not string [%s]\n", __FUNCTION__);
+            json_decref(j_root);
+            return;
+        }
+        prefix = json_string_value(j_prefix);
+        // process msg
+#ifdef W_SGX
+        process_wo_sgx_get_prefix_set(*p_src_id, prefix);
+#else
+        process_w_sgx_get_prefix_set(*p_src_id, prefix);
+#endif
     }
 
     json_decref(j_root);
