@@ -21,7 +21,6 @@ import util.log
 from xctrl.flowmodmsg import FlowModMsgBuilder
 
 from lib import PConfig
-from peer import BGPPeer
 from ss_lib import vmac_part_port_match
 from ss_rule_scheme import update_outbound_rules, init_inbound_rules, init_outbound_rules, msg_clear_all_outbound, ss_process_policy_change
 from supersets import SuperSets
@@ -84,9 +83,14 @@ class ParticipantController(object):
         # ExaBGP Peering Instance
         self.bgp_instance = self.cfg.get_bgp_instance()
 
-        # Route server client, Reference monitor client, Arp Proxy client
+        # Route server client, supersets RS client, Reference monitor client, Arp Proxy client
         self.xrs_client = self.cfg.get_xrs_client(self.logger)
-	self.xrs_client.send({'msgType': 'hello', 'id': self.cfg.id, 'peers_in': self.cfg.peers_in, 'peers_out': self.cfg.peers_out, 'ports': self.cfg.get_ports()})
+        self.xrs_client.send({'msgType': 'hello', 'id': self.cfg.id, 'conType': 'bgp'})
+
+        self.ss_xrs_client = self.cfg.get_xrs_client(self.logger)
+        self.ss_xrs_client.send({'msgType': 'hello', 'id': self.cfg.id, 'conType': 'ss'})
+        self.supersets.run_rulecounts(self)
+        self.ss_xrs_client.send({'msgType': 'participant', 'add': self.supersets.rulecounts.keys()})
 
         self.arp_client = self.cfg.get_arp_client(self.logger)
         self.arp_client.send({'msgType': 'hello', 'macs': self.cfg.get_macs()})
@@ -363,7 +367,9 @@ class ParticipantController(object):
 
         self.logger.debug("updated policies: " + json.dumps(self.policies))
         self.logger.debug("pre-recomputed supersets: " + json.dumps(self.supersets.supersets))
-
+        # -----------------------------------------
+        # TODO: Update policy participants to sxrs
+        # -----------------------------------------
         self.initialize_dataplane()
         self.push_dp()
 
@@ -477,15 +483,12 @@ class ParticipantController(object):
         "Process each incoming BGP advertisement"
         tstart = time.time()
 
-        # Map to update for each prefix in the route advertisement.
-        updates = self.bgp_instance.update(route)
-        #self.logger.debug("process_bgp_route:: "+str(updates))
+        self.logger.debug("process_bgp_route:: "+str(route))
         # TODO: This step should be parallelized
-        # TODO: The decision process for these prefixes is going to be same, we
-        # should think about getting rid of such redundant computations.
+        #       Multiple routes should be sent in one message
+        updates = self.bgp_instance.decision_process_local(route)
         for update in updates:
-            self.bgp_instance.decision_process_local(update)
-            self.vnh_assignment(update)
+            self.vnh_assignment(updates)
 
         if TIMING:
             elapsed = time.time() - tstart
@@ -575,7 +578,7 @@ class ParticipantController(object):
     def send_announcement(self, announcement):
         "Send the announcements to XRS"
 	self.logger.debug("Sending announcements to XRS: %s", announcement)
-	self.xrs_client.send({'msgType': 'bgp', 'announcement': announcement})
+	self.xrs_client.send({'msgType': 'route', 'announcement': announcement})
 
 
     def vnh_assignment(self, update):
@@ -621,6 +624,19 @@ class ParticipantController(object):
             # TODO: @Robert: Place your logic here for VNH assignment for MDS scheme
             self.logger.debug("VNH assignment called for disjoint vmac_mode")
 
+    def get_active_set_from_sxrs(self, prefix):
+        self.ss_xrs_client.send({'msgType': 'set', 'prefix': prefix})
+        while True:
+            if not self.ss_xrs_client.poll(1):
+                continue
+            try:
+                tmp = self.ss_xrs_client.recv()
+            except EOFError:
+                return set([])
+            data = json.loads(tmp)
+            if 'set' not in data or prefix not in data['set']:
+                return set([])
+            return set(data['set'][prefix])
 
 def get_prefixes_from_announcements(route):
     prefixes = []

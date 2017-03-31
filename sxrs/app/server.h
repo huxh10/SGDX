@@ -6,7 +6,9 @@
 
 void server_init(int efd, int as_num, net_conf_t *p_ncf);
 
-void send_msg_to_pctrlr(const char *msg, uint32_t asn);
+void send_bgp_msg_to_pctrlr(const char *msg, uint32_t asn);
+
+void send_ss_msg_to_pctrlr(const char *msg, uint32_t asn);
 
 void send_msg_to_as(const char *msg);
 

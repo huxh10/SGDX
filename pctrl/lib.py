@@ -79,8 +79,8 @@ class PConfig(object):
         self.ports = participant["Ports"]
         self.port0_mac = self.ports[0]["MAC"]
 
-        self.peers_in = participant["Peers"]
-        self.peers_out = self.peers_in
+        #self.peers_in = participant["Peers"]
+        #self.peers_out = self.peers_in
 
         self.asn = participant["ASN"]
 
@@ -93,11 +93,8 @@ class PConfig(object):
     def get_ports(self):
         return [port['IP'] for port in self.ports]
 
-
-
     def get_bgp_instance(self):
-        return BGPPeer(self.id, self.asn, self.ports, self.peers_in, self.peers_out)
-
+        return BGPPeer(self.id, self.asn, self.ports)
 
     def get_xrs_client(self, logger):
         config = self.config

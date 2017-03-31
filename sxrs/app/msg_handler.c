@@ -30,7 +30,7 @@ void handle_resp_set(uint32_t asn, const char *prefix, const uint32_t *p_resp_se
     json_decref(j_msg);
 
     s_resp_set = json_dumps(j_root, 0);
-    send_msg_to_pctrlr((const char *) s_resp_set, asn);
+    send_ss_msg_to_pctrlr((const char *) s_resp_set, asn);
     SAFE_FREE(s_resp_set);
     json_decref(j_root);
 }
@@ -51,9 +51,9 @@ void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
     json_t *j_as_path = json_array();
 
     json_object_set_new(j_msg, "asn", json_integer(p_resp_dec_msg->asn));
-    json_object_set_new(j_msg, "oprt_type", json_string(oprt_type));
+    json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
     json_object_set_new(j_msg, "prefix", json_string(p_resp_dec_msg->prefix));
-    json_object_set_new(j_msg, "next_hop", json_string(p_resp_dec_msg->next_hop));
+    json_object_set_new(j_msg, "next-hop", json_string(p_resp_dec_msg->next_hop));
     for (i = 0; i < p_resp_dec_msg->as_path.length; i++) {
         json_array_append(j_as_path, json_integer(p_resp_dec_msg->as_path.asns[i]));
     }
@@ -64,7 +64,7 @@ void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
     json_decref(j_msg);
 
     route = json_dumps(j_root, 0);
-    send_msg_to_pctrlr((const char *) route, p_resp_dec_msg->asn);
+    send_bgp_msg_to_pctrlr((const char *) route, p_resp_dec_msg->asn);
     SAFE_FREE(route);
     json_decref(j_root);
 }
@@ -244,11 +244,11 @@ void handle_bgp_msg(char *msg)
     return;
 }
 
-void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_sfds, int as_num)
+void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_bgp_sfds, int *pctrlr_ss_sfds, int as_num)
 {
-    json_t *j_root, *j_msg_type, *j_asn, *j_announcement, *j_add_parts, *j_del_parts, *j_part_elmnt, *j_prefix;
+    json_t *j_root, *j_msg_type, *j_asn, *j_con_type, *j_announcement, *j_add_parts, *j_del_parts, *j_part_elmnt, *j_prefix;
     json_error_t j_err;
-    const char *msg_type, *announcement, *prefix;
+    const char *msg_type, *con_type, *announcement, *prefix;
     uint32_t asn, *p_parts, i;
 
     // message parsing
@@ -277,15 +277,31 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_s
         j_asn = json_object_get(j_root, "id");
         if (!json_is_integer(j_asn)) {
             fprintf(stderr, "fmt error: msg[id] is not integer [%s]\n", __FUNCTION__);
-            json_decref(j_asn);
+            json_decref(j_root);
             return;
         }
         asn = json_integer_value(j_asn);
         assert(asn < as_num && asn >= 0);
-        pctrlr_sfds[asn] = src_sfd;
         assert(*p_src_id == -1);
         *p_src_id = asn;
-    } else if (!strcmp(msg_type, "bgp")) {
+        j_con_type = json_object_get(j_root, "conType");
+        if (!json_is_string(j_con_type)) {
+            fprintf(stderr, "fmt error: msg[conType] is not string [%s]\n", __FUNCTION__);
+            // TODO figure out json_decref
+            json_decref(j_root);
+            return;
+        }
+        con_type = json_string_value(j_con_type);
+        if (!strcmp(con_type, "bgp")) {
+            pctrlr_bgp_sfds[asn] = src_sfd;
+        } else if (!strcmp(con_type, "ss")) {
+            pctrlr_ss_sfds[asn] = src_sfd;
+        } else {
+            fprintf(stderr, "fmt error: msg[conType] should be bgp or ss [%s]\n", __FUNCTION__);
+            json_decref(j_root);
+            return;
+        }
+    } else if (!strcmp(msg_type, "route")) {
         j_announcement = json_object_get(j_root, "announcement");
         if (!json_is_string(j_announcement)) {
             fprintf(stderr, "fmt error: msg[announcement] is not string [%s]\n", __FUNCTION__);

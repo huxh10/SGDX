@@ -29,6 +29,7 @@ class SuperSets(object):
         self.mask_size = 0
         self.id_size = 0
         self.supersets = []
+        self.rulecounts = {}
 
 
     def initial_computation(self, pctrl):
@@ -68,6 +69,8 @@ class SuperSets(object):
 
         return rulecounts
 
+    def run_rulecounts(self, pctrl):
+        self.rulecounts = self.recompute_rulecounts(pctrl)
 
     def update_supersets(self, pctrl, updates):
         with lock:
@@ -80,7 +83,7 @@ class SuperSets(object):
             # the list of prefixes who will have changed VMACs
             impacted_prefixes = []
 
-            self.rulecounts = self.recompute_rulecounts(pctrl)
+            self.run_rulecounts(pctrl)
 
             # if supersets haven't been computed at all yet
             if len(self.supersets) == 0:
@@ -96,12 +99,15 @@ class SuperSets(object):
                     continue
                 prefix = update['announce'].prefix
 
+                """
                 # get set of all participants advertising that prefix
                 new_set = get_all_participants_advertising(pctrl, prefix)
 
                 # clean out the inactive participants
                 new_set = set(new_set)
                 new_set.intersection_update(self.rulecounts.keys())
+                """
+                new_set = get_active_set(pctrl, prefix)
 
                 # if the prefix group is still a subset, no update needed
                 if is_subset_of_superset(new_set, self.supersets):
@@ -152,11 +158,15 @@ class SuperSets(object):
 
         self.logger.debug("~Recomputing all Supersets...")
 
-        self.rulecounts = self.recompute_rulecounts(pctrl)
+        self.run_rulecounts(pctrl)
+        """
         # get all sets of participants advertising the same prefix
         peer_sets = get_prefix2part_sets(pctrl)
+        # only care about the participants in outbound policy actions
         peer_sets = clear_inactive_parts(peer_sets, self.rulecounts.keys())
         peer_sets = removeSubsets(peer_sets)
+        """
+        peer_sets = get_all_active_sets(pctrl)
 
         self.supersets = minimize_ss_rules_greedy(peer_sets, self.rulecounts, self.max_initial_bits)
 
@@ -215,6 +225,7 @@ class SuperSets(object):
 
         nexthop_part = nexthop_2_part[next_hop]
 
+        """
         # the participants who are involved in policies
         active_parts = self.recompute_rulecounts(pctrl).keys()
 
@@ -223,6 +234,8 @@ class SuperSets(object):
 
         # remove everyone but the active participants!
         prefix_set.intersection_update(active_parts)
+        """
+        prefix_set = get_active_set(pctrl, prefix)
 
         # find the superset it belongs to
         ss_id = -1
@@ -268,6 +281,16 @@ class SuperSets(object):
 
         return vmac_addr
 
+def get_all_active_sets(pctrl):
+    prefixes = pctrl.prefix_2_VNH.keys()
+    groups = []
+    for prefix in prefixes:
+        groups.append(get_active_set(pctrl, prefix))
+
+    return groups
+
+def get_active_set(pctrl, prefix):
+    return pctrl.get_active_set_from_sxrs(prefix)
 
 def get_prefix2part_sets(pctrl):
     prefixes = pctrl.prefix_2_VNH.keys()
@@ -281,7 +304,6 @@ def get_prefix2part_sets(pctrl):
     pctrl.logger.debug("Prefix2Part called. Returning "+str(groups[:5])+"(this should not be empty) "+str(len(groups)))
 
     return groups
-
 
 def get_all_participants_advertising(pctrl, prefix):
     bgp_instance = pctrl.bgp_instance
