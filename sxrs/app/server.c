@@ -24,9 +24,14 @@ int g_bgp_serv_sfd, g_bgp_clnt_sfd;
 int *g_pctrlr_bgp_sfds, *g_pctrlr_ss_sfds;
 int g_as_num;
 
-static inline void send_msg(const char *msg, uint32_t sfd)
+static inline void send_msg(const char *msg, int msg_size, int sfd)
 {
-    int i, bytes, diff, offset = 0, msg_size = strlen(msg);
+    int i, bytes, diff, offset = 0;
+
+    if (sfd < 0) {
+        fprintf(stdout, "Currently, the connection doesn't exist [%s]\n", __FUNCTION__);
+        return;
+    }
 
     while (msg_size != offset) {
         diff = msg_size - offset;
@@ -42,34 +47,42 @@ static inline void send_msg(const char *msg, uint32_t sfd)
 
 void send_bgp_msg_to_pctrlr(const char *msg, uint32_t asn)
 {
-    send_msg(msg, g_pctrlr_bgp_sfds[asn]);
+    uint32_t msg_len = strlen(msg) + 2;
+    char *msg_with_header = malloc(msg_len);
+    memcpy(msg_with_header, &msg_len, 2);
+    memcpy(msg_with_header + 2, msg, msg_len - 2);
+    send_msg(msg_with_header, msg_len, g_pctrlr_bgp_sfds[asn]);
 }
 
 void send_ss_msg_to_pctrlr(const char *msg, uint32_t asn)
 {
-    send_msg(msg, g_pctrlr_ss_sfds[asn]);
+    send_msg(msg, strlen(msg), g_pctrlr_ss_sfds[asn]);
 }
 
 void send_msg_to_as(const char *msg)
 {
-    send_msg(msg, g_bgp_clnt_sfd);
+    uint32_t msg_len = strlen(msg) + 2;
+    char *msg_with_header = malloc(msg_len);
+    memcpy(msg_with_header, &msg_len, 2);
+    memcpy(msg_with_header + 2, msg, msg_len - 2);
+    send_msg(msg_with_header, msg_len, g_bgp_clnt_sfd);
 }
 
 static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
 {
-    int bytes, msg_size;
+    int bytes, msg_size, i;
     char buffer[BUFFER_SIZE], *s_msg;
-    uint8_t *u8_msg;
+    const uint8_t *u8_msg = NULL;
     server_read_closure_t *closure = h->closure;
 
-    //// fprintf(stdout, "\nread event from sfd:%d <-> as:%d [%s]\n", h->fd, closure->id, __FUNCTION__);
+    fprintf(stdout, "\nread event for sfd:%d client_id:%d [%s]\n", h->fd, closure->id, __FUNCTION__);
 
     // receive msgs from socket
     while (1) {
         bytes = read(h->fd, buffer, BUFFER_SIZE);
 
         if (bytes == 0) {
-            fprintf(stderr, "\n socket from client id %d closed [%s]\n", closure->id, __FUNCTION__);
+            fprintf(stderr, "socket from sfd:%d client_id:%d closed [%s]\n", h->fd, closure->id, __FUNCTION__);
             // TODO clean up sfd ?
             break;
         }
@@ -88,7 +101,7 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
             return;
         }
 
-        //// fprintf(stdout, "\n[app] read %d bytes from as %d [%s]\n", bytes, closure->id, __FUNCTION__);
+        fprintf(stdout, "read %d bytes from sfd:%d client_id:%d [%s]\n", bytes, h->fd, closure->id, __FUNCTION__);
 
         // add received buffer to local flow buffer
         // to extract dst_id from messages
@@ -97,18 +110,21 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
 
     while (1) {
         get_msg(closure->p_ds, &u8_msg, &msg_size);
-        if (u8_msg == NULL || msg_size == 0) {
+        if (!u8_msg || msg_size == 0) {
             // we have processed all available msgs
+            printf("finish processing [%s]\n", __FUNCTION__);
             break;
         }
 
         // ---------- message processing -----------
-        s_msg = malloc((msg_size + 1) * sizeof *s_msg);
-        memcpy(s_msg, u8_msg, msg_size);
-        s_msg[msg_size] = '\0';
+        s_msg = malloc((msg_size - 2 + 1) * sizeof *s_msg);
+        memcpy(s_msg, u8_msg + 2, msg_size -2);
+        s_msg[msg_size - 2] = '\0';
         if (h->fd == g_bgp_clnt_sfd) {
+            printf("handle_bgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
             handle_bgp_msg(s_msg);
         } else {
+            printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
             handle_pctrlr_msg(s_msg, h->fd, &closure->id, g_pctrlr_bgp_sfds, g_pctrlr_ss_sfds, g_as_num);
         }
         SAFE_FREE(s_msg);
@@ -125,7 +141,7 @@ static void server_register_read_event_handler(int efd, int sfd)
 
     epoll_event_handler_t *handler = malloc(sizeof *handler);
     if (!handler) {
-        fprintf(stderr, "\n malloc error [%s]\n", __FUNCTION__);
+        fprintf(stderr, "\nmalloc error [%s]\n", __FUNCTION__);
         return;
     }
     handler->efd = efd;
@@ -138,7 +154,7 @@ static void server_register_read_event_handler(int efd, int sfd)
     init_ds(&closure->p_ds);
     if (!closure->p_ds) {
         free(closure);
-        fprintf(stderr, "\n malloc failed [%s]\n", __FUNCTION__);
+        fprintf(stderr, "\nmalloc failed [%s]\n", __FUNCTION__);
         return;
     }
     handler->closure = closure;
@@ -150,9 +166,9 @@ static void server_handle_listen_event(epoll_event_handler_t *h, uint32_t events
 {
     int sfd;
     struct sockaddr_in addr;
-    socklen_t len;
+    socklen_t len = sizeof(struct sockaddr);
 
-    fprintf(stdout, "\n new connection, enter [%s]\n", __FUNCTION__);
+    fprintf(stdout, "\nnew connection from socket:%d, enter [%s]\n", h->fd, __FUNCTION__);
 
     while (1) {
         sfd = accept(h->fd, (struct sockaddr *) &addr, &len);
@@ -161,14 +177,17 @@ static void server_handle_listen_event(epoll_event_handler_t *h, uint32_t events
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
             } else {
-                fprintf(stdout, "\n accept connection failed [%s]\n", __FUNCTION__);
+                fprintf(stdout, "accept connection failed, err:%s [%s]\n", strerror(errno), __FUNCTION__);
                 return;
             }
         } else {
             // FIXME First session will show 0.0.0.0:16384
-            fprintf(stdout, "\n accept new connection from %s:%d [%s]\n", inet_ntoa(addr.sin_addr), (int) ntohs(addr.sin_port), __FUNCTION__);
+            fprintf(stdout, "accept new connection sfd:%d from %s:%d [%s]\n", sfd, inet_ntoa(addr.sin_addr), (int) ntohs(addr.sin_port), __FUNCTION__);
             server_register_read_event_handler(h->efd, sfd);
-            if (h->fd == g_bgp_serv_sfd) g_bgp_clnt_sfd == sfd;
+            if (h->fd == g_bgp_serv_sfd) {
+                fprintf(stdout, "bgp_clnt_sfd is %d [%s]\n", sfd, __FUNCTION__);
+                g_bgp_clnt_sfd = sfd;
+            }
         }
     }
 }
@@ -178,6 +197,7 @@ static int server_register_listen_event_handler(int efd, char *addr, int port)
     int sfd;
 
     sfd = create_serv_socket(addr, port);
+    fprintf(stdout, "socket:%d starts to listen on %s:%d [%s]\n", sfd, addr, port, __FUNCTION__);
     assert(sfd != -1);
 
     epoll_event_handler_t *handler = malloc(sizeof *handler);

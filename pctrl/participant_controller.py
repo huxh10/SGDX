@@ -85,12 +85,12 @@ class ParticipantController(object):
 
         # Route server client, supersets RS client, Reference monitor client, Arp Proxy client
         self.xrs_client = self.cfg.get_xrs_client(self.logger)
-        self.xrs_client.send({'msgType': 'hello', 'id': self.cfg.id, 'conType': 'bgp'})
+        self.xrs_client.send({'msgType': 'hello', 'id': int(self.cfg.id), 'conType': 'bgp'}, add_header=True)
 
         self.ss_xrs_client = self.cfg.get_xrs_client(self.logger)
-        self.ss_xrs_client.send({'msgType': 'hello', 'id': self.cfg.id, 'conType': 'ss'})
+        self.ss_xrs_client.send({'msgType': 'hello', 'id': int(self.cfg.id), 'conType': 'ss'}, add_header=True)
         self.supersets.run_rulecounts(self)
-        self.ss_xrs_client.send({'msgType': 'participant', 'add': self.supersets.rulecounts.keys()})
+        self.ss_xrs_client.send({'msgType': 'participant', 'add': self.supersets.rulecounts.keys()}, add_header=True)
 
         self.arp_client = self.cfg.get_arp_client(self.logger)
         self.arp_client.send({'msgType': 'hello', 'macs': self.cfg.get_macs()})
@@ -247,21 +247,29 @@ class ParticipantController(object):
 
     def start_eh_xrs(self):
         self.logger.info("XRS Event Handler started.")
+        msg_buff = ''
 
         while self.run:
-            # need to poll since recv() will not detect close from this end
-            # and need some way to shutdown gracefully.
-            if not self.xrs_client.poll(1):
-                continue
             try:
                 tmp = self.xrs_client.recv()
             except EOFError:
                 break
 
-            data = json.loads(tmp)
-            self.logger.debug("XRS Event received: %s", json.dumps(data))
-
-            self.process_event(data)
+            if not tmp:
+                break
+            self.logger.debug("XRS Event received " + str(len(tmp)) + " bytes: " + tmp)
+            msg_buff += tmp
+            offset = 0
+            buff_len = len(msg_buff)
+            while buff_len - offset >= 2:
+                msg_len = ord(msg_buff[offset]) | ord(msg_buff[offset + 1]) << 8
+                self.logger.debug("XRS Event msg_len: " + str(msg_len))
+                if buff_len - offset < msg_len:
+                    break
+                data = json.loads(msg_buff[offset + 2: offset + msg_len])
+                self.process_event(data)
+                offset += msg_len
+            msg_buff = msg_buff[offset:]
 
         self.xrs_client.close()
         self.logger.debug("Exiting start_eh_xrs")
@@ -270,13 +278,17 @@ class ParticipantController(object):
     def process_event(self, data):
         "Locally process each incoming network event"
 
-
-        if 'bgp' in data:
-            self.logger.debug("Event Received: BGP Update.")
-            route = data['bgp']
+        if 'bgp-best' in data:
+            self.logger.debug("Event Received: bgp-best Update.")
+            route = data['bgp-best']
             # Process the incoming BGP updates from XRS
             #self.logger.debug("BGP Route received: "+str(route)+" "+str(type(route)))
-            self.process_bgp_route(route)
+            self.process_bgp_best(route)
+
+        elif 'bgp-reach' in data:
+            self.logger.debug("Event Received: bgp-reach Update.")
+            parts_set = data['bgp-reach']
+            self.process_bgp_reach(parts_set)
 
         elif 'policy' in data:
             # Process the event requesting change of participants' policies
@@ -479,27 +491,45 @@ class ParticipantController(object):
             #self.logger.debug("Repeat :: "+str(hsh))
         return self.prefix_lock[hsh]
 
-    def process_bgp_route(self, route):
+    def process_bgp_best(self, route):
         "Process each incoming BGP advertisement"
         tstart = time.time()
 
-        self.logger.debug("process_bgp_route:: "+str(route))
+        self.logger.debug("process_bgp_best:: "+str(route))
         # TODO: This step should be parallelized
         #       Multiple routes should be sent in one message
         updates = self.bgp_instance.decision_process_local(route)
         for update in updates:
-            self.vnh_assignment(updates)
+            self.vnh_assignment(update)
 
         if TIMING:
             elapsed = time.time() - tstart
             self.logger.debug("Time taken for decision process: "+str(elapsed))
             tstart = time.time()
 
+        # XXX temperally fixing
+        self.process_bgp_reach({})
+
+        changed_vnhs, announcements = self.bgp_instance.bgp_update_peers(updates,
+                self.prefix_2_VNH, self.cfg.ports)
+
+        for vnh in changed_vnhs:
+            self.process_arp_request(None, vnh)
+
+        # Tell Route Server that it needs to announce these routes
+        for announcement in announcements:
+            # TODO: Complete the logic for this function
+            self.send_announcement(announcement)
+
+
+    def process_bgp_reach(self, parts_set):
+        tstart = time.time()
+        self.logger.debug("process_bgp_reach:: "+str(parts_set))
         if self.cfg.isSupersetsMode():
             ################## SUPERSET RESPONSE TO BGP ##################
             # update supersets
             "Map the set of BGP updates to a list of superset expansions."
-            ss_changes, ss_changed_prefs = self.supersets.update_supersets(self, updates)
+            ss_changes, ss_changed_prefs = self.supersets.update_supersets(self, parts_set)
 
             if TIMING:
                 elapsed = time.time() - tstart
@@ -550,24 +580,15 @@ class ParticipantController(object):
             self.logger.debug("Time taken to push dp msgs: "+str(elapsed))
             tstart = time.time()
 
-        changed_vnhs, announcements = self.bgp_instance.bgp_update_peers(updates,
-                self.prefix_2_VNH, self.cfg.ports)
 
+        # XXX we don't need this combination?
         """ Combine the VNHs which have changed BGP default routes with the
             VNHs which have changed supersets.
         """
 
-        changed_vnhs = set(changed_vnhs)
-        changed_vnhs.update(garp_required_vnhs)
-
         # Send gratuitous ARP responses for all them
-        for vnh in changed_vnhs:
+        for vnh in garp_required_vnhs:
             self.process_arp_request(None, vnh)
-
-        # Tell Route Server that it needs to announce these routes
-        for announcement in announcements:
-            # TODO: Complete the logic for this function
-            self.send_announcement(announcement)
 
         if TIMING:
             elapsed = time.time() - tstart
@@ -578,7 +599,7 @@ class ParticipantController(object):
     def send_announcement(self, announcement):
         "Send the announcements to XRS"
 	self.logger.debug("Sending announcements to XRS: %s", announcement)
-	self.xrs_client.send({'msgType': 'route', 'announcement': announcement})
+	self.xrs_client.send({'msgType': 'route', 'announcement': announcement}, add_header=True)
 
 
     def vnh_assignment(self, update):
@@ -586,10 +607,12 @@ class ParticipantController(object):
         if self.cfg.isSupersetsMode():
             " Superset"
             # TODO: Do we really need to assign a VNH for each advertised prefix?
+            self.logger.debug("vnh_assignment" + str(update))
             if ('announce' in update):
                 prefix = update['announce'].prefix
 
                 if (prefix not in self.prefix_2_VNH):
+                    self.logger.debug("assign new prefix_2_VNH, prefix: " + prefix)
                     # get next VNH and assign it the prefix
                     self.num_VNHs_in_use += 1
                     vnh = str(self.cfg.VNHs[self.num_VNHs_in_use])
@@ -613,6 +636,7 @@ class ParticipantController(object):
             #print 'init_vnh_assignment: prefix_2_VNH:', self.prefix_2_VNH
             for prefix in prefixes:
                 if (prefix not in self.prefix_2_VNH):
+                    self.logger.debug("init assign prefix_2_VNH, prefix: " + prefix)
                     # get next VNH and assign it the prefix
                     self.num_VNHs_in_use += 1
                     vnh = str(self.cfg.VNHs[self.num_VNHs_in_use])
@@ -625,13 +649,14 @@ class ParticipantController(object):
             self.logger.debug("VNH assignment called for disjoint vmac_mode")
 
     def get_active_set_from_sxrs(self, prefix):
-        self.ss_xrs_client.send({'msgType': 'set', 'prefix': prefix})
+        self.ss_xrs_client.send({'msgType': 'set', 'prefix': prefix}, add_header=True)
         while True:
-            if not self.ss_xrs_client.poll(1):
-                continue
             try:
                 tmp = self.ss_xrs_client.recv()
             except EOFError:
+                return set([])
+            if not tmp:
+                self.ss_xrs_client.close()
                 return set([])
             data = json.loads(tmp)
             if 'set' not in data or prefix not in data['set']:

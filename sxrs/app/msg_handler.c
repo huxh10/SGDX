@@ -26,11 +26,12 @@ void handle_resp_set(uint32_t asn, const char *prefix, const uint32_t *p_resp_se
     }
     json_object_set(j_msg, prefix, j_resp_set);
     json_decref(j_resp_set);
-    json_object_set(j_root, "set", j_msg);
+    json_object_set(j_root, "bgp-reach", j_msg);
     json_decref(j_msg);
 
     s_resp_set = json_dumps(j_root, 0);
-    send_ss_msg_to_pctrlr((const char *) s_resp_set, asn);
+    fprintf(stdout, "prepare to send s_resp_set:%s to asn:%d pctrlr [%s]\n", s_resp_set, asn, __FUNCTION__);
+    send_bgp_msg_to_pctrlr((const char *) s_resp_set, asn);
     SAFE_FREE(s_resp_set);
     json_decref(j_root);
 }
@@ -50,7 +51,6 @@ void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
     json_t *j_msg = json_object();
     json_t *j_as_path = json_array();
 
-    json_object_set_new(j_msg, "asn", json_integer(p_resp_dec_msg->asn));
     json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
     json_object_set_new(j_msg, "prefix", json_string(p_resp_dec_msg->prefix));
     json_object_set_new(j_msg, "next-hop", json_string(p_resp_dec_msg->next_hop));
@@ -60,10 +60,11 @@ void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
     json_object_set(j_msg, "as-path", j_as_path);
     json_decref(j_as_path);
 
-    json_object_set(j_root, "bgp", j_msg);
+    json_object_set(j_root, "bgp-best", j_msg);
     json_decref(j_msg);
 
     route = json_dumps(j_root, 0);
+    fprintf(stdout, "prepare to send route:%s to asn:%d pctrlr [%s]\n", route, p_resp_dec_msg->asn, __FUNCTION__);
     send_bgp_msg_to_pctrlr((const char *) route, p_resp_dec_msg->asn);
     SAFE_FREE(route);
     json_decref(j_root);
@@ -122,12 +123,13 @@ void handle_bgp_msg(char *msg)
     // route assignment
     bgp_dec_msg.p_route = malloc(sizeof *bgp_dec_msg.p_route);
     bgp_dec_msg.p_route->neighbor = my_strdup(json_string_value(j_neighbor_ip));
+    fprintf(stdout, "neighbor ip: %s [%s]\n", json_string_value(j_neighbor_ip), __FUNCTION__);
 
     // peer is down
     j_state = json_object_get(j_neighbor, "state");
     if (json_is_string(j_state)) {
         fprintf(stdout, "peer %u is down [%s]\n", bgp_dec_msg.asn, __FUNCTION__);
-        // TODO hanlde msg[neighbor][state] == "down"
+        // TODO handle msg[neighbor][state] == "down"
     }
 
     // get update message
@@ -165,6 +167,7 @@ void handle_bgp_msg(char *msg)
     }
     bgp_dec_msg.p_route->as_path.length = json_array_size(j_as_path);
     bgp_dec_msg.p_route->as_path.asns = malloc(bgp_dec_msg.p_route->as_path.length * sizeof * bgp_dec_msg.p_route->as_path.asns);
+    fprintf(stdout, "as_path: ");
     for (i = 0; i < json_array_size(j_as_path); i++) {
         j_as_path_elmnt = json_array_get(j_as_path, i);
         if (!json_is_integer(j_as_path_elmnt)) {
@@ -174,14 +177,16 @@ void handle_bgp_msg(char *msg)
             return;
         }
         bgp_dec_msg.p_route->as_path.asns[i] = json_integer_value(j_as_path_elmnt);
+        fprintf(stdout, "%d ", (int) json_integer_value(j_as_path_elmnt));
     }
+    fprintf(stdout, "[%s]\n", __FUNCTION__);
     // med
     j_med = json_object_get(j_attr, "med");
     bgp_dec_msg.p_route->med = json_is_integer(j_med) ? json_integer_value(j_med) : 0;
     // community
     // TODO: check the key is community or communities
     j_community = json_object_get(j_attr, "community");
-    bgp_dec_msg.p_route->communities = json_is_string(j_community) ? my_strdup(json_string_value(j_community)) : "";
+    bgp_dec_msg.p_route->communities = json_is_string(j_community) ? my_strdup(json_string_value(j_community)) : my_strdup("");
     // atomic-aggregate
     j_atomic_aggregate = json_object_get(j_attr, "atomic-aggregate");
     bgp_dec_msg.p_route->atomic_aggregate = json_is_integer(j_atomic_aggregate) ? json_integer_value(j_atomic_aggregate) : 0;
@@ -190,10 +195,11 @@ void handle_bgp_msg(char *msg)
     j_oprt_type = json_object_get(j_update, "announce");
     if (json_is_object(j_oprt_type)) {
         bgp_dec_msg.oprt_type = ANNOUNCE;
-    }
-    j_oprt_type = json_object_get(j_update, "withdraw");
-    if (json_is_object(j_oprt_type)) {
-        bgp_dec_msg.oprt_type = WITHDRAW;
+    } else {
+        j_oprt_type = json_object_get(j_update, "withdraw");
+        if (json_is_object(j_oprt_type)) {
+            bgp_dec_msg.oprt_type = WITHDRAW;
+        }
     }
     if (bgp_dec_msg.oprt_type == -1) {
         fprintf(stderr, "key [neighbor][message][update][oprt_type] is wrong  [%s]\n", __FUNCTION__);
@@ -209,13 +215,15 @@ void handle_bgp_msg(char *msg)
         return;
     }
 
+    printf("start msg processing [%s]\n", __FUNCTION__);
     // get next_hop and prefix, then process each msg
     if (bgp_dec_msg.oprt_type == ANNOUNCE) {
         json_object_foreach(j_ipv4_uni, key_next_hop, j_prefixes) {
             if (!json_is_object(j_prefixes)) continue;
             bgp_dec_msg.p_route->next_hop = my_strdup(key_next_hop);
-            json_object_foreach(j_ipv4_uni, key_prefix, j_prefix) {
+            json_object_foreach(j_prefixes, key_prefix, j_prefix) {
                 bgp_dec_msg.p_route->prefix = my_strdup(key_prefix);
+                fprintf(stdout, "route prefix:%s next_hop:%s [%s]\n", key_prefix, key_next_hop, __FUNCTION__);
                 // process msg
 #ifdef W_SGX
                 route_process_w_sgx_run(&bgp_dec_msg);
@@ -273,6 +281,8 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_b
         return;
     }
     msg_type = json_string_value(j_msg_type);
+    fprintf(stdout, "handle_pctrlr_msg, msgType:%s [%s]\n", msg_type, __FUNCTION__);
+
     if (!strcmp(msg_type, "hello")) {
         j_asn = json_object_get(j_root, "id");
         if (!json_is_integer(j_asn)) {
@@ -321,14 +331,14 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_b
                     json_decref(j_add_parts);
                     SAFE_FREE(p_parts);
                 }
-                // process msg
-#ifdef W_SGX
-                process_wo_sgx_update_active_parts(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), ANNOUNCE);
-#else
-                process_w_sgx_update_active_parts(*p_src_id, (const uint32_t *) p_parts, json_array_size(j_add_parts), ANNOUNCE);
-#endif
                 p_parts[i] = json_integer_value(j_part_elmnt);
             }
+            // process msg
+#ifdef W_SGX
+            process_w_sgx_update_active_parts(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), ANNOUNCE);
+#else
+            process_wo_sgx_update_active_parts(*p_src_id, (const uint32_t *) p_parts, json_array_size(j_add_parts), ANNOUNCE);
+#endif
             SAFE_FREE(p_parts);
         }
         j_del_parts = json_object_get(j_root, "del");
@@ -341,14 +351,14 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_b
                     json_decref(j_del_parts);
                     SAFE_FREE(p_parts);
                 }
-                // process msg
-#ifdef W_SGX
-                process_wo_sgx_update_active_parts(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), WITHDRAW);
-#else
-                process_w_sgx_update_active_parts(*p_src_id, (const uint32_t *) p_parts, json_array_size(j_add_parts), WITHDRAW);
-#endif
                 p_parts[i] = json_integer_value(j_part_elmnt);
             }
+            // process msg
+#ifdef W_SGX
+            process_w_sgx_update_active_parts(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), WITHDRAW);
+#else
+            process_wo_sgx_update_active_parts(*p_src_id, (const uint32_t *) p_parts, json_array_size(j_add_parts), WITHDRAW);
+#endif
             SAFE_FREE(p_parts);
         }
     } else if (!strcmp(msg_type, "set")) {
@@ -361,9 +371,9 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_b
         prefix = json_string_value(j_prefix);
         // process msg
 #ifdef W_SGX
-        process_wo_sgx_get_prefix_set(*p_src_id, prefix);
-#else
         process_w_sgx_get_prefix_set(*p_src_id, prefix);
+#else
+        process_wo_sgx_get_prefix_set(*p_src_id, prefix);
 #endif
     }
 

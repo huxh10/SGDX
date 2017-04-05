@@ -1,0 +1,633 @@
+20170405 055103.137471:23198:MainThread:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 43:refmon: start
+20170405 055103.139264:23198:MainThread:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 64:refmon: load config
+20170405 055103.139627:23198:MainThread:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 200:ms_ctrlr: creating an instance of MultiSwitchController
+20170405 055103.139796:23198:MainThread:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 25:server: start
+20170405 055103.139878:23198:MainThread:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 35:server: receiver thread spawned
+20170405 055103.139967:23198:MainThread:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 37:server: processor thread spawned
+20170405 055103.152083:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 42:Starting StreamServer
+20170405 055103.152227:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 62:RefMonStreamServer: serve_forever
+20170405 055103.797015:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 218:ms_ctrlr: switch connect: arp
+20170405 055103.797609:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 218:ms_ctrlr: switch connect: inbound
+20170405 055103.797722:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 218:ms_ctrlr: switch connect: outbound
+20170405 055103.798139:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 218:ms_ctrlr: switch connect: main
+20170405 055103.798233:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 234:ms_ctrlr: init fabric
+20170405 055107.721492:23204:MainThread:INFO:xctrl:xctrl/xctrl.py 31:init
+20170405 055107.722011:23204:MainThread:INFO:xctrl:xctrl/xctrl.py 35:REFMON client: localhost 5555
+20170405 055107.722086:23204:MainThread:INFO:xctrl:xctrl/xctrl.py 48:mode GSSmS - OF v1.3
+20170405 055107.722131:23204:MainThread:INFO:xctrl:xctrl/xctrl.py 56:start
+20170405 055107.722168:23204:MainThread:INFO:GSSmS:/home/xiaohe/iSDX/xctrl/gss.py 198:start
+20170405 055107.722203:23204:MainThread:INFO:GSSmS:/home/xiaohe/iSDX/xctrl/gss.py 209:init fabric
+20170405 055107.722236:23204:MainThread:INFO:GSSmS:/home/xiaohe/iSDX/xctrl/gss.py 213:create flow mods to handle BGP traffic
+20170405 055107.722283:23204:MainThread:INFO:GSSmS:/home/xiaohe/iSDX/xctrl/gss.py 217:create flow mods to handle ARP traffic
+20170405 055107.722395:23204:MainThread:INFO:GSSmS:/home/xiaohe/iSDX/xctrl/gss.py 223:create flow mods to handle participant traffic
+20170405 055107.723520:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055107.723569:23204:MainThread:INFO:GSSmS:/home/xiaohe/iSDX/xctrl/gss.py 201:sent flow mods to reference monitor
+20170405 055107.723653:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [{"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [1, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [2, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [3, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [4, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [5, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [6, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [7, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [8, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [9, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [10, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [11, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [12, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [13, 65535], "action": {"fwd": [5], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:01", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [14, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [15, 65535], "action": {"fwd": [6], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:02", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [16, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [17, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [18, 65535], "action": {"fwd": [7], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [19, 65535], "action": {"fwd": [8], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:01:00:03", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp_broadcast", "cookie": [20, 65535], "action": {"fwd": [5, 6, 7, 8, 4]}, "match": {"eth_dst": "ff:ff:ff:ff:ff:ff", "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp_filter", "cookie": [21, 65535], "action": {"fwd": ["arp"]}, "match": {"eth_type": 2054}}, {"rule_type": "arp", "mod_type": "insert", "priority": "vnh_arp", "cookie": [22, 65535], "action": {"fwd": [2]}, "match": {"arp_tpa": ["172.0.1.0", "255.255.255.0"], "eth_type": 2054, "in_port": "main"}}, {"rule_type": "arp", "mod_type": "insert", "priority": "default", "cookie": [23, 65535], "action": {"fwd": [4294967288]}, "match": {"eth_type": 2054, "in_port": "main"}}, {"rule_type": "arp", "mod_type": "insert", "priority": "default", "cookie": [24, 65535], "action": {"fwd": ["main"]}, "match": {"eth_type": 2054, "in_port": "arp proxy"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "outbound", "cookie": [25, 65535], "action": {"fwd": ["outbound"], "set_eth_src": "08:00:27:89:3b:9f"}, "match": {"in_port": 5}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [26, 65535], "action": {"fwd": [7], "set_eth_dst": "08:00:27:54:56:ea"}, "match": {"eth_dst": ["00:00:00:00:00:03", "80:00:03:ff:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [27, 65535], "action": {"fwd": [8], "set_eth_dst": "08:00:27:bd:f8:b2"}, "match": {"eth_dst": ["00:00:00:01:00:03", "80:00:03:ff:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [28, 65535], "action": {"fwd": [5], "set_eth_dst": "08:00:27:89:3b:9f"}, "match": {"eth_dst": ["00:00:00:00:00:01", "00:00:00:00:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [29, 65535], "action": {"fwd": [6], "set_eth_dst": "08:00:27:92:18:1f"}, "match": {"eth_dst": ["00:00:00:00:00:02", "00:00:00:00:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "loop", "cookie": [30, 65535], "action": {}, "match": {"in_port": "inbound"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "inbound", "cookie": [31, 65535], "action": {"fwd": ["outbound"]}, "match": {"eth_dst": ["80:00:00:00:00:00", "80:00:00:00:00:00"]}}, {"rule_type": "outbound", "mod_type": "insert", "priority": "default", "cookie": [32, 65535], "action": {"fwd": ["inbound"]}, "match": {}}, {"rule_type": "inbound", "mod_type": "insert", "priority": "inbound", "cookie": [33, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"]}}, {"rule_type": "inbound", "mod_type": "insert", "priority": "default", "cookie": [34, 65535], "action": {"fwd": ["main-in"]}, "match": {}}], "auth_info": {"participant": 0, "key": "no key"}}
+20170405 055107.723744:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055107.724234:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [{"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [1, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [2, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [3, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [4, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [5, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [6, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [7, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [8, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [9, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "tcp_src": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [10, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "tcp_dst": 179}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [11, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [12, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [13, 65535], "action": {"fwd": [5], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:01", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [14, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [15, 65535], "action": {"fwd": [6], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:02", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [16, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [17, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "eth_type": 2054}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [18, 65535], "action": {"fwd": [7], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [19, 65535], "action": {"fwd": [8], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:01:00:03", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp_broadcast", "cookie": [20, 65535], "action": {"fwd": [5, 6, 7, 8, 4]}, "match": {"eth_dst": "ff:ff:ff:ff:ff:ff", "eth_type": 2054, "in_port": "arp"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "arp_filter", "cookie": [21, 65535], "action": {"fwd": ["arp"]}, "match": {"eth_type": 2054}}, {"rule_type": "arp", "mod_type": "insert", "priority": "vnh_arp", "cookie": [22, 65535], "action": {"fwd": [2]}, "match": {"arp_tpa": ["172.0.1.0", "255.255.255.0"], "eth_type": 2054, "in_port": "main"}}, {"rule_type": "arp", "mod_type": "insert", "priority": "default", "cookie": [23, 65535], "action": {"fwd": [4294967288]}, "match": {"eth_type": 2054, "in_port": "main"}}, {"rule_type": "arp", "mod_type": "insert", "priority": "default", "cookie": [24, 65535], "action": {"fwd": ["main"]}, "match": {"eth_type": 2054, "in_port": "arp proxy"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "outbound", "cookie": [25, 65535], "action": {"fwd": ["outbound"], "set_eth_src": "08:00:27:89:3b:9f"}, "match": {"in_port": 5}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [26, 65535], "action": {"fwd": [7], "set_eth_dst": "08:00:27:54:56:ea"}, "match": {"eth_dst": ["00:00:00:00:00:03", "80:00:03:ff:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [27, 65535], "action": {"fwd": [8], "set_eth_dst": "08:00:27:bd:f8:b2"}, "match": {"eth_dst": ["00:00:00:01:00:03", "80:00:03:ff:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [28, 65535], "action": {"fwd": [5], "set_eth_dst": "08:00:27:89:3b:9f"}, "match": {"eth_dst": ["00:00:00:00:00:01", "00:00:00:00:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [29, 65535], "action": {"fwd": [6], "set_eth_dst": "08:00:27:92:18:1f"}, "match": {"eth_dst": ["00:00:00:00:00:02", "00:00:00:00:ff:ff"]}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "loop", "cookie": [30, 65535], "action": {}, "match": {"in_port": "inbound"}}, {"rule_type": "main-in", "mod_type": "insert", "priority": "inbound", "cookie": [31, 65535], "action": {"fwd": ["outbound"]}, "match": {"eth_dst": ["80:00:00:00:00:00", "80:00:00:00:00:00"]}}, {"rule_type": "outbound", "mod_type": "insert", "priority": "default", "cookie": [32, 65535], "action": {"fwd": ["inbound"]}, "match": {}}, {"rule_type": "inbound", "mod_type": "insert", "priority": "inbound", "cookie": [33, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"]}}, {"rule_type": "inbound", "mod_type": "insert", "priority": "default", "cookie": [34, 65535], "action": {"fwd": ["main-in"]}, "match": {}}], "auth_info": {"participant": 0, "key": "no key"}}
+20170405 055107.726464:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396667.73
+20170405 055107.726556:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 0
+20170405 055107.726635:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [1, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "tcp_src": 179}}
+20170405 055107.726703:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [2, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "tcp_dst": 179}}
+20170405 055107.726766:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [3, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "tcp_src": 179}}
+20170405 055107.726827:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [4, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "tcp_dst": 179}}
+20170405 055107.726885:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [5, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "tcp_src": 179}}
+20170405 055107.726943:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [6, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "tcp_dst": 179}}
+20170405 055107.727000:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [7, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "tcp_src": 179}}
+20170405 055107.727058:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [8, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "tcp_dst": 179}}
+20170405 055107.727115:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [9, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "tcp_src": 179}}
+20170405 055107.727172:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "bgp", "cookie": [10, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "tcp_dst": 179}}
+20170405 055107.727231:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [11, 65535], "action": {"fwd": [4]}, "match": {"eth_dst": "08:00:27:89:3b:ff", "eth_type": 2054}}
+20170405 055107.727289:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [12, 65535], "action": {"fwd": [5]}, "match": {"eth_dst": "08:00:27:89:3b:9f", "eth_type": 2054}}
+20170405 055107.727347:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [13, 65535], "action": {"fwd": [5], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:01", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}
+20170405 055107.727405:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [14, 65535], "action": {"fwd": [6]}, "match": {"eth_dst": "08:00:27:92:18:1f", "eth_type": 2054}}
+20170405 055107.727463:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [15, 65535], "action": {"fwd": [6], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:02", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}
+20170405 055107.727519:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [16, 65535], "action": {"fwd": [7]}, "match": {"eth_dst": "08:00:27:54:56:ea", "eth_type": 2054}}
+20170405 055107.727575:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [17, 65535], "action": {"fwd": [8]}, "match": {"eth_dst": "08:00:27:bd:f8:b2", "eth_type": 2054}}
+20170405 055107.727632:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [18, 65535], "action": {"fwd": [7], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}
+20170405 055107.727691:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp", "cookie": [19, 65535], "action": {"fwd": [8], "set_eth_dst": "ff:ff:ff:ff:ff:ff"}, "match": {"eth_dst": ["00:00:00:01:00:03", "00:00:03:ff:ff:ff"], "eth_type": 2054, "in_port": "arp"}}
+20170405 055107.727748:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp_broadcast", "cookie": [20, 65535], "action": {"fwd": [5, 6, 7, 8, 4]}, "match": {"eth_dst": "ff:ff:ff:ff:ff:ff", "eth_type": 2054, "in_port": "arp"}}
+20170405 055107.727806:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "arp_filter", "cookie": [21, 65535], "action": {"fwd": ["arp"]}, "match": {"eth_type": 2054}}
+20170405 055107.727865:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "arp", "mod_type": "insert", "priority": "vnh_arp", "cookie": [22, 65535], "action": {"fwd": [2]}, "match": {"arp_tpa": ["172.0.1.0", "255.255.255.0"], "eth_type": 2054, "in_port": "main"}}
+20170405 055107.727921:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "arp", "mod_type": "insert", "priority": "default", "cookie": [23, 65535], "action": {"fwd": [4294967288]}, "match": {"eth_type": 2054, "in_port": "main"}}
+20170405 055107.727978:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "arp", "mod_type": "insert", "priority": "default", "cookie": [24, 65535], "action": {"fwd": ["main"]}, "match": {"eth_type": 2054, "in_port": "arp proxy"}}
+20170405 055107.728219:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "outbound", "cookie": [25, 65535], "action": {"fwd": ["outbound"], "set_eth_src": "08:00:27:89:3b:9f"}, "match": {"in_port": 5}}
+20170405 055107.728282:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [26, 65535], "action": {"fwd": [7], "set_eth_dst": "08:00:27:54:56:ea"}, "match": {"eth_dst": ["00:00:00:00:00:03", "80:00:03:ff:ff:ff"]}}
+20170405 055107.728339:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [27, 65535], "action": {"fwd": [8], "set_eth_dst": "08:00:27:bd:f8:b2"}, "match": {"eth_dst": ["00:00:00:01:00:03", "80:00:03:ff:ff:ff"]}}
+20170405 055107.728397:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [28, 65535], "action": {"fwd": [5], "set_eth_dst": "08:00:27:89:3b:9f"}, "match": {"eth_dst": ["00:00:00:00:00:01", "00:00:00:00:ff:ff"]}}
+20170405 055107.728453:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "output", "cookie": [29, 65535], "action": {"fwd": [6], "set_eth_dst": "08:00:27:92:18:1f"}, "match": {"eth_dst": ["00:00:00:00:00:02", "00:00:00:00:ff:ff"]}}
+20170405 055107.728508:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "loop", "cookie": [30, 65535], "action": {}, "match": {"in_port": "inbound"}}
+20170405 055107.755658:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "main-in", "mod_type": "insert", "priority": "inbound", "cookie": [31, 65535], "action": {"fwd": ["outbound"]}, "match": {"eth_dst": ["80:00:00:00:00:00", "80:00:00:00:00:00"]}}
+20170405 055107.755815:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "outbound", "mod_type": "insert", "priority": "default", "cookie": [32, 65535], "action": {"fwd": ["inbound"]}, "match": {}}
+20170405 055107.755883:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "inbound", "mod_type": "insert", "priority": "inbound", "cookie": [33, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"]}}
+20170405 055107.755945:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 0: {"rule_type": "inbound", "mod_type": "insert", "priority": "default", "cookie": [34, 65535], "action": {"fwd": ["main-in"]}, "match": {}}
+20170405 055107.756321:23198:GreenThread-3:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 273:ms_ctrlr: sending barrier
+20170405 055107.761611:23198:GreenThread-3:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 273:ms_ctrlr: sending barrier
+20170405 055107.763358:23198:GreenThread-3:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 273:ms_ctrlr: sending barrier
+20170405 055107.763702:23198:GreenThread-3:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 273:ms_ctrlr: sending barrier
+20170405 055125.604170:23211:MainThread:INFO:arp:arproxy/arproxy.py 248:Reading config file /home/xiaohe/iSDX/arproxy/../examples/test-ms/config/sdx_global.cfg
+20170405 055125.604588:23211:MainThread:INFO:arp:arproxy/arproxy.py 251:Starting ARP Listener
+20170405 055125.622098:23211:MainThread:INFO:arp:arproxy/arproxy.py 257:Starting PCTRL Listener
+20170405 055125.622223:23211:MainThread:INFO:arp:arproxy/arproxy.py 138:Starting the PctrlListener
+20170405 055125.623602:23211:MainThread:INFO:arp:arproxy/arproxy.py 143:ARP Response Handler started
+20170405 055136.890444:23217:MainThread:INFO:P_1:pctrl/participant_controller.py 710:Starting controller with config file: /home/xiaohe/iSDX/examples/test-ms/config/sdx_global.cfg
+20170405 055136.890751:23217:MainThread:INFO:P_1:pctrl/participant_controller.py 711:and policy file: /home/xiaohe/iSDX/examples/test-ms/policies/participant_1.py
+20170405 055136.890970:23217:MainThread:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 26:Max bits: 31 Best path bits: 16
+20170405 055136.891025:23217:MainThread:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 27:VMAC size: 48 Port size: 10
+20170405 055136.891310:23217:Thread-1:INFO:P_1:pctrl/participant_controller.py 81:Starting controller for participant
+20170405 055136.892539:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 274:Attempting to connect to xrs server at localhost port 6666
+20170405 055136.892856:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 277:Connect to xrs successful.
+20170405 055136.893012:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 274:Attempting to connect to xrs server at localhost port 6666
+20170405 055136.893190:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 277:Connect to xrs successful.
+20170405 055136.893309:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055136.893406:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 237:Attempting to connect to arp server at localhost port 4444
+20170405 055136.893711:23211:Thread-2:INFO:arp:arproxy/arproxy.py 50:ARP Pctrl Client started for client ip ('127.0.0.1', 46830).
+20170405 055136.893596:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 239:Connect to arp successful.
+20170405 055136.893835:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/participant_server.py 24:participant_server(1): start server
+20170405 055136.894028:23217:Thread-1:INFO:P_1:pctrl/participant_controller.py 159:Initializing inbound rules
+20170405 055136.894807:23217:Thread-1:DEBUG:P_1:pctrl/participant_controller.py 169:Rule Messages INBOUND:: {}
+20170405 055136.894877:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 38:Superset intial computation running..
+20170405 055136.894936:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 149:~Recomputing all Supersets...
+20170405 055136.895014:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055136.895105:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 182:done.~
+20170405 055136.895160:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 183:Supersets: >> []
+20170405 055136.895220:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 51:Superset computation complete. Supersets: >> [] sdx_msgs: {'changes': [], 'type': 'new'}
+20170405 055136.895352:23217:Thread-1:DEBUG:P_1:pctrl/participant_controller.py 173:Rule Messages OUTBOUND:: {"changes": [], "type": "new"}
+20170405 055136.895417:23217:Thread-1:DEBUG:P_1:pctrl/participant_controller.py 181:Rule Messages:: {"changes": []}
+20170405 055136.896518:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055136.895474:23217:Thread-1:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055136.896715:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055136.895576:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055136.896784:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055136.896543:23217:Thread-1:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055136.896942:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055136.897214:23217:Thread-3:INFO:P_1:pctrl/participant_controller.py 224:ARP Event Handler started.
+20170405 055136.897037:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396696.9
+20170405 055136.897543:23217:Thread-4:INFO:P_1:pctrl/participant_controller.py 249:XRS Event Handler started.
+20170405 055136.897089:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055139.354316:23230:MainThread:INFO:P_2:pctrl/participant_controller.py 710:Starting controller with config file: /home/xiaohe/iSDX/examples/test-ms/config/sdx_global.cfg
+20170405 055139.354621:23230:MainThread:INFO:P_2:pctrl/participant_controller.py 711:and policy file: /home/xiaohe/iSDX/examples/test-ms/policies/participant_2.py
+20170405 055139.354824:23230:MainThread:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 26:Max bits: 31 Best path bits: 16
+20170405 055139.354871:23230:MainThread:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 27:VMAC size: 48 Port size: 10
+20170405 055139.355286:23230:Thread-1:INFO:P_2:pctrl/participant_controller.py 81:Starting controller for participant
+20170405 055139.356586:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 274:Attempting to connect to xrs server at localhost port 6666
+20170405 055139.357057:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 277:Connect to xrs successful.
+20170405 055139.357202:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 274:Attempting to connect to xrs server at localhost port 6666
+20170405 055139.357325:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 277:Connect to xrs successful.
+20170405 055139.357395:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055139.357463:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 237:Attempting to connect to arp server at localhost port 4444
+20170405 055139.357618:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 239:Connect to arp successful.
+20170405 055139.357724:23211:Thread-3:INFO:arp:arproxy/arproxy.py 50:ARP Pctrl Client started for client ip ('127.0.0.1', 46852).
+20170405 055139.357752:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/participant_server.py 24:participant_server(2): start server
+20170405 055139.357886:23230:Thread-1:INFO:P_2:pctrl/participant_controller.py 159:Initializing inbound rules
+20170405 055139.358322:23230:Thread-1:DEBUG:P_2:pctrl/participant_controller.py 169:Rule Messages INBOUND:: {}
+20170405 055139.358393:23230:Thread-1:DEBUG:P_2:pctrl/participant_controller.py 173:Rule Messages OUTBOUND:: {}
+20170405 055139.358436:23230:Thread-1:DEBUG:P_2:pctrl/participant_controller.py 181:Rule Messages:: {}
+20170405 055139.358474:23230:Thread-1:DEBUG:P_2:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055139.358527:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055139.359359:23230:Thread-1:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055139.359368:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055139.359537:23230:Thread-3:INFO:P_2:pctrl/participant_controller.py 224:ARP Event Handler started.
+20170405 055139.359506:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 2, "key": "Part2Key"}}
+20170405 055139.359702:23230:Thread-4:INFO:P_2:pctrl/participant_controller.py 249:XRS Event Handler started.
+20170405 055139.359576:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055139.359748:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 2, "key": "Part2Key"}}
+20170405 055139.359814:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396699.36
+20170405 055139.359866:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 2
+20170405 055141.722610:23243:MainThread:INFO:P_3:pctrl/participant_controller.py 710:Starting controller with config file: /home/xiaohe/iSDX/examples/test-ms/config/sdx_global.cfg
+20170405 055141.722912:23243:MainThread:INFO:P_3:pctrl/participant_controller.py 711:and policy file: /home/xiaohe/iSDX/examples/test-ms/policies/participant_3.py
+20170405 055141.723125:23243:MainThread:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 26:Max bits: 31 Best path bits: 16
+20170405 055141.723172:23243:MainThread:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 27:VMAC size: 48 Port size: 10
+20170405 055141.723797:23243:Thread-1:INFO:P_3:pctrl/participant_controller.py 81:Starting controller for participant
+20170405 055141.725056:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 274:Attempting to connect to xrs server at localhost port 6666
+20170405 055141.725330:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 277:Connect to xrs successful.
+20170405 055141.725440:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 274:Attempting to connect to xrs server at localhost port 6666
+20170405 055141.725590:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 277:Connect to xrs successful.
+20170405 055141.725668:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055141.725740:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 237:Attempting to connect to arp server at localhost port 4444
+20170405 055141.725871:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 239:Connect to arp successful.
+20170405 055141.726003:23211:Thread-4:INFO:arp:arproxy/arproxy.py 50:ARP Pctrl Client started for client ip ('127.0.0.1', 46866).
+20170405 055141.726003:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/participant_server.py 24:participant_server(3): start server
+20170405 055141.726127:23243:Thread-1:INFO:P_3:pctrl/participant_controller.py 159:Initializing inbound rules
+20170405 055141.726643:23243:Thread-1:DEBUG:P_3:pctrl/participant_controller.py 169:Rule Messages INBOUND:: {"changes": [{"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [1, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4321}}, {"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [2, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:01:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4322}}], "type": "new"}
+20170405 055141.726716:23243:Thread-1:DEBUG:P_3:pctrl/participant_controller.py 173:Rule Messages OUTBOUND:: {}
+20170405 055141.726772:23243:Thread-1:DEBUG:P_3:pctrl/participant_controller.py 181:Rule Messages:: {"changes": [{"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [1, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4321}}, {"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [2, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:01:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4322}}], "type": "new"}
+20170405 055141.726812:23243:Thread-1:DEBUG:P_3:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055141.726857:23243:Thread-1:DEBUG:P_3:pctrl/participant_controller.py 197:MOD: {'rule_type': 'inbound', 'mod_type': 'insert', 'priority': 4, 'cookie': (1, 65535), 'action': {'fwd': ['main-in'], 'set_eth_dst': '00:00:00:00:00:03'}, 'match': {'eth_dst': ('00:00:00:00:00:03', '00:00:00:00:ff:ff'), u'tcp_dst': 4321}}
+20170405 055141.726901:23243:Thread-1:DEBUG:P_3:pctrl/participant_controller.py 197:MOD: {'rule_type': 'inbound', 'mod_type': 'insert', 'priority': 4, 'cookie': (2, 65535), 'action': {'fwd': ['main-in'], 'set_eth_dst': '00:00:00:01:00:03'}, 'match': {'eth_dst': ('00:00:00:00:00:03', '00:00:00:00:ff:ff'), u'tcp_dst': 4322}}
+20170405 055141.726958:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055141.727626:23243:Thread-1:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055141.727630:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055141.727811:23243:Thread-3:INFO:P_3:pctrl/participant_controller.py 224:ARP Event Handler started.
+20170405 055141.727797:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [{"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [1, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4321}}, {"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [2, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:01:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4322}}], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055141.727872:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055141.728031:23243:Thread-4:INFO:P_3:pctrl/participant_controller.py 249:XRS Event Handler started.
+20170405 055141.728087:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [{"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [1, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4321}}, {"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [2, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:01:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4322}}], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055141.728191:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396701.73
+20170405 055141.728257:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 3
+20170405 055141.728334:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 3: {"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [1, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:00:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4321}}
+20170405 055141.728412:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 3: {"rule_type": "inbound", "mod_type": "insert", "priority": 4, "cookie": [2, 65535], "action": {"fwd": ["main-in"], "set_eth_dst": "00:00:00:01:00:03"}, "match": {"eth_dst": ["00:00:00:00:00:03", "00:00:00:00:ff:ff"], "tcp_dst": 4322}}
+20170405 055149.609844:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 260:XRS Event received 109 bytes: m {"bgp-best": {"oprt-type": "announce", "prefix": "140.0.0.0/24", "next-hop": "172.0.0.11", "as-path": [2]}}
+20170405 055149.609924:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 260:XRS Event received 109 bytes: m {"bgp-best": {"oprt-type": "announce", "prefix": "140.0.0.0/24", "next-hop": "172.0.0.11", "as-path": [2]}}
+20170405 055149.609217:23260:Thread-1:DEBUG:XRS-send:/home/xiaohe/iSDX/xrs/client.py 50:{ "exabgp": "3.4.8", "time": 1491396709, "host" : "c16", "pid" : "23257", "ppid" : "24365", "counter": 1, "type": "update", "neighbor": { "ip": "172.0.0.11", "address": { "local": "172.0.255.254", "peer": "172.0.0.11"}, "asn": { "local": "65000", "peer": "2"}, "message": { "update": { "attribute": { "origin": "igp", "as-path": [ 2 ], "confederation-path": [], "med": 0 }, "announce": { "ipv4 unicast": { "172.0.0.11": { "140.0.0.0/24": {  }, "150.0.0.0/24": {  } } } } } }} }
+20170405 055149.610223:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 266:XRS Event msg_len: 109
+20170405 055149.611526:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 260:XRS Event received 216 bytes: l {"bgp-best": {"oprt-type": "announce", "prefix": "100.0.0.0/24", "next-hop": "172.0.0.1", "as-path": [1]}}l {"bgp-best": {"oprt-type": "announce", "prefix": "110.0.0.0/24", "next-hop": "172.0.0.1", "as-path": [1]}}
+20170405 055149.610330:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 266:XRS Event msg_len: 109
+20170405 055149.610656:23260:Thread-1:DEBUG:XRS-send:/home/xiaohe/iSDX/xrs/client.py 50:{ "exabgp": "3.4.8", "time": 1491396709, "host" : "c16", "pid" : "23257", "ppid" : "24365", "counter": 1, "type": "update", "neighbor": { "ip": "172.0.0.1", "address": { "local": "172.0.255.254", "peer": "172.0.0.1"}, "asn": { "local": "65000", "peer": "1"}, "message": { "update": { "attribute": { "origin": "igp", "as-path": [ 1 ], "confederation-path": [], "med": 0 }, "announce": { "ipv4 unicast": { "172.0.0.1": { "100.0.0.0/24": {  }, "110.0.0.0/24": {  } } } } } }} }
+20170405 055149.610491:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.611813:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 266:XRS Event msg_len: 108
+20170405 055149.610725:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.613158:23260:Thread-1:DEBUG:XRS-send:/home/xiaohe/iSDX/xrs/client.py 50:{ "exabgp": "3.4.8", "time": 1491396709, "host" : "c16", "pid" : "23257", "ppid" : "24365", "counter": 1, "type": "update", "neighbor": { "ip": "172.0.0.21", "address": { "local": "172.0.255.254", "peer": "172.0.0.21"}, "asn": { "local": "65000", "peer": "3"}, "message": { "update": { "attribute": { "origin": "igp", "as-path": [ 3 ], "confederation-path": [], "med": 0 }, "announce": { "ipv4 unicast": { "172.0.0.21": { "140.0.0.0/24": {  }, "150.0.0.0/24": {  } } } } } }} }
+20170405 055149.610799:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.11', u'prefix': u'140.0.0.0/24', u'oprt-type': u'announce', u'as-path': [2]}
+20170405 055149.612138:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.611054:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.11', u'prefix': u'140.0.0.0/24', u'oprt-type': u'announce', u'as-path': [2]}
+20170405 055149.613722:23260:Thread-1:DEBUG:XRS-send:/home/xiaohe/iSDX/xrs/client.py 50:{ "exabgp": "3.4.8", "time": 1491396709, "host" : "c16", "pid" : "23257", "ppid" : "24365", "counter": 1, "type": "update", "neighbor": { "ip": "172.0.0.22", "address": { "local": "172.0.255.254", "peer": "172.0.0.22"}, "asn": { "local": "65000", "peer": "3"}, "message": { "update": { "attribute": { "origin": "igp", "as-path": [ 3 ], "confederation-path": [], "med": 0 }, "announce": { "ipv4 unicast": { "172.0.0.22": { "140.0.0.0/24": {  }, "150.0.0.0/24": {  } } } } } }} }
+20170405 055149.612799:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.1', u'prefix': u'100.0.0.0/24', u'oprt-type': u'announce', u'as-path': [1]}
+20170405 055149.847088:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'140.0.0.0/24', neighbor='2', next_hop=u'172.0.0.11', origin='', as_path=[2], communities='', med='', atomic_aggregate='')}
+20170405 055149.847417:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 140.0.0.0/24
+20170405 055149.847898:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'140.0.0.0/24', neighbor='2', next_hop=u'172.0.0.11', origin='', as_path=[2], communities='', med='', atomic_aggregate='')}
+20170405 055149.847874:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 507:Time taken for decision process: 0.237102985382
+20170405 055149.848194:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 140.0.0.0/24
+20170405 055149.848174:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.848513:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 507:Time taken for decision process: 0.237488031387
+20170405 055149.852439:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.848460:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.848708:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.852968:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.848775:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.848878:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.853367:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.849040:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 38:Superset intial computation running..
+20170405 055149.849040:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.854182:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.849293:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 149:~Recomputing all Supersets...
+20170405 055149.849191:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 38:Superset intial computation running..
+20170405 055149.854492:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.85
+20170405 055149.849650:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.849338:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 149:~Recomputing all Supersets...
+20170405 055149.854737:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 3
+20170405 055149.850191:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 281:[get_all_active_sets] get active_set of prefix 140.0.0.0/24
+20170405 055149.849486:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.855229:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.850533:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 182:done.~
+20170405 055149.849675:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 281:[get_all_active_sets] get active_set of prefix 140.0.0.0/24
+20170405 055149.855503:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [{"rule_type": "outbound", "mod_type": "remove", "cookie": [1, 65535]}, {"rule_type": "outbound", "mod_type": "remove", "cookie": [2, 65535]}, {"rule_type": "outbound", "mod_type": "remove", "cookie": [3, 65535]}], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.850826:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 183:Supersets: >> [[]]
+20170405 055149.849868:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 182:done.~
+20170405 055149.855771:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.851110:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 51:Superset computation complete. Supersets: >> [[]] sdx_msgs: {'changes': [], 'type': 'new'}
+20170405 055149.850322:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 183:Supersets: >> [[]]
+20170405 055149.856314:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [{"rule_type": "outbound", "mod_type": "remove", "cookie": [1, 65535]}, {"rule_type": "outbound", "mod_type": "remove", "cookie": [2, 65535]}, {"rule_type": "outbound", "mod_type": "remove", "cookie": [3, 65535]}], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.851389:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 536:Time taken to update supersets: 0.00321388244629
+20170405 055149.850491:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 51:Superset computation complete. Supersets: >> [[]] sdx_msgs: {'changes': [], 'type': 'new'}
+20170405 055149.856593:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.86
+20170405 055149.851665:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 545:Wiping outbound rules.
+20170405 055149.850666:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 536:Time taken to update supersets: 0.0019588470459
+20170405 055149.856818:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055149.851959:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 0.000285148620605
+20170405 055149.850812:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 545:Wiping outbound rules.
+20170405 055149.857081:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 1: {"rule_type": "outbound", "mod_type": "remove", "cookie": [1, 65535]}
+20170405 055149.852234:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.850968:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 0.000150918960571
+20170405 055149.857344:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 1: {"rule_type": "outbound", "mod_type": "remove", "cookie": [2, 65535]}
+20170405 055149.852540:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 197:MOD: {'rule_type': 'outbound', 'mod_type': 'remove', 'priority': 0, 'cookie': (1, 65535), 'action': {}, 'match': {'eth_src': u'08:00:27:89:3b:9f'}}
+20170405 055149.851128:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.857622:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 1: {"rule_type": "outbound", "mod_type": "remove", "cookie": [3, 65535]}
+20170405 055149.852841:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 197:MOD: {'rule_type': 'outbound', 'mod_type': 'remove', 'priority': 0, 'cookie': (2, 65535), 'action': {}, 'match': {'eth_src': u'08:00:27:89:3b:9f'}}
+20170405 055149.851345:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.858032:23198:GreenThread-3:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 273:ms_ctrlr: sending barrier
+20170405 055149.853140:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 197:MOD: {'rule_type': 'outbound', 'mod_type': 'remove', 'priority': 0, 'cookie': (3, 65535), 'action': {}, 'match': {'eth_src': u'08:00:27:89:3b:9f'}}
+20170405 055149.852579:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.853554:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.852971:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.00182604789734
+20170405 055149.855048:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.855487:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.00323796272278
+20170405 055149.963113:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'100.0.0.0/24', neighbor='1', next_hop=u'172.0.0.1', origin='', as_path=[1], communities='', med='', atomic_aggregate='')}
+20170405 055149.963429:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 100.0.0.0/24
+20170405 055149.964282:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 140.0.0.0/24
+20170405 055149.963749:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 507:Time taken for decision process: 0.351016998291
+20170405 055149.964527:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 140.0.0.0/24
+20170405 055149.965720:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.964604:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.967433:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.963945:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.964890:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.966101:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:03', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.965044:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:02'}]
+20170405 055149.967583:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 2, "key": "Part2Key"}}
+20170405 055149.964118:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.965379:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:03', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:02'}, {'eth_dst': '00:00:00:01:00:03', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:02'}]
+20170405 055149.967131:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:01:00:03', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.965464:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.109681129456
+20170405 055149.968831:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 257 bytes: U neighbor 172.0.0.1 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]V neighbor 172.0.0.21 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]V neighbor 172.0.0.22 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.967698:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.964283:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.965981:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.112728834152
+20170405 055149.968079:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.967671:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 140.0.0.0/24
+20170405 055149.968933:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 85
+20170405 055149.967892:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 2, "key": "Part2Key"}}
+20170405 055149.964445:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 38:Superset intial computation running..
+20170405 055149.967858:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 140.0.0.0/24
+20170405 055149.968269:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:03', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.967773:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.969010:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.1 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.967978:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.97
+20170405 055149.964593:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 149:~Recomputing all Supersets...
+20170405 055149.967962:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.968381:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:01:00:03', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.967894:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:02'}]
+20170405 055149.969073:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.968068:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 2
+20170405 055149.964745:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.968105:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:03', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:02'}, {'eth_dst': '00:00:00:01:00:03', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:02'}]
+20170405 055149.968605:23211:Thread-3:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:02', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.968018:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.1 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.969121:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.21 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.970955:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.964904:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 281:[get_all_active_sets] get active_set of prefix 100.0.0.0/24
+20170405 055149.968262:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.21 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.969853:23211:Thread-3:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:02', u'TPA': u'172.0.1.1', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.1', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.968212:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 260:XRS Event received 267 bytes: & {"bgp-reach": {"140.0.0.0/24": [2]}}m {"bgp-best": {"oprt-type": "announce", "prefix": "150.0.0.0/24", "next-hop": "172.0.0.11", "as-path": [2]}}& {"bgp-reach": {"150.0.0.0/24": [2]}}) {"bgp-reach": {"140.0.0.0/24": [2, 3]}}) {"bgp-reach": {"150.0.0.0/24": [2, 3]}}
+20170405 055149.969166:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.971128:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [{"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [1, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:02"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["20:00:00:00:00:00", "60:00:00:00:00:00"], "tcp_dst": 80}}], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.965097:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 182:done.~
+20170405 055149.968454:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.22 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.971478:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.1', u'SHA': u'a0:00:00:00:00:02', u'eth_src': u'a0:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'a0:00:00:00:00:02'}
+20170405 055149.968300:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 266:XRS Event msg_len: 38
+20170405 055149.969210:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.22 announce route 140.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 2 ) ]
+20170405 055149.971266:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.965265:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 183:Supersets: >> [[]]
+20170405 055149.968593:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 260:XRS Event received 325 bytes: m {"bgp-best": {"oprt-type": "announce", "prefix": "150.0.0.0/24", "next-hop": "172.0.0.11", "as-path": [2]}}l {"bgp-best": {"oprt-type": "announce", "prefix": "100.0.0.0/24", "next-hop": "172.0.0.1", "as-path": [1]}}l {"bgp-best": {"oprt-type": "announce", "prefix": "110.0.0.0/24", "next-hop": "172.0.0.1", "as-path": [1]}}
+20170405 055149.972626:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:03', u'TPA': u'172.0.1.2', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.2', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.968397:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 289:Event Received: bgp-reach Update.
+20170405 055149.970026:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 86 bytes: V neighbor 172.0.0.11 announce route 100.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 1 ) ]
+20170405 055149.971448:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.965436:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 51:Superset computation complete. Supersets: >> [[]] sdx_msgs: {'changes': [], 'type': 'new'}
+20170405 055149.968680:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 266:XRS Event msg_len: 109
+20170405 055149.972872:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:01:00:03', u'TPA': u'172.0.1.2', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.2', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.968477:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 527:process_bgp_reach:: {u'140.0.0.0/24': [2]}
+20170405 055149.970098:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.971576:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.965639:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 536:Time taken to update supersets: 0.00169396400452
+20170405 055149.968785:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.973051:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.1', u'SHA': u'a0:00:00:00:00:02', u'eth_src': u'a0:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'a0:00:00:00:00:02'}
+20170405 055149.968553:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.970154:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.11 announce route 100.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 1 ) ]
+20170405 055149.971682:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.965793:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 545:Wiping outbound rules.
+20170405 055149.968876:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.11', u'prefix': u'150.0.0.0/24', u'oprt-type': u'announce', u'as-path': [2]}
+20170405 055149.973225:23211:Thread-3:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:02', u'TPA': u'172.0.1.2', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.2', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.968636:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.973406:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 172 bytes: V neighbor 172.0.0.11 announce route 110.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 1 ) ]V neighbor 172.0.0.21 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.971964:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [{"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [1, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:02"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["20:00:00:00:00:00", "60:00:00:00:00:00"], "tcp_dst": 80}}], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.965951:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 0.0001540184021
+20170405 055149.969731:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'150.0.0.0/24', neighbor='2', next_hop=u'172.0.0.11', origin='', as_path=[2], communities='', med='', atomic_aggregate='')}
+20170405 055149.976718:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.2', u'SHA': u'80:00:00:00:00:02', u'eth_src': u'80:00:00:00:00:02', u'SPA': u'172.0.1.2', u'THA': u'80:00:00:00:00:02'}
+20170405 055149.968711:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 96:[update_supersets] get active_set[2]of prefix 140.0.0.0/24
+20170405 055149.973503:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.972083:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.97
+20170405 055149.966097:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.969831:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 150.0.0.0/24
+20170405 055149.977329:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:03', u'TPA': u'172.0.1.3', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.3', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.968808:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 136:Merge possible. Merging set([2]) into superset [2]
+20170405 055149.973580:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.11 announce route 110.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 1 ) ]
+20170405 055149.972184:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055149.966319:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.969959:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 507:Time taken for decision process: 0.00108599662781
+20170405 055149.977478:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:01:00:03', u'TPA': u'172.0.1.3', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.3', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.968880:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 137:with new members [2]
+20170405 055149.973631:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.972313:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 1: {"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [1, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:02"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["20:00:00:00:00:00", "60:00:00:00:00:00"], "tcp_dst": 80}}
+20170405 055149.967429:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.970047:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.979256:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.2', u'SHA': u'a0:00:00:00:00:02', u'eth_src': u'a0:00:00:00:00:02', u'SPA': u'172.0.1.2', u'THA': u'a0:00:00:00:00:02'}
+20170405 055149.968955:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000481128692627
+20170405 055149.973676:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.21 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.972914:23198:GreenThread-3:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 273:ms_ctrlr: sending barrier
+20170405 055149.967519:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.00143003463745
+20170405 055149.970130:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.981488:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:03', u'TPA': u'172.0.1.4', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.4', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.969040:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 555:Supersets have changed: {'changes': [{'position': 0, 'superset': 0, 'participant_id': 2}], 'type': 'update'}
+20170405 055149.973722:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 86 bytes: V neighbor 172.0.0.22 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.973242:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.968280:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 100.0.0.0/24
+20170405 055149.970213:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.981798:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:01:00:03', u'TPA': u'172.0.1.4', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.4', u'THA': u'80:00:00:00:00:01'}
+20170405 055149.969188:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 561:Flow msgs: [{'rule_type': 'outbound', 'mod_type': 'insert', 'priority': 2, 'cookie': (1, 65535), 'action': {'fwd': ['inbound'], 'set_eth_dst': '80:00:00:00:00:02'}, 'match': {'eth_src': u'08:00:27:89:3b:9f', 'eth_dst': ('20:00:00:00:00:00', '60:00:00:00:00:00'), u'tcp_dst': 80}}]
+20170405 055149.973770:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.973324:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.97
+20170405 055149.968372:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.970297:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000248908996582
+20170405 055149.981649:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.1', u'SHA': u'b0:00:00:00:00:02', u'eth_src': u'b0:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'b0:00:00:00:00:02'}
+20170405 055149.969270:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 0.000237941741943
+20170405 055149.973814:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.22 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.973398:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 3
+20170405 055149.968473:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:02', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:01'}]
+20170405 055149.970378:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 9.53674316406e-07
+20170405 055149.982504:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.1', u'SHA': u'b0:00:00:00:00:02', u'eth_src': u'b0:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'b0:00:00:00:00:02'}
+20170405 055149.969346:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.976866:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 85 bytes: U neighbor 172.0.0.1 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.973585:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.968570:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.000992059707642
+20170405 055149.970452:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.984765:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 103:Gratuitous ARP relayed: {u'eth_dst': u'00:00:00:00:00:01', u'TPA': u'172.0.1.2', u'SHA': u'b0:00:00:00:00:02', u'eth_src': u'b0:00:00:00:00:02', u'SPA': u'172.0.1.2', u'THA': u'b0:00:00:00:00:02'}
+20170405 055149.969435:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 197:MOD: {'rule_type': 'outbound', 'mod_type': 'insert', 'priority': 2, 'cookie': (1, 65535), 'action': {'fwd': ['inbound'], 'set_eth_dst': '80:00:00:00:00:02'}, 'match': {'eth_src': u'08:00:27:89:3b:9f', 'eth_dst': ('20:00:00:00:00:00', '60:00:00:00:00:00'), u'tcp_dst': 80}}
+20170405 055149.976949:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 85
+20170405 055149.973697:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 2, "key": "Part2Key"}}
+20170405 055149.969384:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 100.0.0.0/24
+20170405 055149.970558:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.969564:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.977006:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.1 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.973796:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.969490:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.970993:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.970015:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.977574:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 86 bytes: V neighbor 172.0.0.21 announce route 100.0.0.0/24 next-hop 172.0.1.3 as-path [ ( 1 ) ]
+20170405 055149.974272:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 2, "key": "Part2Key"}}
+20170405 055149.969639:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:02', 'TPA': '172.0.1.1', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.1', 'THA': '80:00:00:00:00:01'}]
+20170405 055149.971120:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000663995742798
+20170405 055149.970144:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000793933868408
+20170405 055149.977640:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.974390:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.97
+20170405 055149.969774:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.11 announce route 100.0.0.0/24 next-hop 172.0.1.1 as-path [ ( 1 ) ]
+20170405 055149.971207:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.0
+20170405 055149.971060:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2]) of prefix 140.0.0.0/24
+20170405 055149.977697:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.21 announce route 100.0.0.0/24 next-hop 172.0.1.3 as-path [ ( 1 ) ]
+20170405 055149.974493:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 2
+20170405 055149.969994:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 266:XRS Event msg_len: 108
+20170405 055149.972174:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 150.0.0.0/24
+20170405 055149.971157:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2]
+20170405 055149.977775:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 86 bytes: V neighbor 172.0.0.22 announce route 100.0.0.0/24 next-hop 172.0.1.3 as-path [ ( 1 ) ]
+20170405 055149.975129:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.970110:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.972278:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.971285:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.1', 'SHA': 'a0:00:00:00:00:02', 'eth_src': 'a0:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': 'a0:00:00:00:00:02'}]
+20170405 055149.977850:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.975331:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.970203:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.1', u'prefix': u'110.0.0.0/24', u'oprt-type': u'announce', u'as-path': [1]}
+20170405 055149.972426:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:03', 'TPA': '172.0.1.2', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.2', 'THA': '80:00:00:00:00:02'}, {'eth_dst': '00:00:00:01:00:03', 'TPA': '172.0.1.2', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.2', 'THA': '80:00:00:00:00:02'}]
+20170405 055149.972529:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2]) of prefix 140.0.0.0/24
+20170405 055149.977926:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.22 announce route 100.0.0.0/24 next-hop 172.0.1.3 as-path [ ( 1 ) ]
+20170405 055149.975409:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.971045:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'110.0.0.0/24', neighbor='1', next_hop=u'172.0.0.1', origin='', as_path=[1], communities='', med='', atomic_aggregate='')}
+20170405 055149.973181:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.21 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.972634:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2]
+20170405 055149.982040:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 69:Client receive 172 bytes: V neighbor 172.0.0.21 announce route 110.0.0.0/24 next-hop 172.0.1.4 as-path [ ( 1 ) ]V neighbor 172.0.0.22 announce route 110.0.0.0/24 next-hop 172.0.1.4 as-path [ ( 1 ) ]
+20170405 055149.975551:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.971127:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 110.0.0.0/24
+20170405 055149.973332:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.22 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.972763:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.1', 'SHA': 'a0:00:00:00:00:02', 'eth_src': 'a0:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': 'a0:00:00:00:00:02'}]
+20170405 055149.982164:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.975622:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.98
+20170405 055149.971243:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 507:Time taken for decision process: 0.0010449886322
+20170405 055149.973466:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 266:XRS Event msg_len: 108
+20170405 055149.972901:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.00267314910889
+20170405 055149.982260:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.21 announce route 110.0.0.0/24 next-hop 172.0.1.4 as-path [ ( 1 ) ]
+20170405 055149.975679:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055149.971311:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.973586:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.972986:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 266:XRS Event msg_len: 109
+20170405 055149.982348:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 75:Client process msg_len: 86
+20170405 055149.975810:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.971367:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.973676:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.1', u'prefix': u'100.0.0.0/24', u'oprt-type': u'announce', u'as-path': [1]}
+20170405 055149.973083:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.982428:23260:Thread-2:DEBUG:XRS-recv:/home/xiaohe/iSDX/xrs/client.py 81:neighbor 172.0.0.22 announce route 110.0.0.0/24 next-hop 172.0.1.4 as-path [ ( 1 ) ]
+20170405 055149.975928:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.971421:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.974562:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'100.0.0.0/24', neighbor='1', next_hop=u'172.0.0.1', origin='', as_path=[1], communities='', med='', atomic_aggregate='')}
+20170405 055149.973164:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.11', u'prefix': u'150.0.0.0/24', u'oprt-type': u'announce', u'as-path': [2]}
+20170405 055149.975996:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.971475:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000164031982422
+20170405 055149.974662:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 100.0.0.0/24
+20170405 055149.973984:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'150.0.0.0/24', neighbor='2', next_hop=u'172.0.0.11', origin='', as_path=[2], communities='', med='', atomic_aggregate='')}
+20170405 055149.976129:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.971527:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 1.19209289551e-06
+20170405 055149.974791:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 507:Time taken for decision process: 0.00111985206604
+20170405 055149.974088:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 150.0.0.0/24
+20170405 055149.976208:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.98
+20170405 055149.971599:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.974875:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.974211:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 507:Time taken for decision process: 0.00104999542236
+20170405 055149.976264:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 3
+20170405 055149.971680:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.974958:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.974292:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.977899:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.972024:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.975040:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.974369:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.978077:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.972129:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000530004501343
+20170405 055149.975123:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000247001647949
+20170405 055149.974454:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.978165:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.972186:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.0
+20170405 055149.975205:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 1.90734863281e-06
+20170405 055149.974531:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 536:Time taken to update supersets: 0.00023889541626
+20170405 055149.978325:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.972884:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 110.0.0.0/24
+20170405 055149.975282:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.974603:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 1.90734863281e-06
+20170405 055149.978404:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.98
+20170405 055149.972957:23230:Thread-4:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.975386:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.974672:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.978466:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055149.973047:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:02', 'TPA': '172.0.1.2', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.2', 'THA': '80:00:00:00:00:01'}]
+20170405 055149.975806:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.974769:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.979805:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.973140:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.11 announce route 110.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 1 ) ]
+20170405 055149.975936:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000649213790894
+20170405 055149.975204:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.980024:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.976022:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.0
+20170405 055149.975330:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000653982162476
+20170405 055149.980103:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.976918:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 100.0.0.0/24
+20170405 055149.975410:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.0
+20170405 055149.980249:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 3, "key": "Part3Key"}}
+20170405 055149.977017:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.976309:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 150.0.0.0/24
+20170405 055149.980320:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.98
+20170405 055149.977161:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:03', 'TPA': '172.0.1.3', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.3', 'THA': '80:00:00:00:00:01'}, {'eth_dst': '00:00:00:01:00:03', 'TPA': '172.0.1.3', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.3', 'THA': '80:00:00:00:00:01'}]
+20170405 055149.976410:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2]
+20170405 055149.980381:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 3
+20170405 055149.977323:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.21 announce route 100.0.0.0/24 next-hop 172.0.1.3 as-path [ ( 1 ) ]
+20170405 055149.976536:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.2', 'SHA': '80:00:00:00:00:02', 'eth_src': '80:00:00:00:00:02', 'SPA': '172.0.1.2', 'THA': '80:00:00:00:00:02'}]
+20170405 055149.980524:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.977457:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.22 announce route 100.0.0.0/24 next-hop 172.0.1.3 as-path [ ( 1 ) ]
+20170405 055149.976659:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.1 announce route 150.0.0.0/24 next-hop 172.0.1.2 as-path [ ( 2 ) ]
+20170405 055149.980598:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [{"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [2, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:03"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["10:00:00:00:00:00", "50:00:00:00:00:00"], "tcp_dst": 4321}}, {"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [3, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:03"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["10:00:00:00:00:00", "50:00:00:00:00:00"], "tcp_dst": 4322}}], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.977603:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 266:XRS Event msg_len: 108
+20170405 055149.976796:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 266:XRS Event msg_len: 38
+20170405 055149.980663:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.977710:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 282:Event Received: bgp-best Update.
+20170405 055149.976892:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 289:Event Received: bgp-reach Update.
+20170405 055149.980838:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [{"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [2, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:03"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["10:00:00:00:00:00", "50:00:00:00:00:00"], "tcp_dst": 4321}}, {"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [3, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:03"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["10:00:00:00:00:00", "50:00:00:00:00:00"], "tcp_dst": 4322}}], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.977800:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 498:process_bgp_best:: {u'next-hop': u'172.0.0.1', u'prefix': u'110.0.0.0/24', u'oprt-type': u'announce', u'as-path': [1]}
+20170405 055149.976972:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 527:process_bgp_reach:: {u'150.0.0.0/24': [2]}
+20170405 055149.980911:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.98
+20170405 055149.978644:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 610:vnh_assignment{'announce': RibTuple(prefix=u'110.0.0.0/24', neighbor='1', next_hop=u'172.0.0.1', origin='', as_path=[1], communities='', med='', atomic_aggregate='')}
+20170405 055149.977046:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.980967:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055149.978743:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 615:assign new prefix_2_VNH, prefix: 110.0.0.0/24
+20170405 055149.977129:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.981038:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 1: {"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [2, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:03"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["10:00:00:00:00:00", "50:00:00:00:00:00"], "tcp_dst": 4321}}
+20170405 055149.978870:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 507:Time taken for decision process: 0.00107502937317
+20170405 055149.977203:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 96:[update_supersets] get active_set[2]of prefix 150.0.0.0/24
+20170405 055149.981108:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 153:FLOWMOD from 1: {"rule_type": "outbound", "mod_type": "insert", "priority": 2, "cookie": [3, 65535], "action": {"fwd": ["inbound"], "set_eth_dst": "80:00:00:00:00:03"}, "match": {"eth_src": "08:00:27:89:3b:9f", "eth_dst": ["10:00:00:00:00:00", "50:00:00:00:00:00"], "tcp_dst": 4322}}
+20170405 055149.978955:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 527:process_bgp_reach:: {}
+20170405 055149.977283:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000313997268677
+20170405 055149.983677:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 73:server: accepted connection
+20170405 055149.979040:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.977358:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 1.90734863281e-06
+20170405 055149.983822:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 82:server: received message: {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.979123:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {}
+20170405 055149.977427:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.983919:23198:GreenThread-1:INFO:RefMon_Server:/home/xiaohe/iSDX/flanc/server.py 85:server: msg queued
+20170405 055149.979205:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000248908996582
+20170405 055149.977519:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.984080:23198:GreenThread-3:INFO:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 130:refmon: received flowmod request {"flow_mods": [], "auth_info": {"participant": 1, "key": "Part1Key"}}
+20170405 055149.979289:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 9.53674316406e-07
+20170405 055149.977949:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.984153:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 150:BURST: 1491396709.98
+20170405 055149.979366:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.978075:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000643014907837
+20170405 055149.984214:23198:GreenThread-3:DEBUG:ReferenceMonitor:/home/xiaohe/iSDX/flanc/refmon.py 151:PARTICIPANT: 1
+20170405 055149.979468:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.978947:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2]) of prefix 150.0.0.0/24
+20170405 055149.979896:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.979023:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2]
+20170405 055149.980025:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000654935836792
+20170405 055149.979110:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.2', 'SHA': 'a0:00:00:00:00:02', 'eth_src': 'a0:00:00:00:00:02', 'SPA': '172.0.1.2', 'THA': 'a0:00:00:00:00:02'}]
+20170405 055149.980112:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 9.53674316406e-07
+20170405 055149.979200:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.00104713439941
+20170405 055149.981050:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 110.0.0.0/24
+20170405 055149.979257:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 266:XRS Event msg_len: 41
+20170405 055149.981150:23243:Thread-4:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055149.979320:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 289:Event Received: bgp-reach Update.
+20170405 055149.981293:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:03', 'TPA': '172.0.1.4', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.4', 'THA': '80:00:00:00:00:01'}, {'eth_dst': '00:00:00:01:00:03', 'TPA': '172.0.1.4', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': '172.0.1.4', 'THA': '80:00:00:00:00:01'}]
+20170405 055149.979372:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 527:process_bgp_reach:: {u'140.0.0.0/24': [2, 3]}
+20170405 055149.981656:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.21 announce route 110.0.0.0/24 next-hop 172.0.1.4 as-path [ ( 1 ) ]
+20170405 055149.979420:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.981794:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 601:Sending announcements to XRS: neighbor 172.0.0.22 announce route 110.0.0.0/24 next-hop 172.0.1.4 as-path [ ( 1 ) ]
+20170405 055149.979473:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.979524:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 96:[update_supersets] get active_set[2, 3]of prefix 140.0.0.0/24
+20170405 055149.979590:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 136:Merge possible. Merging set([2, 3]) into superset [2, 3]
+20170405 055149.979636:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 137:with new members [3]
+20170405 055149.979686:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 536:Time taken to update supersets: 0.000314950942993
+20170405 055149.979738:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 555:Supersets have changed: {'changes': [{'position': 1, 'superset': 0, 'participant_id': 3}], 'type': 'update'}
+20170405 055149.979859:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 561:Flow msgs: [{'rule_type': 'outbound', 'mod_type': 'insert', 'priority': 2, 'cookie': (2, 65535), 'action': {'fwd': ['inbound'], 'set_eth_dst': '80:00:00:00:00:03'}, 'match': {'eth_src': u'08:00:27:89:3b:9f', 'eth_dst': ('10:00:00:00:00:00', '50:00:00:00:00:00'), u'tcp_dst': 4321}}, {'rule_type': 'outbound', 'mod_type': 'insert', 'priority': 2, 'cookie': (3, 65535), 'action': {'fwd': ['inbound'], 'set_eth_dst': '80:00:00:00:00:03'}, 'match': {'eth_src': u'08:00:27:89:3b:9f', 'eth_dst': ('10:00:00:00:00:00', '50:00:00:00:00:00'), u'tcp_dst': 4322}}]
+20170405 055149.979917:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 0.000185966491699
+20170405 055149.979967:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.980025:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 197:MOD: {'rule_type': 'outbound', 'mod_type': 'insert', 'priority': 2, 'cookie': (2, 65535), 'action': {'fwd': ['inbound'], 'set_eth_dst': '80:00:00:00:00:03'}, 'match': {'eth_src': u'08:00:27:89:3b:9f', 'eth_dst': ('10:00:00:00:00:00', '50:00:00:00:00:00'), u'tcp_dst': 4321}}
+20170405 055149.980081:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 197:MOD: {'rule_type': 'outbound', 'mod_type': 'insert', 'priority': 2, 'cookie': (3, 65535), 'action': {'fwd': ['inbound'], 'set_eth_dst': '80:00:00:00:00:03'}, 'match': {'eth_src': u'08:00:27:89:3b:9f', 'eth_dst': ('10:00:00:00:00:00', '50:00:00:00:00:00'), u'tcp_dst': 4322}}
+20170405 055149.980166:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.980476:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.980565:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000594854354858
+20170405 055149.981224:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2, 3]) of prefix 140.0.0.0/24
+20170405 055149.981298:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2, 3]
+20170405 055149.981382:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.1', 'SHA': 'b0:00:00:00:00:02', 'eth_src': 'b0:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': 'b0:00:00:00:00:02'}]
+20170405 055149.982191:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2, 3]) of prefix 140.0.0.0/24
+20170405 055149.982268:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2, 3]
+20170405 055149.982354:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.1', 'SHA': 'b0:00:00:00:00:02', 'eth_src': 'b0:00:00:00:00:02', 'SPA': '172.0.1.1', 'THA': 'b0:00:00:00:00:02'}]
+20170405 055149.982447:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.00182008743286
+20170405 055149.982531:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 266:XRS Event msg_len: 41
+20170405 055149.982622:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 289:Event Received: bgp-reach Update.
+20170405 055149.982683:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 527:process_bgp_reach:: {u'150.0.0.0/24': [2, 3]}
+20170405 055149.982745:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 81:Updating supersets...
+20170405 055149.982827:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 70:: RuleCounts:: {2: 1, 3: 2}
+20170405 055149.982907:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 96:[update_supersets] get active_set[2, 3]of prefix 150.0.0.0/24
+20170405 055149.982998:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 536:Time taken to update supersets: 0.00031304359436
+20170405 055149.983064:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 567:Time taken to deal with ss_changes: 2.14576721191e-06
+20170405 055149.983110:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 192:Pushing current flow mod queue:
+20170405 055149.983178:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 207:Attempting to connect to refmon server at localhost port 5555
+20170405 055149.983699:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/lib.py 209:Connect to refmon successful.
+20170405 055149.983786:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 580:Time taken to push dp msgs: 0.000673055648804
+20170405 055149.984449:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2, 3]) of prefix 150.0.0.0/24
+20170405 055149.984521:23217:Thread-4:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2, 3]
+20170405 055149.984610:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 475:Sending Gratuitious ARP: [{'eth_dst': '00:00:00:00:00:01', 'TPA': '172.0.1.2', 'SHA': 'b0:00:00:00:00:02', 'eth_src': 'b0:00:00:00:00:02', 'SPA': '172.0.1.2', 'THA': 'b0:00:00:00:00:02'}]
+20170405 055149.984702:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 595:Time taken to send garps/announcements: 0.000854015350342
+20170405 055225.165708:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 182:Received ARP-REQUEST SRC: 08:00:27:89:3b:9f / 172.0.0.1 DST: ff:ff:ff:ff:ff:ff / 172.0.1.1
+20170405 055225.166123:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 113:relay ARP-REQUEST to participant ('127.0.0.1', 46830)
+20170405 055225.166750:23217:Thread-3:DEBUG:P_1:pctrl/participant_controller.py 237:ARP Event received: {u'arp': [u'08:00:27:89:3b:9f', u'172.0.1.1']}
+20170405 055225.167462:23217:Thread-5:DEBUG:P_1:pctrl/participant_controller.py 301:Event Received: ARP request for IP 172.0.1.1
+20170405 055225.170187:23217:Thread-5:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([2, 3]) of prefix 140.0.0.0/24
+20170405 055225.170458:23217:Thread-5:DEBUG:P_1:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: [2, 3]
+20170405 055225.171258:23211:Thread-2:DEBUG:arp:arproxy/arproxy.py 101:ARP Reply relayed: {u'eth_dst': u'08:00:27:89:3b:9f', u'TPA': u'172.0.0.1', u'SHA': u'b0:00:00:00:00:02', u'eth_src': u'b0:00:00:00:00:02', u'SPA': u'172.0.1.1', u'THA': u'08:00:27:89:3b:9f'}
+20170405 055225.170732:23217:Thread-5:DEBUG:P_1:pctrl/participant_controller.py 477:Sending ARP Response: [{'eth_dst': u'08:00:27:89:3b:9f', 'TPA': u'172.0.0.1', 'SHA': 'b0:00:00:00:00:02', 'eth_src': 'b0:00:00:00:00:02', 'SPA': u'172.0.1.1', 'THA': u'08:00:27:89:3b:9f'}]
+20170405 055225.172494:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 182:Received ARP-REQUEST SRC: 08:00:27:bd:f8:b2 / 172.0.0.22 DST: ff:ff:ff:ff:ff:ff / 172.0.1.3
+20170405 055225.173192:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 113:relay ARP-REQUEST to participant ('127.0.0.1', 46866)
+20170405 055225.173852:23243:Thread-3:DEBUG:P_3:pctrl/participant_controller.py 237:ARP Event received: {u'arp': [u'08:00:27:bd:f8:b2', u'172.0.1.3']}
+20170405 055225.174596:23243:Thread-5:DEBUG:P_3:pctrl/participant_controller.py 301:Event Received: ARP request for IP 172.0.1.3
+20170405 055225.176031:23243:Thread-5:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 100.0.0.0/24
+20170405 055225.176110:23243:Thread-5:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055225.176368:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 101:ARP Reply relayed: {u'eth_dst': u'08:00:27:bd:f8:b2', u'TPA': u'172.0.0.22', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.3', u'THA': u'08:00:27:bd:f8:b2'}
+20170405 055225.176192:23243:Thread-5:DEBUG:P_3:pctrl/participant_controller.py 477:Sending ARP Response: [{'eth_dst': u'08:00:27:bd:f8:b2', 'TPA': u'172.0.0.22', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': u'172.0.1.3', 'THA': u'08:00:27:bd:f8:b2'}]
+20170405 055237.700053:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 182:Received ARP-REQUEST SRC: 08:00:27:54:56:ea / 172.0.0.21 DST: ff:ff:ff:ff:ff:ff / 172.0.1.3
+20170405 055237.700426:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 113:relay ARP-REQUEST to participant ('127.0.0.1', 46866)
+20170405 055237.700905:23243:Thread-3:DEBUG:P_3:pctrl/participant_controller.py 237:ARP Event received: {u'arp': [u'08:00:27:54:56:ea', u'172.0.1.3']}
+20170405 055237.701711:23243:Thread-6:DEBUG:P_3:pctrl/participant_controller.py 301:Event Received: ARP request for IP 172.0.1.3
+20170405 055237.704564:23243:Thread-6:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 100.0.0.0/24
+20170405 055237.704833:23243:Thread-6:DEBUG:P_3:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055237.705657:23211:Thread-4:DEBUG:arp:arproxy/arproxy.py 101:ARP Reply relayed: {u'eth_dst': u'08:00:27:54:56:ea', u'TPA': u'172.0.0.21', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.3', u'THA': u'08:00:27:54:56:ea'}
+20170405 055237.705102:23243:Thread-6:DEBUG:P_3:pctrl/participant_controller.py 477:Sending ARP Response: [{'eth_dst': u'08:00:27:54:56:ea', 'TPA': u'172.0.0.21', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': u'172.0.1.3', 'THA': u'08:00:27:54:56:ea'}]
+20170405 055246.812407:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 182:Received ARP-REQUEST SRC: 08:00:27:92:18:1f / 172.0.0.11 DST: ff:ff:ff:ff:ff:ff / 172.0.1.1
+20170405 055246.812771:23211:Thread-1:DEBUG:arp:arproxy/arproxy.py 113:relay ARP-REQUEST to participant ('127.0.0.1', 46852)
+20170405 055246.813258:23230:Thread-3:DEBUG:P_2:pctrl/participant_controller.py 237:ARP Event received: {u'arp': [u'08:00:27:92:18:1f', u'172.0.1.1']}
+20170405 055246.814378:23230:Thread-5:DEBUG:P_2:pctrl/participant_controller.py 301:Event Received: ARP request for IP 172.0.1.1
+20170405 055246.816899:23230:Thread-5:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 229:[get_vmac] get active_set set([]) of prefix 100.0.0.0/24
+20170405 055246.817495:23230:Thread-5:DEBUG:P_2:/home/xiaohe/iSDX/pctrl/supersets.py 234:supersets[0]: []
+20170405 055246.818586:23211:Thread-3:DEBUG:arp:arproxy/arproxy.py 101:ARP Reply relayed: {u'eth_dst': u'08:00:27:92:18:1f', u'TPA': u'172.0.0.11', u'SHA': u'80:00:00:00:00:01', u'eth_src': u'80:00:00:00:00:01', u'SPA': u'172.0.1.1', u'THA': u'08:00:27:92:18:1f'}
+20170405 055246.817927:23230:Thread-5:DEBUG:P_2:pctrl/participant_controller.py 477:Sending ARP Response: [{'eth_dst': u'08:00:27:92:18:1f', 'TPA': u'172.0.0.11', 'SHA': '80:00:00:00:00:01', 'eth_src': '80:00:00:00:00:01', 'SPA': u'172.0.1.1', 'THA': u'08:00:27:92:18:1f'}]
+20170405 055316.355357:23260:Thread-1:DEBUG:XRS-send:/home/xiaohe/iSDX/xrs/client.py 50:{ "exabgp": "3.4.8", "time": 1491396796, "host" : "c16", "pid" : "23257", "ppid" : "24365", "counter": 1, "type": "notification", "notification": "shutdown"}
+20170405 055318.731300:23243:Thread-4:DEBUG:P_3:pctrl/participant_controller.py 275:Exiting start_eh_xrs
+20170405 055318.731423:23217:Thread-4:DEBUG:P_1:pctrl/participant_controller.py 275:Exiting start_eh_xrs
+20170405 055318.731423:23230:Thread-4:DEBUG:P_2:pctrl/participant_controller.py 275:Exiting start_eh_xrs
+20170405 055323.711442:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 229:ms_ctrlr: switch disconnect: arp
+20170405 055323.755894:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 229:ms_ctrlr: switch disconnect: outbound
+20170405 055323.808046:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 229:ms_ctrlr: switch disconnect: inbound
+20170405 055323.835728:23198:GreenThread-2:INFO:MultiSwitchController:/home/xiaohe/iSDX/flanc/lib.py 229:ms_ctrlr: switch disconnect: main

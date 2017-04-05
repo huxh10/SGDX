@@ -4,6 +4,7 @@
 #  Robert MacDavid (Princeton)
 
 from threading import RLock
+from collections import defaultdict
 import math
 from ss_lib import minimize_ss_rules_greedy, best_ss_to_expand_greedy, is_subset_of_superset, removeSubsets, clear_inactive_parts
 
@@ -30,6 +31,7 @@ class SuperSets(object):
         self.id_size = 0
         self.supersets = []
         self.rulecounts = {}
+        self.prefix2set = defaultdict(lambda: set([]))
 
 
     def initial_computation(self, pctrl):
@@ -72,7 +74,7 @@ class SuperSets(object):
     def run_rulecounts(self, pctrl):
         self.rulecounts = self.recompute_rulecounts(pctrl)
 
-    def update_supersets(self, pctrl, updates):
+    def update_supersets(self, pctrl, parts_set):
         with lock:
             policies = pctrl.policies
 
@@ -90,24 +92,12 @@ class SuperSets(object):
                 sdx_msgs = self.initial_computation(pctrl)
                 return (sdx_msgs, impacted_prefixes)
 
-            for update in updates:
-                if ('withdraw' in update):
-                    prefix = update['withdraw'].prefix
-                    # withdraws always change the bits of a VMAC
-                    impacted_prefixes.append(prefix)
-                if ('announce' not in update):
-                    continue
-                prefix = update['announce'].prefix
-
-                """
-                # get set of all participants advertising that prefix
-                new_set = get_all_participants_advertising(pctrl, prefix)
-
-                # clean out the inactive participants
-                new_set = set(new_set)
-                new_set.intersection_update(self.rulecounts.keys())
-                """
-                new_set = get_active_set(pctrl, prefix)
+            for prefix in parts_set:
+                self.logger.debug("[update_supersets] get active_set" + str(parts_set[prefix]) + "of prefix " + prefix)
+                impacted_prefixes.append(prefix)
+                new_set = set(parts_set[prefix])
+                # update prefix2set, pre-store
+                self.prefix2set[prefix] = new_set
 
                 # if the prefix group is still a subset, no update needed
                 if is_subset_of_superset(new_set, self.supersets):
@@ -236,10 +226,12 @@ class SuperSets(object):
         prefix_set.intersection_update(active_parts)
         """
         prefix_set = get_active_set(pctrl, prefix)
+        self.logger.debug("[get_vmac] get active_set " + str(prefix_set) +  " of prefix " + prefix)
 
         # find the superset it belongs to
         ss_id = -1
         for i, superset in enumerate(self.supersets):
+            self.logger.debug("supersets[" + str(i) + "]: " + str(superset))
             if prefix_set.issubset(superset):
                 ss_id = i
                 break
@@ -253,7 +245,8 @@ class SuperSets(object):
         # build the mask bits
         set_bitstring = ""
         for part in self.supersets[i]:
-            if part in prefix_set and part in pctrl.cfg.peers_out:
+            #if part in prefix_set and part in pctrl.cfg.peers_out:
+            if part in prefix_set:
                 set_bitstring += '1'
             else:
                 set_bitstring += '0'
@@ -285,12 +278,14 @@ def get_all_active_sets(pctrl):
     prefixes = pctrl.prefix_2_VNH.keys()
     groups = []
     for prefix in prefixes:
+        pctrl.logger.debug("[get_all_active_sets] get active_set of prefix " + prefix)
         groups.append(get_active_set(pctrl, prefix))
 
     return groups
 
 def get_active_set(pctrl, prefix):
-    return pctrl.get_active_set_from_sxrs(prefix)
+    return pctrl.supersets.prefix2set[prefix]
+    #return pctrl.get_active_set_from_sxrs(prefix)
 
 def get_prefix2part_sets(pctrl):
     prefixes = pctrl.prefix_2_VNH.keys()

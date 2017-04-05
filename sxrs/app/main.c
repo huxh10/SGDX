@@ -236,10 +236,10 @@ int main(int argc, char *argv[])
     load_as_conf(&as_num, &p_as_policies);
 #ifdef W_SGX
     printf("wsgx\n");
-    route_process_w_sgx_init(as_num, &p_as_policies);
+    route_process_w_sgx_init(as_num, &p_as_policies, cfg.verbose);
 #else
     printf("wosgx\n");
-    route_process_wo_sgx_init(as_num, &p_as_policies);
+    route_process_wo_sgx_init(as_num, &p_as_policies, cfg.verbose);
 #endif
     efd = epoll_init();
     server_init(efd, as_num, &cfg.net);

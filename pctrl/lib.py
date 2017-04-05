@@ -5,6 +5,8 @@
 
 import errno
 import json
+import struct
+import socket
 from multiprocessing.connection import Client
 from netaddr import IPNetwork
 from socket import error as SocketError
@@ -99,7 +101,7 @@ class PConfig(object):
     def get_xrs_client(self, logger):
         config = self.config
         conn_info = config["Route Server"]
-        return GenericClient2(conn_info["AH_SOCKET"][0], conn_info["AH_SOCKET"][1], '', logger, 'xrs')
+        return GenericClient3(conn_info["AH_SOCKET"][0], conn_info["AH_SOCKET"][1], '', logger, 'xrs')
 
     def get_xrs_info(self, logger=None):
         config = self.config
@@ -247,7 +249,7 @@ class GenericClient2(object):
                 self.logger.exception('Connect to '+self.serverName+' threw unknown exception')
                 raise
 
-    def send(self, msg):
+    def send(self, msg, add_header=False):
         self.conn.send(json.dumps(msg))
 
     def poll(self, t):
@@ -255,6 +257,46 @@ class GenericClient2(object):
 
     def recv(self):
         return self.conn.recv()
+
+    def close(self):
+        self.conn.close()
+
+class GenericClient3(object):
+    def __init__(self, address, port, key, logger, sname):
+        self.address = address
+        self.port = int(port)
+        self.key = key
+        self.logger = logger
+        self.serverName = sname
+
+        while True: # keep going until we break out inside the loop
+            try:
+                self.logger.debug('Attempting to connect to '+self.serverName+' server at '+str(self.address)+' port '+str(self.port))
+                self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.conn.connect((self.address, self.port))
+                self.logger.debug('Connect to '+self.serverName+' successful.')
+                break
+            except SocketError as serr:
+                if serr.errno == errno.ECONNREFUSED:
+                    self.logger.debug('Connect to '+self.serverName+' failed because connection was refused (the server is down). Trying again.')
+                else:
+                    # Not a recognized error. Treat as fatal.
+                    self.logger.debug('Connect to '+self.serverName+' gave socket error '+str(serr.errno))
+                    raise serr
+            except:
+                self.logger.exception('Connect to '+self.serverName+' threw unknown exception')
+                raise
+
+    def send(self, msg, add_header=False):
+        if add_header:
+            payload = json.dumps(msg)
+            header = struct.pack('H', len(payload) + 2)
+            self.conn.send(header+payload)
+        else:
+            self.conn.send(json.dumps(msg))
+
+    def recv(self):
+        return self.conn.recv(4096)
 
     def close(self):
         self.conn.close()

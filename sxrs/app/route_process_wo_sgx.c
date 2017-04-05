@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "app_types.h"
 #include "shared_types.h"
 #include "msg_handler.h"
@@ -10,11 +11,13 @@
 uint32_t g_num = 0;
 as_policy_t *g_p_policies = NULL;
 rib_map_t **g_pp_ribs = NULL;
+int g_verbose = 0;
 
-void route_process_wo_sgx_init(uint32_t as_num, as_policy_t **pp_as_policies)
+void route_process_wo_sgx_init(uint32_t as_num, as_policy_t **pp_as_policies, int verbose)
 {
     uint32_t i = 0;
 
+    g_verbose = verbose;
     g_num = as_num;
     g_p_policies = malloc(as_num * sizeof *g_p_policies);
     g_pp_ribs = malloc(as_num * sizeof *g_pp_ribs);
@@ -25,30 +28,36 @@ void route_process_wo_sgx_init(uint32_t as_num, as_policy_t **pp_as_policies)
         g_p_policies[i].active_parts = malloc(as_num * sizeof *g_p_policies[i].active_parts);
         memset(g_p_policies[i].active_parts, 0, as_num * sizeof(*g_p_policies[i].active_parts));
         g_p_policies[i].import_policy = malloc(as_num * sizeof *g_p_policies[i].import_policy);
-        memcpy(g_p_policies[i].import_policy, (*pp_as_policies)[i].import_policy, as_num * sizeof (*pp_as_policies)[i].import_policy);
+        memcpy(g_p_policies[i].import_policy, (*pp_as_policies)[i].import_policy, as_num * sizeof *(*pp_as_policies)[i].import_policy);
         g_p_policies[i].export_policy = malloc(as_num * as_num * sizeof *g_p_policies[i].export_policy);
-        memcpy(g_p_policies[i].export_policy, (*pp_as_policies)[i].export_policy, as_num * as_num * sizeof (*pp_as_policies)[i].export_policy);
+        memcpy(g_p_policies[i].export_policy, (*pp_as_policies)[i].export_policy, as_num * as_num * sizeof *(*pp_as_policies)[i].export_policy);
         SAFE_FREE((*pp_as_policies)[i].import_policy);
         SAFE_FREE((*pp_as_policies)[i].export_policy);
     }
     SAFE_FREE(*pp_as_policies);
 }
 
-void route_process_wo_sgx_run(bgp_dec_msg_t *p_bgp_dec_msg)
+void route_process_wo_sgx_run(const bgp_dec_msg_t *p_bgp_dec_msg)
 {
     uint32_t i = 0;
     resp_dec_msg_t *p_resp_dec_msgs = NULL;
-    size_t resp_msg_num = 0;
+    resp_dec_set_msg_t *p_resp_dec_set_msgs = NULL;
+    size_t resp_msg_num = 0, resp_set_msg_num = 0;
 
-    compute_route_by_msg_queue(p_bgp_dec_msg, g_p_policies, g_pp_ribs, g_num, &p_resp_dec_msgs, &resp_msg_num);
+    compute_route_by_msg_queue(p_bgp_dec_msg, g_p_policies, g_pp_ribs, g_num, &p_resp_dec_msgs, &resp_msg_num, &p_resp_dec_set_msgs, &resp_set_msg_num);
 
-    if (!resp_msg_num) return;
+    if (g_verbose == 4) print_rs_ribs(g_pp_ribs, g_num);
 
     for (i = 0; i < resp_msg_num; i++) {
         handle_resp_route(&p_resp_dec_msgs[i]);
         free_resp_dec_msg(&p_resp_dec_msgs[i]);
     }
     SAFE_FREE(p_resp_dec_msgs);
+    for (i = 0; i < resp_set_msg_num; i++) {
+        handle_resp_set(p_resp_dec_set_msgs[i].asn, p_resp_dec_set_msgs[i].prefix, p_resp_dec_set_msgs[i].set, p_resp_dec_set_msgs[i].set_size);
+        free_resp_dec_set_msg(&p_resp_dec_set_msgs[i]);
+    }
+    SAFE_FREE(p_resp_dec_set_msgs);
 
     return;
 }

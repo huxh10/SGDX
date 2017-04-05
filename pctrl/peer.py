@@ -53,6 +53,7 @@ class BGPPeer(object):
             updated_route = RibTuple(prefix, neighbor, next_hop, origin, as_path, communities, med, atomic_aggregate)
             self.update_route('local', updated_route)
             update_list.append({'announce': updated_route})
+        return update_list
 
     def bgp_update_peers(self, updates, prefix_2_VNH, ports):
         changed_vnhs = []
@@ -67,7 +68,6 @@ class BGPPeer(object):
                 prefix = update['withdraw'].prefix
                 for port in self.ports:
                     announcements.append(withdraw_route(port["IP"], prefix, prefix_2_VNH[prefix]))
-
         return changed_vnhs, announcements
 
 

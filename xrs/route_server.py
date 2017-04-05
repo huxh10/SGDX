@@ -56,7 +56,8 @@ class PctrlClient(object):
             except EOFError as ee:
                 break
 
-            logger.debug('Trace: Got rv: %s', rv)
+            logger.info('\n PctrlClient: Trace: Got rv, original route: %s\n', rv)
+            logger.info('\n PctrlClient: Trace: Got rv, json route: %s\n', json.loads(rv))
             if not (rv and self.process_message(**json.loads(rv))):
                 break
 
@@ -193,9 +194,10 @@ class BGPListener(object):
                 continue
 
             waiting = 0
+            logger.info("\n BGPListener: Got original route from ExaBGP: %s\n", route)
             route = json.loads(route)
 
-            logger.debug("Got route from ExaBGP: %s", route)
+            logger.info("\n BGPListener: Got json route from ExaBGP: %s\n", route)
 
             # Received BGP route advertisement from ExaBGP
             try:

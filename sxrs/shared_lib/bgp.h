@@ -38,21 +38,46 @@ typedef struct {
     int atomic_aggregate;
 } route_t;
 
+// route list type
 typedef struct _route_node route_node_t;
 
 struct _route_node {
-    uint8_t is_selected;
-    uint32_t next_hop;      // asn
+    union {
+        uint8_t is_selected;
+        uint8_t oprt_type;
+    } flag;
+    uint32_t next_asn;
     route_t *route;
     route_node_t *prev;
     route_node_t *next;
 };
 
+typedef struct {
+    int route_num;
+    route_node_t *head;
+} route_list_t;
+
+// set type
+typedef struct _set_node_t set_node_t;
+
+struct _set_node_t {
+    uint32_t part_asn;
+    set_node_t *prev;
+    set_node_t *next;
+};
+
+typedef struct {
+    int set_size;
+    set_node_t *head;
+} set_t;
+
+// rib type
 typedef struct _rib_map rib_map_t;
 
 struct _rib_map {
     char *key;
-    route_node_t *routes;   // route list
+    set_t *set;
+    route_list_t *rl;
     UT_hash_handle hh;
 };
 
@@ -95,9 +120,17 @@ typedef struct {
     as_path_t as_path;
 } resp_dec_msg_t;
 
+typedef struct {
+    uint32_t asn;
+    char *prefix;
+    uint32_t set_size;
+    uint32_t *set;
+} resp_dec_set_msg_t;
+
 char *my_strdup(const char *s);
 void free_route_ptr(route_t **pp_route);
 void free_route(route_t *p_route);
+void free_resp_dec_set_msg(resp_dec_set_msg_t *p_resp_dec_set_msg);
 void free_resp_dec_msg(resp_dec_msg_t *p_resp_dec_msg);
 void print_route(route_t *p_route);
 void parse_route_from_file(route_t **pp_route, char *p_s_route);
@@ -106,11 +139,14 @@ void route_cpy(route_t **dst_route, uint32_t *src_asn, route_t *src_route);
 int get_route_size(route_t *r);
 int write_route_to_stream(uint8_t **pp_msg, route_t *input);
 int write_route_to_existed_stream(uint8_t *route, route_t *input);
-int parse_resp_from_stream(resp_dec_msg_t **pp_resp_dec_msg, size_t *p_resp_msg_num, uint8_t *p_msg);
-int write_resp_to_stream(uint8_t **pp_msg, resp_dec_msg_t *p_resp_dec_msgs, size_t resp_msg_num);
-route_node_t* get_selected_route_node(route_node_t *p_rns);
-void add_route(route_node_t **pp_rns, uint32_t src_asn, route_t *src_route, uint8_t *import_policy);
-void del_route(route_node_t **pp_rns, uint32_t src_asn, route_t *src_route, uint8_t *import_policy, route_node_t *p_old_best_rn);
+int parse_resp_from_stream(resp_dec_msg_t **pp_resp_dec_msgs, size_t *p_resp_msg_num, resp_dec_set_msg_t **pp_resp_dec_set_msgs, size_t *p_resp_set_msg_num, uint8_t *p_msg);
+int write_resp_to_stream(uint8_t **pp_msg, resp_dec_msg_t *p_resp_dec_msgs, size_t resp_msg_num, resp_dec_set_msg_t *p_resp_dec_set_msgs, size_t resp_set_msg_num);
+route_node_t* rl_get_selected_route_node(route_list_t *p_rl);
+void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *import_policy);
+void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *import_policy, route_node_t *p_old_best_rn);
 void execute_export_policy(rs_inner_msg_t **pp_inner_msgs, uint32_t num, uint8_t *export_policy, uint32_t src_asn, uint32_t src_next_hop, uint8_t oprt_type, route_t *src_route);
+void set_free(set_t **pp_set);
+void set_write_elmnts_to_array(uint32_t *p, set_t *p_set);
+int update_prefix_sets(set_t **pp_set, route_list_t *p_rl, uint8_t *p_active_parts, uint32_t num);
 
 #endif

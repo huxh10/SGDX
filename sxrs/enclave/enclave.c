@@ -67,7 +67,9 @@ uint32_t ecall_load_as_policies(uint32_t asn, void *import_msg, size_t import_ms
 uint32_t ecall_compute_route_by_msg_queue(void *msg, size_t msg_size)
 {
     resp_dec_msg_t *p_resp_dec_msgs = NULL;
-    size_t resp_msg_num = 0, resp_msg_size = 0;
+    size_t i, resp_msg_num = 0, resp_msg_size = 0;
+    resp_dec_set_msg_t *p_resp_dec_set_msgs = NULL;
+    size_t resp_set_msg_num = 0;
     uint8_t *resp_msg = NULL;
     uint32_t call_status, ret_status;
 
@@ -82,15 +84,24 @@ uint32_t ecall_compute_route_by_msg_queue(void *msg, size_t msg_size)
     assert(bgp_dec_msg.p_route);
     assert(bgp_dec_msg.p_route->as_path.asns);
 
-    compute_route_by_msg_queue(&bgp_dec_msg, g_p_policies, g_pp_ribs, g_num, &p_resp_dec_msgs, &resp_msg_num);
+    compute_route_by_msg_queue(&bgp_dec_msg, g_p_policies, g_pp_ribs, g_num, &p_resp_dec_msgs, &resp_msg_num, &p_resp_dec_set_msgs, &resp_set_msg_num);
 
     // process response messages
-    if (!resp_msg_num) {
+    if (!resp_msg_num && !resp_set_msg_num) {
         return SGX_SUCCESS;
     }
-    resp_msg_size = write_resp_to_stream(&resp_msg, p_resp_dec_msgs, resp_msg_num);
+    resp_msg_size = write_resp_to_stream(&resp_msg, p_resp_dec_msgs, resp_msg_num, p_resp_dec_set_msgs, resp_set_msg_num);
     call_status = ocall_send_route(&ret_status, (void *) resp_msg, resp_msg_size);
     SAFE_FREE(resp_msg);
+    for (i = 0; i < resp_msg_num; i++) {
+        free_resp_dec_msg(&p_resp_dec_msgs[i]);
+    }
+    SAFE_FREE(p_resp_dec_msgs);
+    for (i = 0; i < resp_set_msg_num; i++) {
+        free_resp_dec_set_msg(&p_resp_dec_set_msgs[i]);
+    }
+    SAFE_FREE(p_resp_dec_set_msgs);
+    free_route_ptr(&bgp_dec_msg.p_route);
     if (call_status == SGX_SUCCESS) {
         if (ret_status != SGX_SUCCESS) return ret_status;
     } else {
@@ -98,18 +109,18 @@ uint32_t ecall_compute_route_by_msg_queue(void *msg, size_t msg_size)
     }
 }
 
-uint32_t ecall_update_active_parts(uint32_t asn, uint32_t *p_parts, size_t part_num, uint8_t oprt_type)
+uint32_t ecall_update_active_parts(uint32_t asn, const uint32_t *p_parts, size_t part_num, uint8_t oprt_type)
 {
     return update_active_parts(g_p_policies[asn].active_parts, p_parts, part_num, oprt_type);
 }
 
-uint32_t ecall_get_prefix_set(uint32_t asn, char *prefix)
+uint32_t ecall_get_prefix_set(uint32_t asn, const char *prefix)
 {
     uint32_t call_status, ret_status;
     uint32_t *p_resp_set = NULL;
     uint32_t resp_set_size = 0;
 
-    get_prefix_set((const char *) prefix, g_p_policies[asn].active_parts, g_num, g_pp_ribs[asn], &p_resp_set, &resp_set_size);
+    get_prefix_set(prefix, g_p_policies[asn].active_parts, g_num, g_pp_ribs[asn], &p_resp_set, &resp_set_size);
     call_status = ocall_send_prefix_set(&ret_status, p_resp_set, (size_t) resp_set_size, asn, prefix);
     SAFE_FREE(p_resp_set);
     if (call_status == SGX_SUCCESS) {

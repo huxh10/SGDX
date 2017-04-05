@@ -62,16 +62,16 @@ void append_ds(ds_t *p_ds, uint8_t *s, int size)
     //fprintf(stdout, "\nds curse after appended [%d, %d) [%s]\n", p_ds->start, p_ds->end, __FUNCTION__);
 }
 
-void get_msg(ds_t *p_ds, uint8_t **msg, int *size)
+void get_msg(ds_t *p_ds, const uint8_t **pp_msg, int *p_size)
 {
     int msg_len;
 
-    if (p_ds == NULL || msg == NULL || size == NULL) {
+    if (!p_ds || !pp_msg || !p_size) {
         return;
     }
 
-    *msg = NULL;
-    *size = 0;
+    *pp_msg = NULL;
+    *p_size = 0;
 
     // no msgs exist
     if (p_ds->end == p_ds->start) {
@@ -105,8 +105,8 @@ void get_msg(ds_t *p_ds, uint8_t **msg, int *size)
     }
 
     // complete msgs exist, process one
-    *msg = p_ds->s + p_ds->start;
-    *size = msg_len;
+    *pp_msg = p_ds->s + p_ds->start;
+    *p_size = msg_len;
     p_ds->start = p_ds->start + msg_len;
     return;
 }
