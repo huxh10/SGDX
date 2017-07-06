@@ -6,6 +6,10 @@
 #include "bgp.h"
 #include "rs.h"
 
+uint32_t compute_non_transit_route(const bgp_dsrlz_msg_t)
+{
+}
+
 uint32_t compute_route_by_msg_queue(const bgp_dec_msg_t *p_bgp_msg, as_policy_t *p_policies, rib_map_t **pp_ribs, uint32_t num, resp_dec_msg_t **pp_resp_dec_msgs, size_t *p_resp_msg_num, resp_dec_set_msg_t **pp_resp_dec_set_msgs, size_t *p_resp_set_msg_num)
 {
     uint32_t i = 0, j = 0, orig_sender_asn = 0;
@@ -102,16 +106,16 @@ uint32_t compute_route_by_msg_queue(const bgp_dec_msg_t *p_bgp_msg, as_policy_t 
             printf("asn:%d prepares to send inner msg\n", i);
             // execute export policies and update inner msg lists 
             if (p_old_best_rn[i]) {
-                printf("    old next_asn:%u\n", p_old_best_rn[i]->next_asn);
-                execute_export_policy(pp_inner_msgs, num, p_policies[i].export_policy, i, p_old_best_rn[i]->next_asn, WITHDRAW, NULL);
+                printf("    old advertiser_asn:%u\n", p_old_best_rn[i]->advertiser_asn);
+                execute_export_policy(pp_inner_msgs, num, p_policies[i].export_policy, i, p_old_best_rn[i]->advertiser_asn, WITHDRAW, NULL);
                 if (p_old_best_rn[i]->flag.is_selected == TO_BE_DEL) {
                     free_route_ptr(&p_old_best_rn[i]->route);
                     SAFE_FREE(p_old_best_rn[i]);
                 }
             }
             if (p_new_best_rn[i]) {
-                printf("    new next_asn:%u\n", p_new_best_rn[i]->next_asn);
-                execute_export_policy(pp_inner_msgs, num, p_policies[i].export_policy, i, p_new_best_rn[i]->next_asn, ANNOUNCE, p_new_best_rn[i]->route);
+                printf("    new advertiser_asn:%u\n", p_new_best_rn[i]->advertiser_asn);
+                execute_export_policy(pp_inner_msgs, num, p_policies[i].export_policy, i, p_new_best_rn[i]->advertiser_asn, ANNOUNCE, p_new_best_rn[i]->route);
             }
             p_old_best_rn[i] = NULL;
             p_new_best_rn[i] = NULL;
@@ -242,14 +246,14 @@ uint32_t get_prefix_set(const char *prefix, uint8_t *p_active_parts, uint32_t nu
 
     p_tmp_rn = p_rib_entry->rl->head;
     while (p_tmp_rn) {
-        if (p_active_parts[p_tmp_rn->next_asn]) (*p_resp_set_size)++;
+        if (p_active_parts[p_tmp_rn->advertiser_asn]) (*p_resp_set_size)++;
         p_tmp_rn = p_tmp_rn->next;
     }
     *pp_resp_set = malloc(*p_resp_set_size * sizeof(**pp_resp_set));
     p_tmp_rn = p_rib_entry->rl->head;
     while (p_tmp_rn) {
-        if (p_active_parts[p_tmp_rn->next_asn]) {
-            (*pp_resp_set)[i] = p_tmp_rn->next_asn;
+        if (p_active_parts[p_tmp_rn->advertiser_asn]) {
+            (*pp_resp_set)[i] = p_tmp_rn->advertiser_asn;
             i++;
         }
         p_tmp_rn = p_tmp_rn->next;
@@ -286,7 +290,7 @@ uint32_t print_rs_best_ribs(rib_map_t **pp_ribs, uint32_t num)
         HASH_ITER(hh, pp_ribs[i], p_rib_entry, tmp_p_rib_entry) {
             p_best_rn = p_rib_entry ? rl_get_selected_route_node(p_rib_entry->rl) : NULL;
             if (p_best_rn) {
-                printf("next_asn: %d, route: ", p_best_rn->next_asn);
+                printf("advertiser_asn: %d, route: ", p_best_rn->advertiser_asn);
                 print_route(p_best_rn->route);
             }
         }
@@ -306,9 +310,9 @@ uint32_t print_rs_ribs(rib_map_t **pp_ribs, uint32_t num)
             p_tmp_rn = p_rib_entry->rl->head;
             while (p_tmp_rn) {
                 if (p_tmp_rn->flag.is_selected) {
-                    printf("[*] next_asn:%d, route: ", p_tmp_rn->next_asn);
+                    printf("[*] advertiser_asn:%d, route: ", p_tmp_rn->advertiser_asn);
                 } else {
-                    printf("    next_asn:%d, route: ", p_tmp_rn->next_asn);
+                    printf("    advertiser_asn:%d, route: ", p_tmp_rn->advertiser_asn);
                 }
                 print_route(p_tmp_rn->route);
                 p_tmp_rn = p_tmp_rn->next;

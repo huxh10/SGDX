@@ -32,7 +32,7 @@ void free_route_ptr(route_t **pp_route)
     SAFE_FREE(*pp_route);
 }
 
-void free_route(route_t *p_route)
+void reset_route(route_t *p_route)
 {
     if (!p_route) {
         return;
@@ -43,6 +43,9 @@ void free_route(route_t *p_route)
     SAFE_FREE(p_route->origin);
     SAFE_FREE(p_route->as_path.asns);
     SAFE_FREE(p_route->communities);
+    p_route->as_path.length = 0;
+    p_route->med = 0;
+    p_route->atomic_aggregate = 0;
 }
 
 void free_resp_dec_set_msg(resp_dec_set_msg_t *p_resp_dec_set_msg)
@@ -453,7 +456,7 @@ int _route_cmp(route_t *r1, route_t *r2)
     }
 }
 
-void route_cpy(route_t **dst_route, uint32_t *src_asn, route_t *src_route)
+void route_cpy(route_t **dst_route, uint32_t *src_asn, const route_t *src_route)
 {
     if (!dst_route || !src_route) return;
     *dst_route = malloc(sizeof **dst_route);
@@ -490,7 +493,7 @@ route_node_t* rl_get_selected_route_node(route_list_t *p_rl)
     return NULL;
 }
 
-void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *import_policy)
+void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
 {
     if (!pp_rl) return;
     if (!*pp_rl) {
@@ -503,7 +506,8 @@ void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
     // create new route node
     route_node_t *p_rn = malloc(sizeof *p_rn);
     p_rn->flag.is_selected = 0;
-    p_rn->next_asn = src_asn;
+    p_rn->advertiser_asn = src_asn;
+    p_rn->advertiser_asid = src_asid;
     p_rn->prev = NULL;
     p_rn->next = NULL;
     route_cpy(&p_rn->route, NULL, src_route);
@@ -521,7 +525,7 @@ void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
 
     route_node_t *tmp_rn = rl_get_selected_route_node(*pp_rl);
     assert(tmp_rn);
-    ret = import_policy[p_rn->next_asn] - import_policy[tmp_rn->next_asn];
+    ret = selection_policy[p_rn->advertiser_asid] - selection_policy[tmp_rn->advertiser_asid];
     if (ret < 0) {
         tmp_rn->flag.is_selected = 0;
         p_rn->flag.is_selected = 1;
@@ -537,7 +541,7 @@ void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
     }
 }
 
-void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *import_policy, route_node_t *p_old_best_rn)
+void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *selection_policy, route_node_t *p_old_best_rn)
 {
     if (!pp_rl || !*pp_rl) return;
     if (!(*pp_rl)->head) {
@@ -549,7 +553,7 @@ void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
     // traverse and delete
     route_node_t *tmp_rn = (*pp_rl)->head;
     while (tmp_rn) {
-        if (tmp_rn->next_asn == src_asn || !strcmp(tmp_rn->route->neighbor, src_route->neighbor)) {
+        if (tmp_rn->advertiser_asn == src_asn && !strcmp(tmp_rn->route->neighbor, src_route->neighbor)) {
             (*pp_rl)->route_num--;
             if (tmp_rn->prev && tmp_rn->next) {
                 tmp_rn->prev->next = tmp_rn->next;
@@ -585,7 +589,7 @@ void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
     if (!cur_best_rn) return;
     tmp_rn = cur_best_rn->next;
     while (tmp_rn) {
-        ret = import_policy[cur_best_rn->next_asn] - import_policy[tmp_rn->next_asn];
+        ret = selection_policy[cur_best_rn->advertiser_asid] - selection_policy[tmp_rn->advertiser_asid];
         if (ret > 0 || (ret = 0 && _route_cmp(cur_best_rn->route, tmp_rn->route) < 0)) {
             cur_best_rn = tmp_rn;
         }
@@ -753,8 +757,8 @@ int update_prefix_sets(set_t **pp_set, route_list_t *p_rl, uint8_t *p_active_par
     // previous set is empty, directly add parts
     if (!(*pp_set)->set_size) {
         while (p_tmp_rn) {
-            if (p_active_parts[p_tmp_rn->next_asn]) {
-                set_add_part(*pp_set, p_tmp_rn->next_asn);
+            if (p_active_parts[p_tmp_rn->advertiser_asn]) {
+                set_add_part(*pp_set, p_tmp_rn->advertiser_asn);
             }
             p_tmp_rn = p_tmp_rn->next;
         }
@@ -768,8 +772,8 @@ int update_prefix_sets(set_t **pp_set, route_list_t *p_rl, uint8_t *p_active_par
         original_parts[i] = 0;
     }
     while (p_tmp_rn) {
-        if (p_active_parts[p_tmp_rn->next_asn]) {
-            if (set_update_part(*pp_set, p_tmp_rn->next_asn, original_parts, original_size)) updated_flag = 1;
+        if (p_active_parts[p_tmp_rn->advertiser_asn]) {
+            if (set_update_part(*pp_set, p_tmp_rn->advertiser_asn, original_parts, original_size)) updated_flag = 1;
         }
         p_tmp_rn = p_tmp_rn->next;
     }

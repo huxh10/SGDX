@@ -4,11 +4,10 @@
 #define BUFFER_SIZE     4096
 #define MAX_MSG_SIZE    4096
 
-#define AS_CONF_FILE    "conf/as.conf"
 #define VERBOSE         1
 
 #ifndef SAFE_FREE
-#define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
+#define SAFE_FREE(ptr)  {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
 #endif
 
 typedef struct {
