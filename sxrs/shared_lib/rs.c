@@ -6,212 +6,183 @@
 #include "bgp.h"
 #include "rs.h"
 
-uint32_t compute_non_transit_route(const bgp_dsrlz_msg_t)
+uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asn, uint32_t *tmp_asid, route_t *p_route, rt_state_t *p_rt_states)
 {
+    size_t read = strlen(line);
+    char *delimiter = " ", *token, *p_save, *s_tmp;
+
+    if (!strncmp("PREFIX: ", line, 8)) {
+        reset_route(p_route);
+        p_route->prefix = strndup(line+8, read-9);  // "PREFIX: " is first 8 bytes, "\n" is the last byte
+    } else if (!strncmp("FROM: ", line, 6)) {
+        asn_map_t *asmap_entry;
+        token = strtok_r(line, delimiter, &p_save);
+        token = strtok_r(0, delimiter, &p_save);
+        p_route->neighbor = strdup(token);
+        token = strtok_r(0, delimiter, &p_save);
+        *tmp_asn = atoi(token+2);                     // ASXXX
+        HASH_FIND_INT(p_rt_states->as_n_2_id, tmp_asn, asmap_entry);
+        *tmp_asid = asmap_entry->as_id;
+    } else if (!strncmp("ORIGIN: ", line, 8)) {
+        p_route->origin = strndup(line+8, read-9);  // the same as PREFIX
+    } else if (!strncmp("ASPATH: ", line, 8)) {
+        s_tmp = line;
+        p_route->as_path.length = 0;                // delimiter count
+        while (*s_tmp) {
+            p_route->as_path.length += (*s_tmp++ == ' ');
+        }
+        p_route->as_path.asns = malloc(p_route->as_path.length * sizeof *p_route->as_path.asns);
+        if (!p_route->as_path.asns) {
+            printf("malloc error for p_route->as_path.asns [%s]\n", __FUNCTION__);
+            return MALLOC_ERROR;
+        }
+        token = strtok_r(line, delimiter, &p_save);
+        for (j = 0; j < p_route->as_path.length; j++) {
+            token = strtok_r(0, delimiter, &p_save);
+            p_route->as_path.asns[j] = atoi(token);
+        }
+    } else if (!strncmp("NEXT_HOP: ", line, 10)) {
+        p_route->next_hop = strndup(line+10, read-11);
+    } else if (!strncmp("COMMUNITY: ", line, 11)) {
+        p_route->communities = strndup(line+11, read-12);
+    } else if (!strncmp("ATOMIC_AGGREGATE", line, 16)) {
+        p_route->atomic_aggregate = 1;
+    } else if (!strncmp("MULTI_EXIT_DISC: ", line, 17)) {
+        line[read-1] = 0;
+        g_tmp_route->med = atoi(line+17);
+    } else if (!strcmp("\n", line)) {
+        rib_map_t *p_rib_entry = NULL;
+        HASH_FIND_STR(p_rt_states->ribs[asid], p_route->prefix, p_rib_entry);
+        if (p_rib_entry) {
+            rl_add_route(&p_rib_entry->rl, *tmp_asn, *tmp_asid, p_route, p_rt_states->as_policies[asid].selection_policy);
+        } else {
+            p_rib_entry = malloc(sizeof *p_rib_entry);
+            if (!p_rib_entry) {
+                printf("malloc error for p_rib_entry [%s]\n", __FUNCTION__);
+                return MALLOC_ERROR;
+            }
+            p_rib_entry->key = strdup(p_route->prefix);
+            p_rib_entry->augmented_reach = NULL;
+            p_rib_entry->rl = NULL;
+            rl_add_route(&p_rib_entry->rl, *tmp_asn, *tmp_id, p_route, p_rt_states->as_policies[asid].selection_policy);
+            HASH_ADD_KEYPTR(hh, p_rt_states->ribs[asid], p_rib_entry->key, strlen(p_rib_entry->key), p_rib_entry);
+        }
+    }
 }
 
-uint32_t compute_route_by_msg_queue(const bgp_dec_msg_t *p_bgp_msg, as_policy_t *p_policies, rib_map_t **pp_ribs, uint32_t num, resp_dec_msg_t **pp_resp_dec_msgs, size_t *p_resp_msg_num, resp_dec_set_msg_t **pp_resp_dec_set_msgs, size_t *p_resp_set_msg_num)
+uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_input_msg, rt_state_t *p_rt_states, bgp_route_output_dsrlz_msg_t **pp_bgp_output_msgs, size_t *p_bgp_output_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_output_msgs, size_t *p_sdn_output_msg_num)
 {
-    uint32_t i = 0, j = 0, orig_sender_asn = 0;
-    char *key = NULL;
-    rs_inner_msg_t *tmp_p_inner_msg = NULL;
-    rib_map_t *p_rib_entry = NULL, *tmp_p_rib_entry = NULL;
-    int processed_as_num_in_one_loop = 0, iteration = 0;
+    int i, j;
+    uint8_t next_hop_changed[p_rt_states->as_size];
+    uint8_t reach_changed[p_rt_states->as_size];
+    route_node_t *p_old_rn[p_rt_states->as_size];
+    route_node_t *p_new_rn[p_rt_states->as_size];
+    rib_map_t *p_rib_entry = NULL;
 
-    int potential_changes[num];
-    route_node_t *p_orig_best_rn[num];
-    route_node_t *p_old_best_rn[num];
-    route_node_t *p_new_best_rn[num];
-    for (i = 0; i < num; i++) {
-        potential_changes[i] = 0;
-        p_orig_best_rn[i] = NULL;
-        p_old_best_rn[i] = NULL;
-        p_new_best_rn[i] = NULL;
-    }
+    *p_bgp_output_msg_num = 0;
+    *p_sdn_output_msg_num = 0;
 
-    // get original sender asn and route prefix
-    orig_sender_asn = p_bgp_msg->asn;
-    key = my_strdup(p_bgp_msg->p_route->prefix);
+    for (i = 0; i < p_rt_states->as_size; i++) {
+        next_hop_changed[i] = 0;
+        reach_changed[i] = 0;
 
-    // record original rib entries
-    route_list_t *p_rls[num];
-    for (i = 0; i < num; i++) {
-        HASH_FIND_STR(pp_ribs[i], key, p_rib_entry);
-        p_rls[i] = p_rib_entry ? p_rib_entry->rl : NULL;
-        p_orig_best_rn[i] = rl_get_selected_route_node(p_rls[i]);
-    }
+        // execute filter policies
+        if (!p_rt_states->as_policies[p_bgp_input_msg->asid].export_policy[i]) continue;
+        if (!p_rt_states->as_policies[i].import_policy[p_bgp_input_msg->asid]) continue;
 
-    // initialize inner msg lists for exchange
-    rs_inner_msg_t **pp_inner_msgs = malloc(num * sizeof *pp_inner_msgs);
-    for (i = 0; i < num; i++) {
-        pp_inner_msgs[i] = NULL;
-    }
-
-    // add received bgp_msg to asn list
-    tmp_p_inner_msg = malloc(sizeof *tmp_p_inner_msg);
-    tmp_p_inner_msg->src_asn = p_bgp_msg->p_route->as_path.asns[0];
-    tmp_p_inner_msg->oprt_type = p_bgp_msg->oprt_type;
-    route_cpy(&tmp_p_inner_msg->src_route, NULL, p_bgp_msg->p_route);
-    tmp_p_inner_msg->next = tmp_p_inner_msg;
-    tmp_p_inner_msg->prev = tmp_p_inner_msg;
-    pp_inner_msgs[orig_sender_asn] = tmp_p_inner_msg;
-
-    while (1) {
-        // iterate until routes are converged
-        iteration++;
-        processed_as_num_in_one_loop = 0;
-
-        // process msgs to each as
-        for (i = 0; i < num; i++) {
-            if (pp_inner_msgs[i] == NULL) continue;
-            potential_changes[i] = 1;
-            p_old_best_rn[i] = rl_get_selected_route_node(p_rls[i]);
-            while (pp_inner_msgs[i]) {
-                // FIFO process
-                tmp_p_inner_msg = pp_inner_msgs[i]->prev;
-
-                // update entry
-                if (tmp_p_inner_msg->oprt_type == ANNOUNCE) {
-                    printf("iteration:%d, asn:%u, receive ANNOUNCE msg from:%d\n", iteration, i, tmp_p_inner_msg->src_asn);
-                    rl_add_route(&p_rls[i], tmp_p_inner_msg->src_asn, tmp_p_inner_msg->src_route, p_policies[i].import_policy);
-                } else if (tmp_p_inner_msg->oprt_type == WITHDRAW) {
-                    printf("iteration:%d, asn:%u, receive WITHDRAW msg from:%d\n", iteration, i, tmp_p_inner_msg->src_asn);
-                    rl_del_route(&p_rls[i], tmp_p_inner_msg->src_asn, tmp_p_inner_msg->src_route, p_policies[i].import_policy, p_old_best_rn[i]);
-                }
-
-                if (pp_inner_msgs[i]->prev == pp_inner_msgs[i]) {
-                    free_route_ptr(&tmp_p_inner_msg->src_route);
-                    SAFE_FREE(tmp_p_inner_msg);
-                    pp_inner_msgs[i] = NULL;
-                } else {
-                    pp_inner_msgs[i]->prev = tmp_p_inner_msg->prev;
-                    tmp_p_inner_msg->prev->next = pp_inner_msgs[i];
-                    free_route_ptr(&tmp_p_inner_msg->src_route);
-                    SAFE_FREE(tmp_p_inner_msg);
-                }
+        // update ribs
+        HASH_FIND_STR(p_rt_states->ribs[i], p_bgp_input_msg->p_route->prefix, p_rib_entry);
+        if (!p_rib_entry) {
+            assert(p_bgp_input_msg->oprt_type == ANNOUNCE);
+            p_rib_entry = malloc(sizeof *p_rib_entry);
+            if (!p_rib_entry) {
+                printf("malloc error for p_rib_entry [%s]\n", __FUNCTION__);
+                return MALLOC_ERROR;
             }
-            p_new_best_rn[i] = rl_get_selected_route_node(p_rls[i]);
-            /*
-            if (p_new_best_rn[i]) {
-                printf("as:%d new best after this iteration: ", i);
-                print_route(p_new_best_rn[i]->route);
-            } else {
-                printf("as:%d new best after this iteration: NULL\n", i);
-            }
-            */
-        }
-        // add potential msgs to next iteration
-        for (i = 0; i < num; i++) {
-            if (p_old_best_rn[i] == p_new_best_rn[i]) continue;
-            printf("asn:%d prepares to send inner msg\n", i);
-            // execute export policies and update inner msg lists 
-            if (p_old_best_rn[i]) {
-                printf("    old advertiser_asn:%u\n", p_old_best_rn[i]->advertiser_asn);
-                execute_export_policy(pp_inner_msgs, num, p_policies[i].export_policy, i, p_old_best_rn[i]->advertiser_asn, WITHDRAW, NULL);
-                if (p_old_best_rn[i]->flag.is_selected == TO_BE_DEL) {
-                    free_route_ptr(&p_old_best_rn[i]->route);
-                    SAFE_FREE(p_old_best_rn[i]);
-                }
-            }
-            if (p_new_best_rn[i]) {
-                printf("    new advertiser_asn:%u\n", p_new_best_rn[i]->advertiser_asn);
-                execute_export_policy(pp_inner_msgs, num, p_policies[i].export_policy, i, p_new_best_rn[i]->advertiser_asn, ANNOUNCE, p_new_best_rn[i]->route);
-            }
-            p_old_best_rn[i] = NULL;
-            p_new_best_rn[i] = NULL;
-            processed_as_num_in_one_loop++;
-        }
-
-        // converged
-        if (!processed_as_num_in_one_loop) break;
-    }
-
-    SAFE_FREE(pp_inner_msgs);
-
-    // update rib routes and prefix sets
-    *p_resp_set_msg_num = 0;
-    for (i = 0; i < num; i++) {
-        // reuse potential_changes as change indicator for sets
-        if (!potential_changes[i]) continue;
-        potential_changes[i] = 0;
-        if (p_rls[i]) {
-            HASH_FIND_STR(pp_ribs[i], key, p_rib_entry);
-            if (p_rib_entry) {
-                p_rib_entry->rl = p_rls[i];
-            } else {
-                p_rib_entry = malloc(sizeof *p_rib_entry);
-                p_rib_entry->key = my_strdup(key);
-                p_rib_entry->set = NULL;
-                p_rib_entry->rl = p_rls[i];
-                HASH_ADD_KEYPTR(hh, pp_ribs[i], p_rib_entry->key, strlen(key), p_rib_entry);
-            }
-            // prefix sets
-            potential_changes[i] = update_prefix_sets(&p_rib_entry->set, p_rls[i], p_policies[i].active_parts, num);
+            p_rib_entry->key = my_strdup(p_bgp_input_msg->p_route->prefix);
+            p_rib_entry->augmented_reach = NULL;
+            p_rib_entry->rl = NULL;
+            p_old_rn[i] = NULL;
+            rl_add_route(&p_rib_entry->rl, p_bgp_input_msg->asn, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
+            p_new_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
+            HASH_ADD_KEYPTR(hh, p_rt_states->ribs[i], p_rib_entry->key, strlen(key), p_rib_entry);
         } else {
-            HASH_FIND_STR(pp_ribs[i], key, p_rib_entry);
-            if (p_rib_entry) {
-                HASH_DEL(pp_ribs[i], p_rib_entry);
-                SAFE_FREE(p_rib_entry->key);
-                set_free(&p_rib_entry->set);
-                SAFE_FREE(p_rib_entry);
-                potential_changes[i] = 1;
+            // get next hop asid before processing
+            p_old_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
+            // update route
+            if (p_bgp_input_msg->oprt_type == ANNOUNCE) {
+                rl_add_route(&p_rib_entry->rl, p_bgp_input_msg->asn, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
+            } else if (p_bgp_input_msg->oprt_type == WITHDRAW) {
+                rl_del_route(&p_rib_entry->rl, p_bgp_input_msg->asn, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
+            }
+            p_new_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
+        }
+        // get change status
+        if (i != p_bgp_input_msg->asid) {
+            if (p_old_rn[i] != p_new_rn[i]) {
+                next_hop_changed[i] = 1;
+                (*p_bgp_output_msg_num)++;
+            }
+            if (ENABLE_SDX) {
+                reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach);
+                *p_sdn_output_msg_num += reach_changed[i];
             }
         }
-        if (potential_changes[i]) (*p_resp_set_msg_num)++;
     }
 
-    // send updated prefix sets back
-    if (*p_resp_set_msg_num) {
-        *pp_resp_dec_set_msgs = malloc(*p_resp_set_msg_num * sizeof **pp_resp_dec_set_msgs);
-        j = 0;
-        for (i = 0; i < num; i++) {
-            if (!potential_changes[i]) continue;
-            // XXX maybe we should avoid rib lookup
-            HASH_FIND_STR(pp_ribs[i], key, p_rib_entry);
-            (*pp_resp_dec_set_msgs)[j].asn = i;
-            (*pp_resp_dec_set_msgs)[j].prefix = my_strdup(key);
-            (*pp_resp_dec_set_msgs)[j].set_size = p_rib_entry->set->set_size;
-            (*pp_resp_dec_set_msgs)[j].set = malloc(p_rib_entry->set->set_size * sizeof *(*pp_resp_dec_set_msgs)[j].set);
-            set_write_elmnts_to_array((*pp_resp_dec_set_msgs)[j].set, p_rib_entry->set);
-            j++;
-        }
-        assert(j == *p_resp_set_msg_num);
+    // return bgp route output msg
+    *pp_bgp_output_msgs = malloc(*p_bgp_output_msg_num * sizeof **pp_bgp_output_msgs);
+    if (!*pp_bgp_output_msgs) {
+        printf("malloc error for pp_bgp_output_msgs [%s]\n", __FUNCTION__);
+        return MALLOC_ERROR;
     }
-
-    // send updated best routes back
-    *p_resp_msg_num = 0;
-    for (i = 0; i < num; i++) {
-        if (i == orig_sender_asn) continue;
-        p_new_best_rn[i] = rl_get_selected_route_node(p_rls[i]);
-        if (p_orig_best_rn[i] == p_new_best_rn[i]) continue;
-        (*p_resp_msg_num)++;
-    }
-    if (!*p_resp_msg_num) return SUCCESS;
-    *pp_resp_dec_msgs = malloc(*p_resp_msg_num * sizeof **pp_resp_dec_msgs);
     j = 0;
-    for (i = 0; i < num; i++) {
-        if (i == orig_sender_asn) continue;
-        if (p_orig_best_rn[i] == p_new_best_rn[i]) continue;
-        (*pp_resp_dec_msgs)[j].asn = i;
-        if (p_new_best_rn[i]) {
+    for (i = 0; i < p_rt_states->as_size; i++) {
+        if (!next_hop_changed[i]) continue;
+        (*pp_bgp_output_msgs)[j].asid = i;
+        // assume the new announcement route can overwrite
+        // the previous next hop route in AS border router
+        if (p_new_rn[i]) {
             // ANNOUNCE
-            (*pp_resp_dec_msgs)[j].oprt_type = ANNOUNCE;
-            // response msg assignment
-            (*pp_resp_dec_msgs)[j].prefix = my_strdup(p_new_best_rn[i]->route->prefix);
-            (*pp_resp_dec_msgs)[j].next_hop = my_strdup(p_new_best_rn[i]->route->next_hop);
-            (*pp_resp_dec_msgs)[j].as_path.length = p_new_best_rn[i]->route->as_path.length;
-            (*pp_resp_dec_msgs)[j].as_path.asns = malloc((*pp_resp_dec_msgs)[j].as_path.length * sizeof *(*pp_resp_dec_msgs)[j].as_path.asns);
-            memcpy((*pp_resp_dec_msgs)[j].as_path.asns, p_new_best_rn[i]->route->as_path.asns, (*pp_resp_dec_msgs)[j].as_path.length * sizeof *(*pp_resp_dec_msgs)[j].as_path.asns);
+            (*pp_bgp_output_msgs)[j].oprt_type = ANNOUNCE;
+            (*pp_bgp_output_msgs)[j].prefix = my_strdup(p_new_rn[i]->route->prefix);
+            (*pp_bgp_output_msgs)[j].next_hop = my_strdup(p_new_rn[i]->route->next_hop);
+            (*pp_bgp_output_msgs)[j].as_path.length = p_new_rn[i]->route->as_path.length;
+            (*pp_bgp_output_msgs)[j].as_path.asns = malloc((*pp_bgp_output_msgs)[j].as_path.length * sizeof *(*pp_bgp_output_msgs)[j].as_path.asns);
+            if (!(*pp_bgp_output_msgs)[j].as_path.asns) {
+                printf("malloc error for (*pp_bgp_output_msgs)[%d].as_path.asns [%s]\n", j, __FUNCTION__);
+                return MALLOC_ERROR;
+            }
+            memcpy((*pp_bgp_output_msgs)[j].as_path.asns, p_new_rn[i]->route->as_path.asns, (*pp_bgp_output_msgs)[j].as_path.length * sizeof *(*pp_bgp_output_msgs)[j].as_path.asns);
         } else {
             // WITHDRAW
-            (*pp_resp_dec_msgs)[j].oprt_type = ANNOUNCE;
-            // response msg assignment
-            (*pp_resp_dec_msgs)[j].prefix = my_strdup(p_orig_best_rn[i]->route->prefix);
-            (*pp_resp_dec_msgs)[j].next_hop = my_strdup(p_orig_best_rn[i]->route->next_hop);
+            (*pp_bgp_output_msgs)[j].oprt_type = WITHDRAW;
+            (*pp_bgp_output_msgs)[j].prefix = my_strdup(p_old_rn[i]->route->prefix);
+            (*pp_bgp_output_msgs)[j].next_hop = my_strdup(p_old_rn[i]->route->next_hop);
         }
         j++;
     }
-    assert(j == *p_resp_msg_num);
+    assert(j == *p_bgp_output_msg_num);
+
+    if (!ENABLE_SDX || !*p_sdn_output_msg_num) return SUCCESS;
+    // return sdn reachability output msg
+    *pp_sdn_output_msgs = malloc(*p_sdn_output_msg_num * sizeof **pp_sdn_output_msgs);
+    if (!*pp_sdn_output_msgs) {
+        printf("malloc error for *pp_sdn_output_msgs [%s]\n", __FUNCTION__);
+        return MALLOC_ERROR;
+    }
+    j = 0;
+    for (i = 0; i < p_rt_states->as_size; i++) {
+        if (!reach_changed[i]) continue;
+        HASH_FIND_STR(p_rt_states->ribs[i], p_bgp_input_msg->p_route->prefix, p_rib_entry);
+        (*pp_sdn_output_msgs)[j].asid = i;
+        (*pp_sdn_output_msgs)[j].prefix = my_strdup(p_bgp_input_msg->p_route->prefix);
+        (*pp_sdn_output_msgs)[j].reach_size = p_rib_entry->augmented_reach->size;
+        (*pp_sdn_output_msgs)[j].reachability = malloc((*pp_sdn_output_msgs)[j].reach_size * sizeof *(*pp_sdn_output_msgs)[j].reachability);
+        set_write_elmnts_to_array((*pp_sdn_output_msgs)[j].reachability, p_rib_entry->augmented_reach);
+        j++;
+    }
+    assert(j == *p_sdn_output_msg_num);
 
     return SUCCESS;
 }

@@ -5,14 +5,9 @@
 #include "bgp.h"
 #include "uthash.h"
 
-#ifndef SAFE_FREE
-#define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
-#endif
+#define ENABLE_SDX 1
 
 // next hop policy type
-//
-// active_parts[as_size] for SDX encoding
-//      active_parts[i] is true means as i is a destination in the SDN policy
 //
 // import_policy[as_size] for route announcement
 //      import_policy[i] is true means accepting routes from as i
@@ -24,7 +19,6 @@
 //      selection_policy[i] represents the priority of as i route
 //      the lower the value is, the higher selection order the as route is
 typedef struct {
-    uint8_t *active_parts;
     uint8_t *import_policy;
     uint8_t *export_policy;
     uint32_t *selection_policy;
@@ -39,9 +33,23 @@ typedef struct {
 typedef struct {
     uint32_t as_size;
     uint32_t *as_id_2_n;
+    as_policy_t *as_policies;
+    char *rib_file_dir;
+} as_cfg_t;
+
+// all runtime related states
+//
+// sdn_orgnl_reach[as_size] for SDX encoding
+//      sdn_orngl_reach[i] is true means as i is a destination in SDN policies
+//
+// rib_map_t *ribs[as_size] is a list of rib pointers
+typedef struct {
+    uint32_t as_size;
+    uint32_t *as_id_2_n;
     asn_map_t *as_n_2_id;
     as_policy_t *as_policies;
-    rib_map_t **loaded_ribs;
-} as_cfg_t;
+    uint8_t *sdn_orgnl_reach;
+    rib_map_t **ribs;
+} rt_state_t;
 
 #endif

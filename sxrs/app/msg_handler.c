@@ -13,7 +13,7 @@
 #include "route_process_wo_sgx.h"
 #endif
 
-void handle_resp_set(uint32_t asn, const char *prefix, const uint32_t *p_resp_set, uint32_t resp_set_size)
+void handle_sdn_reach(uint32_t asn, const char *prefix, const uint32_t *p_resp_set, uint32_t resp_set_size)
 {
     char *s_resp_set = NULL;
     uint32_t i;
@@ -36,13 +36,13 @@ void handle_resp_set(uint32_t asn, const char *prefix, const uint32_t *p_resp_se
     json_decref(j_root);
 }
 
-void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
+void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
 {
     uint32_t i;
     char *route = NULL, *oprt_type = NULL;
-    if (p_resp_dec_msg->oprt_type == ANNOUNCE) {
+    if (p_bgp_msg->oprt_type == ANNOUNCE) {
         oprt_type = "announce";
-    } else if (p_resp_dec_msg->oprt_type == WITHDRAW) {
+    } else if (p_bgp_msg->oprt_type == WITHDRAW) {
         oprt_type = "withdraw";
     } else {
         return;
@@ -52,10 +52,10 @@ void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
     json_t *j_as_path = json_array();
 
     json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
-    json_object_set_new(j_msg, "prefix", json_string(p_resp_dec_msg->prefix));
-    json_object_set_new(j_msg, "next-hop", json_string(p_resp_dec_msg->next_hop));
-    for (i = 0; i < p_resp_dec_msg->as_path.length; i++) {
-        json_array_append(j_as_path, json_integer(p_resp_dec_msg->as_path.asns[i]));
+    json_object_set_new(j_msg, "prefix", json_string(p_bgp_msg->prefix));
+    json_object_set_new(j_msg, "next-hop", json_string(p_bgp_msg->next_hop));
+    for (i = 0; i < p_bgp_msg->as_path.length; i++) {
+        json_array_append(j_as_path, json_integer(p_bgp_msg->as_path.asns[i]));
     }
     json_object_set(j_msg, "as-path", j_as_path);
     json_decref(j_as_path);
@@ -64,8 +64,8 @@ void handle_resp_route(resp_dec_msg_t *p_resp_dec_msg)
     json_decref(j_msg);
 
     route = json_dumps(j_root, 0);
-    fprintf(stdout, "prepare to send route:%s to asn:%d pctrlr [%s]\n", route, p_resp_dec_msg->asn, __FUNCTION__);
-    send_bgp_msg_to_pctrlr((const char *) route, p_resp_dec_msg->asn);
+    fprintf(stdout, "prepare to send route:%s to asn:%d pctrlr [%s]\n", route, p_bgp_msg->asn, __FUNCTION__);
+    send_bgp_msg_to_pctrlr((const char *) route, p_bgp_msg->asn);
     SAFE_FREE(route);
     json_decref(j_root);
 }

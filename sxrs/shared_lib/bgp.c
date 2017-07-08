@@ -4,10 +4,6 @@
 #include <assert.h>
 #include "bgp.h"
 
-#ifndef SAFE_FREE
-#define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
-#endif
-
 char *my_strdup(const char *s)
 {
     int l = strlen(s);
@@ -48,17 +44,17 @@ void reset_route(route_t *p_route)
     p_route->atomic_aggregate = 0;
 }
 
-void free_resp_dec_set_msg(resp_dec_set_msg_t *p_resp_dec_set_msg)
+void free_sdn_reach_output_dsrlz_msg(sdn_reach_output_dsrlz_msg_t *p_msg)
 {
-    SAFE_FREE(p_resp_dec_set_msg->prefix);
-    SAFE_FREE(p_resp_dec_set_msg->set);
+    SAFE_FREE(p_msg->prefix);
+    SAFE_FREE(p_msg->reachability);
 }
 
-void free_resp_dec_msg(resp_dec_msg_t *p_resp_dec_msg)
+void free_bgp_route_output_dsrlz_msg(bgp_route_output_dsrlz_msg_t *p_msg)
 {
-    SAFE_FREE(p_resp_dec_msg->prefix);
-    SAFE_FREE(p_resp_dec_msg->next_hop);
-    SAFE_FREE(p_resp_dec_msg->as_path.asns);
+    SAFE_FREE(p_msg->prefix);
+    SAFE_FREE(p_msg->next_hop);
+    SAFE_FREE(p_msg->as_path.asns);
 }
 
 void print_route(route_t *p_route)
@@ -152,7 +148,7 @@ void parse_route_from_file(route_t **pp_route, char *p_s_route)
     (*pp_route)->atomic_aggregate = atoi(token);
 }
 
-int parse_route_from_stream(route_t **pp_route, uint8_t *p_s_route)
+int parse_route_from_stream(route_t **pp_route, const uint8_t *p_s_route)
 {
     int offset = 0;
     uint32_t size = 0;
@@ -286,146 +282,158 @@ int write_route_to_stream(uint8_t **pp_msg, route_t *input)
     return write_route_to_existed_stream(*pp_msg, input);
 }
 
-int parse_resp_from_stream(resp_dec_msg_t **pp_resp_dec_msgs, size_t *p_resp_msg_num, resp_dec_set_msg_t **pp_resp_dec_set_msgs, size_t *p_resp_set_msg_num, uint8_t *p_msg)
+int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t *p_bgp_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_msgs, size_t *p_sdn_msg_num, uint8_t *p_msg);
 {
-    if (!pp_resp_dec_msgs || *pp_resp_dec_msgs || !p_resp_msg_num) {
+    if (!pp_bgp_msgs || *pp_bgp_msgs || !pp_sdn_msgs || *pp_sdn_msgs || !p_bgp_msg_num || !p_sdn_msg_num) {
         return 0;
     }
 
     uint32_t i = 0, offset = 0, tmp_size;
-    *p_resp_msg_num = *((uint32_t *) (p_msg + offset));
+    *p_bgp_msg_num = *((uint32_t *) (p_msg + offset));
     offset += 4;
-    *p_resp_set_msg_num = *((uint32_t *) (p_msg + offset));
+    *p_sdn_msg_num = *((uint32_t *) (p_msg + offset));
     offset += 4;
-    if (!*p_resp_msg_num) {
-        *pp_resp_dec_msgs = NULL;
+    if (!*p_bgp_msg_num) {
+        *pp_bgp_msgs = NULL;
     } else {
-        *pp_resp_dec_msgs = malloc(*p_resp_msg_num * sizeof **pp_resp_dec_msgs);
+        *pp_bgp_msgs = malloc(*p_bgp_msg_num * sizeof **pp_bgp_msgs);
+        if (!*pp_bgp_msgs) {
+            printf("malloc error for *pp_bgp_msgs [%s]\n", __FUNCTION__);
+            return -1;
+        }
     }
-    if (!*p_resp_set_msg_num) {
-        *pp_resp_dec_set_msgs = NULL;
+    if (!*p_sdn_msg_num) {
+        *pp_sdn_msgs = NULL;
     } else {
-        *pp_resp_dec_set_msgs = malloc(*p_resp_set_msg_num * sizeof **pp_resp_dec_set_msgs);
+        *pp_sdn_msgs = malloc(*p_sdn_msg_num * sizeof **pp_sdn_msgs);
+        if (!*pp_sdn_msgs) {
+            printf("malloc error for *pp_sdn_msgs [%s]\n", __FUNCTION__);
+            return -1;
+        }
     }
-    for (i = 0; i < *p_resp_msg_num; i++) {
-        // asn
-        (*pp_resp_dec_msgs)[i].asn = *((uint32_t *) (p_msg + offset));
+    for (i = 0; i < *p_bgp_msg_num; i++) {
+        // asid
+        (*pp_bgp_msgs)[i].asid = *((uint32_t *) (p_msg + offset));
         offset += 4;
         // oprt_type
-        (*pp_resp_dec_msgs)[i].oprt_type = *(p_msg + offset);
+        (*pp_bgp_msgs)[i].oprt_type = *(p_msg + offset);
         offset++;
         // prefix
         tmp_size = *(p_msg + offset);
         offset++;
-        (*pp_resp_dec_msgs)[i].prefix = malloc(tmp_size + 1);
-        memcpy((*pp_resp_dec_msgs)[i].prefix, p_msg + offset, tmp_size);
+        (*pp_bgp_msgs)[i].prefix = malloc(tmp_size + 1);
+        memcpy((*pp_bgp_msgs)[i].prefix, p_msg + offset, tmp_size);
         offset += tmp_size;
-        (*pp_resp_dec_msgs)[i].prefix[tmp_size] = '\0';
+        (*pp_bgp_msgs)[i].prefix[tmp_size] = '\0';
         // next_hop
         tmp_size = *(p_msg + offset);
         offset++;
-        (*pp_resp_dec_msgs)[i].next_hop = malloc(tmp_size + 1);
-        memcpy((*pp_resp_dec_msgs)[i].next_hop, p_msg + offset, tmp_size);
+        (*pp_bgp_msgs)[i].next_hop = malloc(tmp_size + 1);
+        memcpy((*pp_bgp_msgs)[i].next_hop, p_msg + offset, tmp_size);
         offset += tmp_size;
-        (*pp_resp_dec_msgs)[i].next_hop[tmp_size] = '\0';
-        if ((*pp_resp_dec_msgs)[i].oprt_type == WITHDRAW) continue;
+        (*pp_bgp_msgs)[i].next_hop[tmp_size] = '\0';
+        if ((*pp_bgp_msgs)[i].oprt_type == WITHDRAW) continue;
         // as_path
-        (*pp_resp_dec_msgs)[i].as_path.length = *((uint32_t *) (p_msg + offset));
+        (*pp_bgp_msgs)[i].as_path.length = *((uint32_t *) (p_msg + offset));
         offset += 4;
-        tmp_size = (*pp_resp_dec_msgs)[i].as_path.length * sizeof *(*pp_resp_dec_msgs)[i].as_path.asns;
-        (*pp_resp_dec_msgs)[i].as_path.asns = malloc(tmp_size);
-        memcpy((*pp_resp_dec_msgs)[i].as_path.asns, p_msg + offset, tmp_size);
+        tmp_size = (*pp_bgp_msgs)[i].as_path.length * sizeof *(*pp_bgp_msgs)[i].as_path.asns;
+        (*pp_bgp_msgs)[i].as_path.asns = malloc(tmp_size);
+        memcpy((*pp_bgp_msgs)[i].as_path.asns, p_msg + offset, tmp_size);
         offset += tmp_size;
     }
-    for (i = 0; i < *p_resp_set_msg_num; i++) {
-        // asn
-        (*pp_resp_dec_set_msgs)[i].asn = *((uint32_t *) (p_msg + offset));
+    for (i = 0; i < *p_sdn_msg_num; i++) {
+        // asid
+        (*pp_sdn_msgs)[i].asid = *((uint32_t *) (p_msg + offset));
         offset += 4;
         // prefix
         tmp_size = *(p_msg + offset);
         offset++;
-        (*pp_resp_dec_set_msgs)[i].prefix = malloc(tmp_size + 1);
-        memcpy((*pp_resp_dec_set_msgs)[i].prefix, p_msg + offset, tmp_size);
+        (*pp_sdn_msgs)[i].prefix = malloc(tmp_size + 1);
+        memcpy((*pp_sdn_msgs)[i].prefix, p_msg + offset, tmp_size);
         offset += tmp_size;
-        (*pp_resp_dec_set_msgs)[i].prefix[tmp_size] = '\0';
-        // set_size
-        (*pp_resp_dec_set_msgs)[i].set_size = *((uint32_t *) (p_msg + offset));
+        (*pp_sdn_msgs)[i].prefix[tmp_size] = '\0';
+        // reachability size
+        (*pp_sdn_msgs)[i].reach_size = *((uint32_t *) (p_msg + offset));
         offset += 4;
-        // set
-        tmp_size = (*pp_resp_dec_set_msgs)[i].set_size * sizeof *(*pp_resp_dec_set_msgs)[i].set;
-        (*pp_resp_dec_set_msgs)[i].set = malloc(tmp_size);
-        memcpy((*pp_resp_dec_set_msgs)[i].set, p_msg + offset, tmp_size);
+        // reachability
+        tmp_size = (*pp_sdn_msgs)[i].reach_size * sizeof *(*pp_sdn_msgs)[i].reachability;
+        (*pp_sdn_msgs)[i].reachability = malloc(tmp_size);
+        memcpy((*pp_sdn_msgs)[i].reachability, p_msg + offset, tmp_size);
         offset += tmp_size;
     }
     return offset;
 }
 
-int write_resp_to_stream(uint8_t **pp_msg, resp_dec_msg_t *p_resp_dec_msgs, size_t resp_msg_num, resp_dec_set_msg_t *p_resp_dec_set_msgs, size_t resp_set_msg_num)
+int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bgp_msgs, size_t bgp_msg_num, sdn_reach_output_dsrlz_msg_t *p_sdn_msgs, size_t sdn_msg_num);
 {
-    if (!pp_msg || (!p_resp_dec_msgs && !p_resp_dec_set_msgs)) {
+    if (!pp_msg || (!p_bgp_msgs && !p_sdn_msgs)) {
         return 0;
     }
 
     uint32_t i = 0, offset = 0;
-    size_t resp_msg_size = 0;
+    size_t ret_msg_size = 0;
 
     // serialize the response message
-    resp_msg_size += 4; // resp_msg_num (4)
-    resp_msg_size += 4; // resp_set_msg_num (4)
-    for (i = 0; i < resp_msg_num; i++) {
-        resp_msg_size += 5; // asn (4) + oprt_type (1)
-        resp_msg_size += 2; // prefix_size (1) + next_hop_size (1)
-        resp_msg_size += strlen(p_resp_dec_msgs[i].prefix);
-        resp_msg_size += strlen(p_resp_dec_msgs[i].next_hop);
-        if (p_resp_dec_msgs[i].oprt_type == ANNOUNCE) {
-            resp_msg_size += 4;  // as_path_length (4)
-            resp_msg_size += p_resp_dec_msgs[i].as_path.length * sizeof *p_resp_dec_msgs[i].as_path.asns;
+    ret_msg_size += 4; // bgp_msg_num (4)
+    ret_msg_size += 4; // sdn_msg_num (4)
+    for (i = 0; i < bgp_msg_num; i++) {
+        ret_msg_size += 5; // asid (4) + oprt_type (1)
+        ret_msg_size += 2; // prefix_size (1) + next_hop_size (1)
+        ret_msg_size += strlen(p_bgp_msgs[i].prefix);
+        ret_msg_size += strlen(p_bgp_msgs[i].next_hop);
+        if (p_bgp_msgs[i].oprt_type == ANNOUNCE) {
+            ret_msg_size += 4;  // as_path_length (4)
+            ret_msg_size += p_bgp_msgs[i].as_path.length * sizeof *p_bgp_msgs[i].as_path.asns;
         }
     }
-    for (i = 0; i < resp_set_msg_num; i++) {
-        resp_msg_size += 5; // asn (4) + prefix_size (1)
-        resp_msg_size += strlen(p_resp_dec_set_msgs[i].prefix);
-        resp_msg_size += 4; // set_size (4)
-        resp_msg_size += p_resp_dec_set_msgs[i].set_size * sizeof *p_resp_dec_set_msgs[i].set;
+    for (i = 0; i < sdn_msg_num; i++) {
+        ret_msg_size += 5; // asid (4) + prefix_size (1)
+        ret_msg_size += strlen(p_sdn_msgs[i].prefix);
+        ret_msg_size += 4; // reach_size (4)
+        ret_msg_size += p_sdn_msgs[i].reach_size * sizeof *p_sdn_msgs[i].reachability;
     }
-    *pp_msg = malloc(resp_msg_size);
-    *((uint32_t *) (*pp_msg + offset)) = resp_msg_num;
+    *pp_msg = malloc(ret_msg_size);
+    if (!*pp_msg) {
+        printf("malloc error for *pp_msg [%s]\n", __FUNCTION__);
+        return -1;
+    }
+    *((uint32_t *) (*pp_msg + offset)) = bgp_msg_num;
     offset += 4;
-    *((uint32_t *) (*pp_msg + offset)) = resp_set_msg_num;
+    *((uint32_t *) (*pp_msg + offset)) = sdn_msg_num;
     offset += 4;
-    for (i = 0; i < resp_msg_num; i++) {
-        *((uint32_t *) (*pp_msg + offset)) = p_resp_dec_msgs[i].asn;
+    for (i = 0; i < bgp_msg_num; i++) {
+        *((uint32_t *) (*pp_msg + offset)) = p_bgp_msgs[i].asid;
         offset += 4;
-        *(*pp_msg + offset) = p_resp_dec_msgs[i].oprt_type;
+        *(*pp_msg + offset) = p_bgp_msgs[i].oprt_type;
         offset++;
-        *(*pp_msg + offset) = (uint8_t) strlen(p_resp_dec_msgs[i].prefix);
+        *(*pp_msg + offset) = (uint8_t) strlen(p_bgp_msgs[i].prefix);
         offset++;
-        memcpy(*pp_msg + offset, p_resp_dec_msgs[i].prefix, strlen(p_resp_dec_msgs[i].prefix));
-        offset += strlen(p_resp_dec_msgs[i].prefix);
-        *(*pp_msg + offset) = (uint8_t) strlen(p_resp_dec_msgs[i].next_hop);
+        memcpy(*pp_msg + offset, p_bgp_msgs[i].prefix, strlen(p_bgp_msgs[i].prefix));
+        offset += strlen(p_bgp_msgs[i].prefix);
+        *(*pp_msg + offset) = (uint8_t) strlen(p_bgp_msgs[i].next_hop);
         offset++;
-        memcpy(*pp_msg + offset, p_resp_dec_msgs[i].next_hop, strlen(p_resp_dec_msgs[i].next_hop));
-        offset += strlen(p_resp_dec_msgs[i].next_hop);
-        if (p_resp_dec_msgs[i].oprt_type == ANNOUNCE) {
-            *((uint32_t *) (*pp_msg + offset)) = p_resp_dec_msgs[i].as_path.length;
+        memcpy(*pp_msg + offset, p_bgp_msgs[i].next_hop, strlen(p_bgp_msgs[i].next_hop));
+        offset += strlen(p_bgp_msgs[i].next_hop);
+        if (p_bgp_msgs[i].oprt_type == ANNOUNCE) {
+            *((uint32_t *) (*pp_msg + offset)) = p_bgp_msgs[i].as_path.length;
             offset += 4;
-            memcpy(*pp_msg + offset, p_resp_dec_msgs[i].as_path.asns, p_resp_dec_msgs[i].as_path.length * sizeof *p_resp_dec_msgs[i].as_path.asns);
-            offset += p_resp_dec_msgs[i].as_path.length * sizeof *p_resp_dec_msgs[i].as_path.asns;
+            memcpy(*pp_msg + offset, p_bgp_msgs[i].as_path.asns, p_bgp_msgs[i].as_path.length * sizeof *p_bgp_msgs[i].as_path.asns);
+            offset += p_bgp_msgs[i].as_path.length * sizeof *p_bgp_msgs[i].as_path.asns;
         }
     }
-    for (i = 0; i < resp_set_msg_num; i++) {
-        *((uint32_t *) (*pp_msg + offset)) = p_resp_dec_set_msgs[i].asn;
+    for (i = 0; i < sdn_msg_num; i++) {
+        *((uint32_t *) (*pp_msg + offset)) = p_sdn_msgs[i].asid;
         offset += 4;
-        *(*pp_msg + offset) = (uint8_t) strlen(p_resp_dec_set_msgs[i].prefix);
+        *(*pp_msg + offset) = (uint8_t) strlen(p_sdn_msgs[i].prefix);
         offset++;
-        memcpy(*pp_msg + offset, p_resp_dec_set_msgs[i].prefix, strlen(p_resp_dec_set_msgs[i].prefix));
-        offset += strlen(p_resp_dec_set_msgs[i].prefix);
-        *((uint32_t *) (*pp_msg + offset)) = p_resp_dec_set_msgs[i].set_size;
+        memcpy(*pp_msg + offset, p_sdn_msgs[i].prefix, strlen(p_sdn_msgs[i].prefix));
+        offset += strlen(p_sdn_msgs[i].prefix);
+        *((uint32_t *) (*pp_msg + offset)) = p_sdn_msgs[i].reach_size;
         offset += 4;
-        memcpy(*pp_msg + offset, p_resp_dec_set_msgs[i].set, p_resp_dec_set_msgs[i].set_size * sizeof *p_resp_dec_set_msgs[i].set);
-        offset += p_resp_dec_set_msgs[i].set_size * sizeof *p_resp_dec_set_msgs[i].set;
+        memcpy(*pp_msg + offset, p_sdn_msgs[i].reachability, p_sdn_msgs[i].reach_size * sizeof *p_sdn_msgs[i].reachability);
+        offset += p_sdn_msgs[i].reach_size * sizeof *p_sdn_msgs[i].reachability;
     }
-    assert(offset == resp_msg_size);
+    assert(offset == ret_msg_size);
     return offset;
 }
 
@@ -493,9 +501,9 @@ route_node_t* rl_get_selected_route_node(route_list_t *p_rl)
     return NULL;
 }
 
-void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
+int rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
 {
-    if (!pp_rl) return;
+    if (!pp_rl) return -1;
     if (!*pp_rl) {
         *pp_rl = malloc(sizeof **pp_rl);
         (*pp_rl)->route_num = 0;
@@ -516,7 +524,7 @@ void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, rou
     if (!(*pp_rl)->head) {
         (*pp_rl)->head = p_rn;
         p_rn->flag.is_selected = 1;
-        return;
+        return 0;
     }
     p_rn->next = (*pp_rl)->head;
     (*pp_rl)->head->prev = p_rn;
@@ -530,23 +538,22 @@ void rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, rou
         tmp_rn->flag.is_selected = 0;
         p_rn->flag.is_selected = 1;
     } else if (ret > 0) {
-        return;
     } else {
         if (_route_cmp(tmp_rn->route, p_rn->route) < 0) {
             tmp_rn->flag.is_selected = 0;
             p_rn->flag.is_selected = 1;
         } else {
-            return;
         }
     }
+    return 0;
 }
 
-void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *selection_policy, route_node_t *p_old_best_rn)
+int rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *selection_policy)
 {
-    if (!pp_rl || !*pp_rl) return;
+    if (!pp_rl || !*pp_rl) return -1;
     if (!(*pp_rl)->head) {
         SAFE_FREE(*pp_rl);
-        return;
+        return -1;
     }
     int del_best_rn_flag = 0, ret = 0;
 
@@ -568,25 +575,19 @@ void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
                 SAFE_FREE(*pp_rl);
             }
             if (tmp_rn->flag.is_selected == 1) del_best_rn_flag = 1;
-            if (tmp_rn != p_old_best_rn) {
-                free_route_ptr(&tmp_rn->route);
-                SAFE_FREE(tmp_rn);
-            } else {
-                // p_old_best_rn will be freed after a whole iteration
-                // p_old_best_rn is needed to construct the inner msg
-                tmp_rn->flag.is_selected = TO_BE_DEL;
-            }
+            free_route_ptr(&tmp_rn->route);
+            SAFE_FREE(tmp_rn);
             break;
         } else {
             tmp_rn = tmp_rn->next;
         }
     }
-    if (!del_best_rn_flag) return;
+    if (!del_best_rn_flag) return 0;
 
     // the best route node has been deleted, select a new one
-    if (!*pp_rl) return;
+    if (!*pp_rl) return 0;
     route_node_t *cur_best_rn = (*pp_rl)->head;
-    if (!cur_best_rn) return;
+    if (!cur_best_rn) return 0;
     tmp_rn = cur_best_rn->next;
     while (tmp_rn) {
         ret = selection_policy[cur_best_rn->advertiser_asid] - selection_policy[tmp_rn->advertiser_asid];
@@ -596,40 +597,7 @@ void rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, ui
         tmp_rn = tmp_rn->next;
     }
     cur_best_rn->flag.is_selected = 1;
-}
-
-void execute_export_policy(rs_inner_msg_t **pp_inner_msgs, uint32_t num, uint8_t *export_policy, uint32_t src_asn, uint32_t src_next_hop, uint8_t oprt_type, route_t *src_route)
-{
-    uint32_t dst_asn;
-    rs_inner_msg_t *p_inner_msg = NULL;
-    for (dst_asn = 0; dst_asn < num; dst_asn++) {
-        if (export_policy[src_next_hop * num + dst_asn]) {
-            p_inner_msg = malloc(sizeof *p_inner_msg);
-            p_inner_msg->src_asn = src_asn;
-            p_inner_msg->oprt_type = oprt_type;
-            p_inner_msg->src_route = NULL;
-            p_inner_msg->prev = NULL;
-            p_inner_msg->next = NULL;
-            if (src_route) {
-                if (src_next_hop == src_asn) {
-                    route_cpy(&p_inner_msg->src_route, NULL, src_route);
-                } else {
-                    route_cpy(&p_inner_msg->src_route, &src_asn, src_route);
-                }
-            }
-            if (pp_inner_msgs[dst_asn]) {
-                pp_inner_msgs[dst_asn]->prev->next = p_inner_msg;
-                p_inner_msg->prev = pp_inner_msgs[dst_asn]->prev;
-                p_inner_msg->next = pp_inner_msgs[dst_asn];
-                pp_inner_msgs[dst_asn]->prev = p_inner_msg;
-                pp_inner_msgs[dst_asn] = p_inner_msg;
-            } else {
-                pp_inner_msgs[dst_asn] = p_inner_msg;
-                pp_inner_msgs[dst_asn]->prev = p_inner_msg;
-                pp_inner_msgs[dst_asn]->next = p_inner_msg;
-            }
-        }
-    }
+    return 0;
 }
 
 // set operations
@@ -638,7 +606,7 @@ void set_free(set_t **pp_set)
     if (!pp_set || !*pp_set) return;
     int i;
     set_node_t *p_tmp_set, *p_iter_set = (*pp_set)->head;
-    for (i = 0; i < (*pp_set)->set_size; i++) {
+    for (i = 0; i < (*pp_set)->size; i++) {
         p_tmp_set = p_iter_set;
         p_iter_set = p_iter_set->next;
         SAFE_FREE(p_tmp_set);
@@ -652,63 +620,63 @@ void set_write_elmnts_to_array(uint32_t *p, set_t *p_set)
     // no check, be careful
     int i = 0;
     set_node_t *p_iter_set = p_set->head;
-    for (i = 0; i < p_set->set_size; i++) {
-        p[i] = p_iter_set->part_asn;
+    for (i = 0; i < p_set->size; i++) {
+        p[i] = p_iter_set->id;
         p_iter_set = p_iter_set->next;
     }
 }
 
-static int set_add_part(set_t *p_set, uint32_t asn)
+static int set_add(set_t *p_set, uint32_t id)
 {
     if (!p_set) return 0;
     int i;
     set_node_t *p_tmp_set = p_set->head;
     if (!p_tmp_set) {
         p_tmp_set = malloc(sizeof *p_tmp_set);
-        p_tmp_set->part_asn = asn;
+        p_tmp_set->id = id;
         p_tmp_set->prev = p_tmp_set;
         p_tmp_set->next = p_tmp_set;
         p_set->head = p_tmp_set;
-        p_set->set_size = 1;
+        p_set->size = 1;
         return 1;
     }
-    for (i = 0; i < p_set->set_size; i++) {
+    for (i = 0; i < p_set->size; i++) {
         if (p_tmp_set->part_asn == asn) return 0;
         p_tmp_set = p_tmp_set->next;
     }
     p_tmp_set = malloc(sizeof *p_tmp_set);
-    p_tmp_set->part_asn = asn;
+    p_tmp_set->id = id;
     p_tmp_set->next = p_set->head;
     p_tmp_set->prev = p_set->head->prev;
     p_set->head->prev->next = p_tmp_set;
     p_set->head->prev = p_tmp_set;
-    p_set->set_size++;
+    p_set->size++;
     return 1;
 }
 
-static int set_update_part(set_t *p_set, uint32_t asn, int *original_parts, int original_size)
+static int set_update(set_t *p_set, uint32_t asid, int *original_set, int original_size)
 {
     if (!p_set) return 0;
     int i;
     set_node_t *p_tmp_set = p_set->head;
-    for (i = 0; i < p_set->set_size; i++) {
-        if (p_tmp_set->part_asn == asn) {
-            if (i < original_size) original_parts[i] = 1;
+    for (i = 0; i < p_set->size; i++) {
+        if (p_tmp_set->id == id) {
+            if (i < original_size) original_set[i] = 1;
             return 0;
         }
         p_tmp_set = p_tmp_set->next;
     }
     p_tmp_set = malloc(sizeof *p_tmp_set);
-    p_tmp_set->part_asn = asn;
+    p_tmp_set->id = id;
     p_tmp_set->next = p_set->head;
     p_tmp_set->prev = p_set->head->prev;
     p_set->head->prev->next = p_tmp_set;
     p_set->head->prev = p_tmp_set;
-    p_set->set_size++;
+    p_set->size++;
     return 1;
 }
 
-static void set_delete_part(set_t *p_set, int *original_parts, int original_size)
+static void set_delete(set_t *p_set, int *original_set, int original_size)
 {
     if (!p_set) return;
     int i;
@@ -716,7 +684,7 @@ static void set_delete_part(set_t *p_set, int *original_parts, int original_size
     // save head ptr
     set_node_t *p_tail_set = p_set->head->prev;
     for (i = 0; i < original_size - 1; i++) {
-        if (original_parts[i]) {
+        if (original_set[i]) {
             p_iter_set = p_iter_set->next;
             continue;
         }
@@ -725,67 +693,67 @@ static void set_delete_part(set_t *p_set, int *original_parts, int original_size
         p_tmp_set->next->prev = p_tmp_set->prev;
         p_tmp_set->prev->next = p_tmp_set->next;
         SAFE_FREE(p_tmp_set);
-        p_set->set_size--;
+        p_set->size--;
     }
-    if (original_parts[i]) {
+    if (original_set[i]) {
         p_set->head = p_tail_set->next;
     } else {
-        if (p_set->set_size == 1) {
+        if (p_set->size == 1) {
             SAFE_FREE(p_iter_set);
-            p_set->set_size--;
+            p_set->size--;
             p_set->head = NULL;
         } else {
             p_set->head = p_tail_set->next;
             p_iter_set->next->prev = p_iter_set->prev;
             p_iter_set->prev->next = p_iter_set->next;
             SAFE_FREE(p_iter_set);
-            p_set->set_size--;
+            p_set->size--;
         }
     }
 }
 
-int update_prefix_sets(set_t **pp_set, route_list_t *p_rl, uint8_t *p_active_parts, uint32_t num)
+int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_reach)
 {
     if (!p_rl || !pp_set) return 0;
     if (!*pp_set) {
         *pp_set = malloc(sizeof **pp_set);
-        (*pp_set)->set_size = 0;
+        (*pp_set)->size = 0;
         (*pp_set)->head = NULL;
     }
     route_node_t *p_tmp_rn = p_rl->head;
 
-    // previous set is empty, directly add parts
-    if (!(*pp_set)->set_size) {
+    // previous set is empty, directly add asid
+    if (!(*pp_set)->size) {
         while (p_tmp_rn) {
-            if (p_active_parts[p_tmp_rn->advertiser_asn]) {
-                set_add_part(*pp_set, p_tmp_rn->advertiser_asn);
+            if (p_sdn_reach[p_tmp_rn->advertiser_asn]) {
+                set_add(*pp_set, p_tmp_rn->advertiser_asid);
             }
             p_tmp_rn = p_tmp_rn->next;
         }
-        return (*pp_set)->set_size ? 1 : 0;
+        return (*pp_set)->size ? 1 : 0;
     }
 
-    // try to update parts and log if the set is changed
-    int i, updated_flag = 0, original_size = (*pp_set)->set_size;
-    int original_parts[original_size];
+    // try to update reachability and log set change
+    int i, updated_flag = 0, original_size = (*pp_set)->size;
+    int original_set[original_size];
     for (i = 0; i < original_size; i++) {
-        original_parts[i] = 0;
+        original_set[i] = 0;
     }
     while (p_tmp_rn) {
-        if (p_active_parts[p_tmp_rn->advertiser_asn]) {
-            if (set_update_part(*pp_set, p_tmp_rn->advertiser_asn, original_parts, original_size)) updated_flag = 1;
+        if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
+            if (set_update(*pp_set, p_tmp_rn->advertiser_asid, original_set, original_size)) updated_flag = 1;
         }
         p_tmp_rn = p_tmp_rn->next;
     }
-    // finish updating parts, check the log to delete parts
+    // finish updating reachability, check if we need to delete ASes
     for (i = 0; i < original_size; i++) {
-        if (!original_parts[i]) {
+        if (!original_set[i]) {
             updated_flag = 1;
             break;
         }
     }
     if (i == original_size) return updated_flag;
-    // delete the original unaccessed parts
-    set_delete_part(*pp_set, original_parts, original_size);
+    // delete the unaccessed original ASes
+    set_delete(*pp_set, original_set, original_size);
     return updated_flag;
 }
