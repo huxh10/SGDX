@@ -56,9 +56,9 @@ void handle_sdn_reach(uint32_t asid, const char *prefix, const uint32_t *p_sdn_r
     json_decref(j_root);
 }
 
-void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
+void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
 {
-    uint32_t i, msg_size, offset;
+    uint32_t i, j, msg_size, offset;
     char *route = NULL, *oprt_type = NULL;
     char *msg_to_as = NULL, *msg_to_pctrlr = NULL;
     char *neighbor_ip;
@@ -80,8 +80,6 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
     } else {
         return;
     }
-    neighbor_ip = g_msg_states.as_ips[p_bgp_msg->asid];
-    msg_size += strlen(neighbor_ip);
     msg_size += strlen(p_bgp_msg->prefix);
 
     if (ENABLE_SDX) {
@@ -102,39 +100,42 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
     }
     msg_size += strlen(next_hop);
     msg_size += 1;  // '\0'
-    msg_to_as = malloc(msg_size);
 
-    // write to msg
-    offset = 0;
-    memcpy(msg_to_as + offset, "neighbor ", 9);
-    offset += 9;
-    memcpy(msg_to_as + offset, neighbor_ip, strlen(neighbor_ip));
-    offset += strlen(neighbor_ip);
-    msg_to_as[offset] = ' ';
-    offset += 1;
-    memcpy(msg_to_as + offset, oprt_type, 8);
-    offset += 8;
-    memcpy(msg_to_as + offset, " route ", 7);
-    offset += 7;
-    memcpy(msg_to_as + offset, p_bgp_msg->prefix, strlen(p_bgp_msg->prefix));
-    offset += strlen(p_bgp_msg->prefix);
-    memcpy(msg_to_as + offset, " next-hop ", 10);
-    offset += 10;
-    memcpy(msg_to_as + offset, next_hop, strlen(next_hop));
-    offset += strlen(next_hop);
-    if (p_bgp_msg->oprt_type == ANNOUNCE) {
-        memcpy(msg_to_as + offset, " as-path [ ( ", 13);
-        offset += 13;
-        for (i = 0, i < p_bgp_msg->as_path.length; i++) {
-            offset += sprintf(msg_to_as + offset, "%d ", p_bgp_msg->as_path.asns[i]);
+    for (i = 0; i < g_msg_states.as_ips[p_bgp_msg->asid].ip_num; i++) {
+        neighbor_ip = g_msg_states.as_ips[p_bgp_msg->asid].ips[i];
+        msg_to_as = malloc(msg_size + strlen(neighbor_ip));
+        // write to msg
+        offset = 0;
+        memcpy(msg_to_as + offset, "neighbor ", 9);
+        offset += 9;
+        memcpy(msg_to_as + offset, neighbor_ip, strlen(neighbor_ip));
+        offset += strlen(neighbor_ip);
+        msg_to_as[offset] = ' ';
+        offset += 1;
+        memcpy(msg_to_as + offset, oprt_type, 8);
+        offset += 8;
+        memcpy(msg_to_as + offset, " route ", 7);
+        offset += 7;
+        memcpy(msg_to_as + offset, p_bgp_msg->prefix, strlen(p_bgp_msg->prefix));
+        offset += strlen(p_bgp_msg->prefix);
+        memcpy(msg_to_as + offset, " next-hop ", 10);
+        offset += 10;
+        memcpy(msg_to_as + offset, next_hop, strlen(next_hop));
+        offset += strlen(next_hop);
+        if (p_bgp_msg->oprt_type == ANNOUNCE) {
+            memcpy(msg_to_as + offset, " as-path [ ( ", 13);
+            offset += 13;
+            for (j = 0, j < p_bgp_msg->as_path.length; j++) {
+                offset += sprintf(msg_to_as + offset, "%d ", p_bgp_msg->as_path.asns[i]);
+            }
+            memcpy(msg_to_as + offset, ") ]", 3);
+            offset += 3;
         }
-        memcpy(msg_to_as + offset, ") ]", 3);
-        offset += 3;
+        msg_to_as[offset] = 0;
+        // send to exabgp's client.py
+        send_msg_to_as(msg_to_as);
+        SAFE_FREE(msg_to_as);
     }
-    msg_to_as[offset] = 0;
-    // send to exabgp's client.py
-    send_msg_to_as(msg_to_as);
-    SAFE_FREE(msg_to_as);
 
     if (!ENABLE_SDX) return;
     // send msg to pctrlr
