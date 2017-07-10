@@ -103,11 +103,11 @@ void process_bgp_route_w_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
     if (g_verbose == 4) enclave_ecall_print_rs_ribs(g_enclave_id, &ret_status);
 }
 
-void process_sdn_reach_w_sgx(uint32_t asid, const uint32_t *p_ases, uint32_t as_size, uint8_t oprt_type)
+void process_sdn_reach_w_sgx(uint32_t asid, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type)
 {
     uint32_t call_status, ret_status;
 
-    call_status = enclave_ecall_process_sdn_reach(g_enclave_id, &ret_status, asid, p_ases, (size_t) as_size, oprt_type);
+    call_status = enclave_ecall_process_sdn_reach(g_enclave_id, &ret_status, asid, p_reach, (size_t) reach_size, oprt_type);
     if (ret_status != SUCCESS) {
         fprintf(stderr, "enclave_ecall_process_sdn_reach, errno: %d [%s]\n", ret_status, __FUNCTION__);
     }

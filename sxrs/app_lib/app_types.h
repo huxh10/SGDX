@@ -2,6 +2,7 @@
 #define _APP_TYPES_H_
 
 #include "shared_types.h"
+#include "uthash.h"
 
 #define BUFFER_SIZE     4096
 #define MAX_MSG_SIZE    4096
@@ -32,11 +33,23 @@ typedef struct {
     char *rib_file_dir;
 } as_cfg_t;
 
+typedef struct {
+    char *prefix;   // key
+    char *vnh;      // value
+    UT_hash_handle hh;
+} vnh_map_t;
+
+typedef struct {
+    uint32_t crnt_vnh;
+    vnh_map_t *vnh_map;
+} vnh_state_t;
+
 // message processing related states
 typedef struct {
     uint32_t as_size;
     int *pctrlr_sfds;
     as_ips_t *as_ips;
+    vnh_state_t vnh_states;
 } msg_state_t;
 
 #endif

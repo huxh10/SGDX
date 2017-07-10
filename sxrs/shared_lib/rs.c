@@ -242,28 +242,28 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
     return SUCCESS;
 }
 
-uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_ases, uint32_t as_size, uint8_t oprt_type)
+uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type)
 {
-    if (!p_sdn_reach || !p_ases) return SUCCESS;
+    if (!p_sdn_reach || !p_reach) return SUCCESS;
     uint32_t i;
     uint8_t v = (oprt_type == ANNOUNCE) ? 1 : 0;
 
-    for (i = 0; i < as_size; i++) {
-        printf("p_ases[%d]:%u [%s]\n", i, p_ases[i], __FUNCTION__);
-        p_sdn_reach[p_ases[i]] = v;
+    for (i = 0; i < reach_size; i++) {
+        printf("p_reach[%d]:%u [%s]\n", i, p_reach[i], __FUNCTION__);
+        p_sdn_reach[p_reach[i]] = v;
     }
 
     return SUCCESS;
 }
 
-uint32_t get_sdn_reach_by_prefix(const char *prefix, uint8_t *p_sdn_reach, uint32_t num, rib_map_t *p_rib, uint32_t **pp_resp_set, uint32_t *p_resp_set_size)
+uint32_t get_sdn_reach_by_prefix(const char *prefix, uint8_t *p_sdn_reach, uint32_t num, rib_map_t *p_rib, uint32_t **pp_ret_reach, uint32_t *p_ret_reach_size)
 {
-    if (!pp_resp_set || *pp_resp_set || !p_resp_set_size|| !prefix) {
+    if (!pp_ret_reach || *pp_ret_reach || !p_ret_reach_size|| !prefix) {
         return SUCCESS;
     }
     rib_map_t *p_rib_entry = NULL;
     route_node_t *p_tmp_rn = NULL;
-    *p_resp_set_size = 0;
+    *p_ret_reach_size = 0;
     uint32_t i = 0;
 
     HASH_FIND_STR(p_rib, prefix, p_rib_entry);
@@ -271,19 +271,19 @@ uint32_t get_sdn_reach_by_prefix(const char *prefix, uint8_t *p_sdn_reach, uint3
 
     p_tmp_rn = p_rib_entry->rl->head;
     while (p_tmp_rn) {
-        if (p_sdn_reach[p_tmp_rn->advertiser_asid]) (*p_resp_set_size)++;
+        if (p_sdn_reach[p_tmp_rn->advertiser_asid]) (*p_ret_reach_size)++;
         p_tmp_rn = p_tmp_rn->next;
     }
-    *pp_resp_set = malloc(*p_resp_set_size * sizeof(**pp_resp_set));
+    *pp_ret_reach = malloc(*p_ret_reach_size * sizeof(**pp_ret_reach));
     p_tmp_rn = p_rib_entry->rl->head;
     while (p_tmp_rn) {
         if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
-            (*pp_resp_set)[i] = p_tmp_rn->advertiser_asid;
+            (*pp_ret_reach)[i] = p_tmp_rn->advertiser_asid;
             i++;
         }
         p_tmp_rn = p_tmp_rn->next;
     }
-    assert(i == *p_resp_set_size);
+    assert(i == *p_ret_reach_size);
 
     return SUCCESS;
 }

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <jansson.h>
+#include <arpa/inet.h>
 #include "server.h"
 #include "bgp.h"
 #include "app_types.h"
@@ -28,66 +29,133 @@ void msg_handler_init(as_cfg_t *p_as_cfg)
     }
     g_msg_states.as_size = as_size;
     g_msg_states.as_ips = p_as_cfg.as_ips;
+    g_msg_states.vnh_states.crnt_vnh = 0;
+    g_msg_states.vnh_states.vnh_map = NULL;
 }
 
-void handle_sdn_reach(uint32_t asn, const char *prefix, const uint32_t *p_sdn_reach, uint32_t reach_size)
+void handle_sdn_reach(uint32_t asid, const char *prefix, const uint32_t *p_sdn_reach, uint32_t reach_size)
 {
-    char *s_resp_set = NULL;
     uint32_t i;
     json_t *j_root = json_object();
     json_t *j_msg = json_object();
-    json_t *j_resp_set = json_array();
+    json_t *j_sdn_reach = json_array();
+    char *s_sdn_reach = NULL;
 
     for (i = 0; i < reach_size; i++) {
-        json_array_append(j_resp_set, json_integer(p_sdn_reach[i]));
+        json_array_append(j_sdn_reach, json_integer(p_sdn_reach[i]));
     }
-    json_object_set(j_msg, prefix, j_resp_set);
-    json_decref(j_resp_set);
-    json_object_set(j_root, "bgp-reach", j_msg);
+    json_object_set(j_msg, prefix, j_sdn_reach);
+    json_decref(j_sdn_reach);
+    json_object_set(j_root, "sdn-reach", j_msg);
     json_decref(j_msg);
 
-    s_resp_set = json_dumps(j_root, 0);
-    fprintf(stdout, "prepare to send s_resp_set:%s to asn:%d pctrlr [%s]\n", s_resp_set, asn, __FUNCTION__);
-    send_bgp_msg_to_pctrlr((const char *) s_resp_set, asn);
-    SAFE_FREE(s_resp_set);
+    s_sdn_reach = json_dumps(j_root, 0);
+    fprintf(stdout, "prepare to send s_sdn_reach:%s to asid:%d pctrlr [%s]\n", s_sdn_reach, asid, __FUNCTION__);
+    send_msg_to_pctrlr((const char *) s_sdn_reach, g_msg_states.pctrlr_sfds[asid]);
+    SAFE_FREE(s_sdn_reach);
     json_decref(j_root);
 }
 
 void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
 {
-    uint32_t i;
+    uint32_t i, msg_size, offset;
     char *route = NULL, *oprt_type = NULL;
+    char *msg_to_as = NULL, *msg_to_pctrlr = NULL;
+    char *neighbor_ip;
+    char *next_hop;
+    // SDX virtual next hop related
+    vnh_map_t *vnh_entry;
+    struct in_addr ip_addr;
+
+    // send msg to as
+    // "neighbor "(9) + neighbor_ip + " announce route "(16) + prefix + " next-hop "(10) + next_hop + " as-path [ ( "(13) + asns+' ' + ") ]"(3)
+    // "neighbor "(9) + neighbor_ip + " withdraw route "(16) + prefix + " next-hop "(10) + next_hop
     if (p_bgp_msg->oprt_type == ANNOUNCE) {
         oprt_type = "announce";
+        msg_size = 51;  // 9+16+10+13+3
+        msg_size += 11 * p_bgp_msg->as_path.length;  // allocate 10 bytes string for each asn in as_path, one more whitespace
     } else if (p_bgp_msg->oprt_type == WITHDRAW) {
         oprt_type = "withdraw";
+        msg_size = 35;  // 9+16+10
     } else {
         return;
     }
+    neighbor_ip = g_msg_states.as_ips[p_bgp_msg->asid];
+    msg_size += strlen(neighbor_ip);
+    msg_size += strlen(p_bgp_msg->prefix);
+
+    if (ENABLE_SDX) {
+        HASH_FIND_STR(g_msg_states.vnh_states.vnh_map, p_bgp_msg->prefix, vnh_entry);
+        if (vnh_entry) {
+            next_hop = vnh_entry->vnh;
+        } else {
+            // new vnh assignment
+            g_msg_states.vnh_states.crnt_vnh++;
+            ip_addr.s_addr = g_msg_states.vnh_states.crnt_vnh;
+            next_hop = strdup(inet_ntoa(ip_addr));
+            vnh_entry->prefix = strdup(p_bgp_msg->prefix);
+            vnh_entry->vnh = next_hop;
+            HASH_ADD_KEYPTR(hh, g_msg_states.vnh_states.vnh_map, vnh_entry->prefix, vnh_entry);
+        }
+    } else {
+        next_hop = p_bgp_msg->next_hop;
+    }
+    msg_size += strlen(next_hop);
+    msg_size += 1;  // '\0'
+    msg_to_as = malloc(msg_size);
+
+    // write to msg
+    offset = 0;
+    memcpy(msg_to_as + offset, "neighbor ", 9);
+    offset += 9;
+    memcpy(msg_to_as + offset, neighbor_ip, strlen(neighbor_ip));
+    offset += strlen(neighbor_ip);
+    msg_to_as[offset] = ' ';
+    offset += 1;
+    memcpy(msg_to_as + offset, oprt_type, 8);
+    offset += 8;
+    memcpy(msg_to_as + offset, " route ", 7);
+    offset += 7;
+    memcpy(msg_to_as + offset, p_bgp_msg->prefix, strlen(p_bgp_msg->prefix));
+    offset += strlen(p_bgp_msg->prefix);
+    memcpy(msg_to_as + offset, " next-hop ", 10);
+    offset += 10;
+    memcpy(msg_to_as + offset, next_hop, strlen(next_hop));
+    offset += strlen(next_hop);
+    if (p_bgp_msg->oprt_type == ANNOUNCE) {
+        memcpy(msg_to_as + offset, " as-path [ ( ", 13);
+        offset += 13;
+        for (i = 0, i < p_bgp_msg->as_path.length; i++) {
+            offset += sprintf(msg_to_as + offset, "%d ", p_bgp_msg->as_path.asns[i]);
+        }
+        memcpy(msg_to_as + offset, ") ]", 3);
+        offset += 3;
+    }
+    msg_to_as[offset] = 0;
+    // send to exabgp's client.py
+    send_msg_to_as(msg_to_as);
+    SAFE_FREE(msg_to_as);
+
+    if (!ENABLE_SDX) return;
+    // send msg to pctrlr
     json_t *j_root = json_object();
     json_t *j_msg = json_object();
-    json_t *j_as_path = json_array();
 
     json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
     json_object_set_new(j_msg, "prefix", json_string(p_bgp_msg->prefix));
-    json_object_set_new(j_msg, "next-hop", json_string(p_bgp_msg->next_hop));
-    for (i = 0; i < p_bgp_msg->as_path.length; i++) {
-        json_array_append(j_as_path, json_integer(p_bgp_msg->as_path.asns[i]));
-    }
-    json_object_set(j_msg, "as-path", j_as_path);
-    json_decref(j_as_path);
+    json_object_set_new(j_msg, "vnh", json_string(next_hop));
 
-    json_object_set(j_root, "bgp-best", j_msg);
+    json_object_set(j_root, "bgp-nh", j_msg);
     json_decref(j_msg);
 
-    route = json_dumps(j_root, 0);
-    fprintf(stdout, "prepare to send route:%s to asn:%d pctrlr [%s]\n", route, p_bgp_msg->asn, __FUNCTION__);
-    send_bgp_msg_to_pctrlr((const char *) route, p_bgp_msg->asn);
-    SAFE_FREE(route);
+    msg_to_pctrlr = json_dumps(j_root, 0);
+    fprintf(stdout, "prepare to send msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
+    send_msg_to_pctrlr(msg_to_pctrlr, g_msg_states.pctrlr_sfds[p_bgp_msg->asid]);
+    SAFE_FREE(msg_to_pctrlr);
     json_decref(j_root);
 }
 
-void handle_bgp_msg(char *msg)
+void handle_exabgp_msg(char *msg)
 {
     uint32_t i;
     json_t *j_root, *j_neighbor, *j_asn, *j_peer_id, *j_neighbor_ip, *j_state, *j_message, *j_update, *j_attr, *j_origin, *j_as_path, *j_as_path_elmnt, *j_med, *j_community, *j_atomic_aggregate, *j_oprt_type, *j_ipv4_uni, *j_prefixes, *j_prefix;
@@ -269,12 +337,12 @@ void handle_bgp_msg(char *msg)
     return;
 }
 
-void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id)
+void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
 {
-    json_t *j_root, *j_msg_type, *j_asn, *j_con_type, *j_announcement, *j_add_parts, *j_del_parts, *j_part_elmnt, *j_prefix;
+    json_t *j_root, *j_msg_type, *j_asid, *j_con_type, *j_announcement, *j_reach, *j_reach, *j_reach_elmnt, *j_prefix;
     json_error_t j_err;
     const char *msg_type, *con_type, *announcement, *prefix;
-    uint32_t asn, *p_parts, i;
+    uint32_t asid, *p_reach, i;
 
     // message parsing
     j_root = json_loads(msg, 0, &j_err);
@@ -300,84 +368,61 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id)
     msg_type = json_string_value(j_msg_type);
     fprintf(stdout, "handle_pctrlr_msg, msgType:%s [%s]\n", msg_type, __FUNCTION__);
 
+    // hello message set connection id using asid
     if (!strcmp(msg_type, "hello")) {
-        j_asn = json_object_get(j_root, "id");
-        if (!json_is_integer(j_asn)) {
+        j_asid = json_object_get(j_root, "id");
+        if (!json_is_integer(j_asid)) {
             fprintf(stderr, "fmt error: msg[id] is not integer [%s]\n", __FUNCTION__);
             json_decref(j_root);
             return;
         }
-        asn = json_integer_value(j_asn);
-        assert(asn < g_msg_states.as_size && asn >= 0);
-        assert(*p_src_id == -1);
-        *p_src_id = asn;
-        j_con_type = json_object_get(j_root, "conType");
-        if (!json_is_string(j_con_type)) {
-            fprintf(stderr, "fmt error: msg[conType] is not string [%s]\n", __FUNCTION__);
-            // TODO figure out json_decref
-            json_decref(j_root);
-            return;
-        }
-        con_type = json_string_value(j_con_type);
-        if (!strcmp(con_type, "bgp")) {
-            g_msg_states.pctrlr_sfds[asn] = src_sfd;
-        } else {
-            fprintf(stderr, "fmt error: msg[conType] should be bgp [%s]\n", __FUNCTION__);
-            json_decref(j_root);
-            return;
-        }
-    } else if (!strcmp(msg_type, "route")) {
-        j_announcement = json_object_get(j_root, "announcement");
-        if (!json_is_string(j_announcement)) {
-            fprintf(stderr, "fmt error: msg[announcement] is not string [%s]\n", __FUNCTION__);
-            json_decref(j_announcement);
-            return;
-        }
-        announcement = json_string_value(j_announcement);
-        send_msg_to_as(announcement);
-    } else if (!strcmp(msg_type, "participant")) {
-        j_add_parts = json_object_get(j_root, "add");
-        if (json_is_array(j_add_parts)) {
-            p_parts = malloc(json_array_size(j_add_parts) * sizeof *p_parts);
-            for (i = 0; i < json_array_size(j_add_parts); i++) {
-                j_part_elmnt = json_array_get(j_add_parts, i);
-                if (!json_is_integer(j_part_elmnt)) {
+        asid = json_integer_value(j_asid);
+        assert(asid < g_msg_states.as_size && asid >= 0);
+        assert(*p_con_id == -1);
+        *p_con_id = asid;
+        g_msg_states.pctrlr_sfds[asid] = src_sfd;
+    } else if (!strcmp(msg_type, "sdn_reach")) {
+        j_reach = json_object_get(j_root, "add");
+        if (json_is_array(j_reach)) {
+            p_reach = malloc(json_array_size(j_reach) * sizeof *p_reach);
+            for (i = 0; i < json_array_size(j_reach); i++) {
+                j_reach_elmnt = json_array_get(j_reach, i);
+                if (!json_is_integer(j_reach_elmnt)) {
                     fprintf(stderr, "fmt error: msg[add][%d] is not integer [%s]\n", i, __FUNCTION__);
-                    json_decref(j_add_parts);
-                    SAFE_FREE(p_parts);
+                    json_decref(j_reach);
+                    SAFE_FREE(p_reach);
                 }
-                p_parts[i] = json_integer_value(j_part_elmnt);
+                p_reach[i] = json_integer_value(j_reach_elmnt);
             }
             // process msg
 #ifdef W_SGX
-            process_sdn_reach_w_sgx(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), ANNOUNCE);
+            process_sdn_reach_w_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), ANNOUNCE);
 #else
-            process_sdn_reach_wo_sgx(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), ANNOUNCE);
+            process_sdn_reach_wo_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), ANNOUNCE);
 #endif
-            SAFE_FREE(p_parts);
+            SAFE_FREE(p_reach);
         }
-        j_del_parts = json_object_get(j_root, "del");
-        if (json_is_array(j_del_parts)) {
-            p_parts = malloc(json_array_size(j_del_parts) * sizeof *p_parts);
-            for (i = 0; i < json_array_size(j_del_parts); i++) {
-                j_part_elmnt = json_array_get(j_del_parts, i);
-                if (!json_is_integer(j_part_elmnt)) {
+        j_reach = json_object_get(j_root, "del");
+        if (json_is_array(j_reach)) {
+            p_reach = malloc(json_array_size(j_reach) * sizeof *p_reach);
+            for (i = 0; i < json_array_size(j_reach); i++) {
+                j_reach_elmnt = json_array_get(j_reach, i);
+                if (!json_is_integer(j_reach_elmnt)) {
                     fprintf(stderr, "fmt error: msg[add][%d] is not integer [%s]\n", i, __FUNCTION__);
-                    json_decref(j_del_parts);
-                    SAFE_FREE(p_parts);
+                    json_decref(j_reach);
+                    SAFE_FREE(p_reach);
                 }
-                p_parts[i] = json_integer_value(j_part_elmnt);
+                p_reach[i] = json_integer_value(j_reach_elmnt);
             }
             // process msg
 #ifdef W_SGX
-            process_sdn_reach_w_sgx(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), WITHDRAW);
+            process_sdn_reach_w_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), WITHDRAW);
 #else
-            process_sdn_reach_wo_sgx(*p_src_id, (const uint32_t*) p_parts, json_array_size(j_add_parts), WITHDRAW);
+            process_sdn_reach_wo_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), WITHDRAW);
 #endif
-            SAFE_FREE(p_parts);
+            SAFE_FREE(p_reach);
         }
-    } else if (!strcmp(msg_type, "set")) {
-        j_prefix = json_object_get(j_root, "prefix");
+        j_prefix = json_object_get(j_root, "get");
         if (!json_is_string(j_prefix)) {
             fprintf(stderr, "fmt error: msg[prefix] is not string [%s]\n", __FUNCTION__);
             json_decref(j_root);
@@ -386,9 +431,9 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id)
         prefix = json_string_value(j_prefix);
         // process msg
 #ifdef W_SGX
-        get_sdn_reach_by_prefix_w_sgx(*p_src_id, prefix);
+        get_sdn_reach_by_prefix_w_sgx(*p_con_id, prefix);
 #else
-        get_sdn_reach_by_prefix_wo_sgx(*p_src_id, prefix);
+        get_sdn_reach_by_prefix_wo_sgx(*p_con_id, prefix);
 #endif
     }
 

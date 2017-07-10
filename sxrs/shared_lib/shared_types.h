@@ -5,7 +5,6 @@
 #include "bgp.h"
 #include "uthash.h"
 
-#define ENABLE_SDX 1
 
 // next hop policy type
 //

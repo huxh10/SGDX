@@ -12,7 +12,7 @@ enclave {
 
     untrusted {
         uint32_t ocall_send_bgp_ret([in, size = msg_size] void *msg, size_t msg_size);
-        uint32_t ocall_send_sdn_ret([in, size = resp_set_size] uint32_t *p_resp_set, size_t resp_set_size, uint32_t asid, [in, string] const char *prefix);
+        uint32_t ocall_send_sdn_ret([in, size = reach_size] uint32_t *p_sdn_reach, size_t reach_size, uint32_t asid, [in, string] const char *prefix);
         void ocall_print_string([in, string] const char *str);
     };
 };

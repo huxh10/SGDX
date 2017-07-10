@@ -49,11 +49,8 @@ void process_bgp_route_wo_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg
     bgp_route_output_dsrlz_msg_t *p_bgp_route_output_dsrlz_msgs = NULL;
     sdn_reach_output_dsrlz_msg_t *p_sdn_reach_output_dsrlz_msgs = NULL;
     size_t i, bgp_output_msg_num = 0, sdn_output_msg_num = 0, ret_msg_size = 0;
-    asn_map_t *asmap_entry;
 
-    resp_dec_msg_t *p_resp_dec_msgs = NULL;
-    resp_dec_set_msg_t *p_resp_dec_set_msgs = NULL;
-    size_t resp_msg_num = 0, resp_set_msg_num = 0;
+    asn_map_t *asmap_entry;
     HASH_FIND_INT(gp_rt_states->as_n_2_id, p_bgp_dsrlz_msg->asn, asmap_entry);
     p_bgp_dsrlz_msg->asid = asmap_entry->as_id;
 
@@ -67,7 +64,7 @@ void process_bgp_route_wo_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg
     }
     SAFE_FREE(p_bgp_route_output_dsrlz_msgs);
     for (i = 0; i < sdn_output_msg_num; i++) {
-        handle_sdn_reach(p_resp_dec_set_msgs[i].asn, p_resp_dec_set_msgs[i].prefix, p_resp_dec_set_msgs[i].set, p_resp_dec_set_msgs[i].set_size);
+        handle_sdn_reach(p_sdn_reach_output_dsrlz_msgs[i].asid, p_sdn_reach_output_dsrlz_msgs[i].prefix, p_sdn_reach_output_dsrlz_msgs[i].reachability, p_sdn_reach_output_dsrlz_msgs[i].reach_size);
         free_sdn_reach_output_dsrlz_msg(&p_sdn_reach_output_dsrlz_msgs[i]);
     }
     SAFE_FREE(p_sdn_reach_output_dsrlz_msgs);
@@ -75,9 +72,9 @@ void process_bgp_route_wo_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg
     return;
 }
 
-void process_sdn_reach_wo_sgx(uint32_t asid, const uint32_t *p_ases, uint32_t as_size, uint8_t oprt_type)
+void process_sdn_reach_wo_sgx(uint32_t asid, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type)
 {
-    process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_ases, as_size, oprt_type);
+    process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_reach, reach_size, oprt_type);
 }
 
 void get_sdn_reach_by_prefix_wo_sgx(uint32_t asid, const char *prefix)

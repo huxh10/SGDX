@@ -9,8 +9,8 @@ void handle_sdn_reach(uint32_t asn, const char *prefix, const uint32_t *p_sdn_re
 
 void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
 
-void handle_bgp_msg(char *msg);
+void handle_exabgp_msg(char *msg);
 
-void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id);
+void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id);
 
 #endif

@@ -43,18 +43,13 @@ static inline void send_msg(const char *msg, int msg_size, int sfd)
     }
 }
 
-void send_bgp_msg_to_pctrlr(const char *msg, uint32_t asn)
+void send_msg_to_pctrlr(const char *msg, int sfd)
 {
     uint32_t msg_len = strlen(msg) + 2;
     char *msg_with_header = malloc(msg_len);
     memcpy(msg_with_header, &msg_len, 2);
     memcpy(msg_with_header + 2, msg, msg_len - 2);
-    send_msg(msg_with_header, msg_len, g_pctrlr_bgp_sfds[asn]);
-}
-
-void send_ss_msg_to_pctrlr(const char *msg, uint32_t asn)
-{
-    send_msg(msg, strlen(msg), g_pctrlr_ss_sfds[asn]);
+    send_msg(msg_with_header, msg_len, sfd);
 }
 
 void send_msg_to_as(const char *msg)
@@ -119,8 +114,8 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         memcpy(s_msg, u8_msg + 2, msg_size -2);
         s_msg[msg_size - 2] = '\0';
         if (h->fd == g_bgp_clnt_sfd) {
-            printf("handle_bgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
-            handle_bgp_msg(s_msg);
+            printf("handle_exabgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
+            handle_exabgp_msg(s_msg);
         } else {
             printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
             handle_pctrlr_msg(s_msg, h->fd, &closure->id);
