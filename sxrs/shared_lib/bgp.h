@@ -44,7 +44,6 @@ struct _route_node {
         uint8_t is_selected;
         uint8_t oprt_type;
     } flag;
-    uint32_t advertiser_asn;
     uint32_t advertiser_asid;
     route_t *route;
     route_node_t *prev;
@@ -83,7 +82,6 @@ struct _rib_map {
 typedef struct {
     uint32_t msg_size;
     uint32_t asn;
-    uint32_t asid;
     uint8_t oprt_type;
     uint8_t route[];
 } bgp_route_input_srlz_msg_t;
@@ -126,8 +124,8 @@ int write_route_to_existed_stream(uint8_t *route, route_t *input);
 int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t *p_bgp_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_msgs, size_t *p_sdn_msg_num, uint8_t *p_msg);
 int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bgp_msgs, size_t bgp_msg_num, sdn_reach_output_dsrlz_msg_t *p_sdn_msgs, size_t sdn_msg_num);
 route_node_t* rl_get_selected_route_node(route_list_t *p_rl);
-int rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy);
-int rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *selection_policy);
+int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy);
+int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy);
 void set_free(set_t **pp_set);
 void set_write_elmnts_to_array(uint32_t *p, set_t *p_set);
 int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_reach);

@@ -4,15 +4,15 @@ enclave {
         public uint32_t ecall_load_as_policies(uint32_t asid, [in, size = import_msg_size] void *import_msg, size_t import_msg_size, [in, size = export_msg_size] void *export_msg, size_t export_msg_size, [in, size = selection_msg_size] void *selection_msg, size_t selection_msg_size);
         public uint32_t ecall_load_rib_file_line(uint32_t asid, [in, string] char *line);
         public uint32_t ecall_process_non_transit_route([in, size = msg_size] void *msg, size_t msg_size);
-        public uint32_t ecall_update_active_parts(uint32_t asn, [in, size = part_num] const uint32_t *p_parts, size_t part_num, uint8_t oprt_type);
-        public uint32_t ecall_get_prefix_set(uint32_t asn, [in, string] const char *prefix);
+        public uint32_t ecall_process_sdn_reach(uint32_t asid, [in, size = as_size] const uint32_t *p_ases, size_t as_size, uint8_t oprt_type);
+        public uint32_t ecall_get_sdn_reach_by_prefix(uint32_t asid, [in, string] const char *prefix);
         public uint32_t ecall_get_rs_ribs_num();
         public uint32_t ecall_print_rs_ribs();
     };
 
     untrusted {
         uint32_t ocall_send_bgp_ret([in, size = msg_size] void *msg, size_t msg_size);
-        uint32_t ocall_send_sdn_ret([in, size = resp_set_size] uint32_t *p_resp_set, size_t resp_set_size, uint32_t asn, [in, string] const char *prefix);
+        uint32_t ocall_send_sdn_ret([in, size = resp_set_size] uint32_t *p_resp_set, size_t resp_set_size, uint32_t asid, [in, string] const char *prefix);
         void ocall_print_string([in, string] const char *str);
     };
 };

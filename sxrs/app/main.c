@@ -17,6 +17,7 @@
 static struct {
     net_conf_t net;
     char *asn_2_id_file;
+    char *as_ips_file;
     char *filter_file;
     char *rank_file;
     char *rib_file_dir;
@@ -35,6 +36,7 @@ static void print_help(void)
         "   -t, --pctrlr_serv_port PORT specify the participant controller server port, default is 6666\n"
         "   -v, --verbose num           0(default): print selected time, 4: print bgp_msgs and the ribs, 5: print as policies\n"
         "   -a, --asn_2_id_file FILE    specify an asn to id configuration file, e.g. ../examples/test-rs/config/asn_2_id.cfg\n"
+        "   -i, --as_ips_file   FILE    specify as connected port ips file, e.g. ../examples/test-rs/config/as_ips.cfg"
         "   -f, --filter_file   FILE    specify filtering policy file, e.g. ../examples/test-rs/bgp_policies/peers_uni_62_020.cfg\n"
         "   -r, --rank_file     FILE    specify ranking policy file, e.g. ../examples/test-rs/bgp_policies/prefer_rand_62.cfg\n"
         "   -d, --rib_file_dir  DIR     specify rib directory name to load ribs from file, e.g. ../examples/test-rs/ribs/\n"
@@ -56,6 +58,7 @@ static void parse_args(int argc, char *argv[])
         {"pctrlr_serv_port", required_argument, NULL, 't'},
         {"verbose", required_argument, NULL, 'v'},
         {"asn_2_id_file", required_argument, NULL, 'a'},
+        {"as_ips_file", required_argument, NULL, "i"},
         {"filter_file", required_argument, NULL, 'f'},
         {"rank_file", required_argument, NULL, "r"},
         {NULL, 0, NULL, 0}
@@ -92,6 +95,15 @@ static void parse_args(int argc, char *argv[])
                     exit(-1);
                 } else {
                     g_cfg.asn_2_id_file = optarg;
+                    break;
+                }
+
+            case 'i':
+                if (access(optarg, F_OK) == -1) {
+                    perror(optarg);
+                    exit(-1);
+                } else {
+                    g_cfg.as_ips_file = optarg;
                     break;
                 }
 
@@ -132,6 +144,9 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     int fscanf_ret;
     FILE *fp;
     uint32_t tmp_size, tmp_id;
+    char *tmp_line, *delimiter = " ", *token, *p_save;
+    size_t len;
+    ssize_t read;
     assert(p_as_cfg != NULL);
 
     // FILE#1: asn_2_id file
@@ -156,6 +171,43 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     fscanf_ret = fscanf(fp, "\n");
     assert(fscanf_ret == 0);
+    fclose(fp);
+
+    // FILE#2: as_ips_file
+    if ((fp = fopen(g_cfg.as_ips_file, "r")) == NULL) {
+        fprintf(stderr, "can not open file: %s [%s]\n", g_cfg.as_ips_file, __FUNCTION__);
+        exit(-1);
+    }
+    // the first line is about the as size
+    if (fscanf(fp, "%u\n", &tmp_size) != 1) {
+        fprintf(stderr, "illegal as number format [%s]\n", __function__);
+        exit(-1);
+    }
+    assert(tmp_size == p_as_cfg->as_size);
+    p_as_cfg->as_ips = malloc(p_as_cfg->as_size * sizeof *p_as_cfg->as_ips);
+    if (!p_as_cfg->as_ips) {
+        fprintf(stderr, "malloc error for p_as_cfg->as_ips [%s]\n", __FUNCTION__);
+        exit(-1);
+    }
+    // the next lines about each AS ips
+    for (i = 0; i < p_as_cfg->as_size; i++) {
+        read = getline(&tmp_line, &len, fp);
+        assert(read != 0);
+        line[read - 1] = 0;             // strip '\n'
+        token = strtok_r(0, delimiter, &p_save);
+        tmp_size = atoi(token);
+        p_as_cfg->as_ips[i].ip_num = tmp_size;
+        p_as_cfg->as_ips[i].ips = malloc(tmp_size * sizeof *p_as_cfg->as_ips[i].ips);
+        if (!p_as_cfg->as_ips[i].ips) {
+            fprintf(stderr, "malloc error for p_as_cfg->as_ips[%d].ips [%s]\n", i, __FUNCTION__);
+            exit(-1);
+        }
+        for (j = 0; j < tmp_size; j++) {
+            token = strtok_r(0, delimiter, &p_save);
+            p_as_cfg->as_ips[i].ips[j] = strdup(token);
+        }
+    }
+    SAFE_FREE(tmp_line);
     fclose(fp);
 
     // alloc memory for as_policies
@@ -194,7 +246,7 @@ static void load_cfg(as_cfg_t *p_as_cfg)
         }
     }
 
-    // FILE#2: filter_file
+    // FILE#3: filter_file
     if ((fp = fopen(g_cfg.filter_file, "r")) == NULL) {
         fprintf(stderr, "can not open file: %s [%s]\n", g_cfg.filter_file, __FUNCTION__);
         exit(-1);
@@ -221,7 +273,7 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     fclose(fp);
 
-    // FILE#3: rank_file
+    // FILE#4: rank_file
     if ((fp = fopen(g_cfg.rank_file, "r")) == NULL) {
         fprintf(stderr, "can not open file: %s [%s]\n", g_cfg.rank_file, __FUNCTION__);
         exit(-1);
@@ -267,14 +319,14 @@ static void load_cfg(as_cfg_t *p_as_cfg)
         }
     }
 
-    // FILE#4: rib files, contents processed inside enclave
+    // FILE#5: rib files, contents processed inside enclave
     if (g_cfg.rib_file_dir) p_as_cfg->rib_file_dir = strdup(g_cfg.rib_file_dir);
 }
 
 int main(int argc, char *argv[])
 {
     int efd;
-    as_cfg_t as_cfg = {0, NULL, NULL, NULL};
+    as_cfg_t as_cfg = {0, NULL, NULL, NULL, NULL};
 
     parse_args(argc, argv);
     if (!g_cfg.asn_2_id_file || !g_cfg.filter_file || !g_cfg.rank_file) {
@@ -295,8 +347,9 @@ int main(int argc, char *argv[])
     printf("wosgx\n");
     init_wo_sgx(&as_cfg, g_cfg.verbose);
 #endif
+    msg_handler_init(&as_cfg);
     efd = epoll_init();
-    server_init(efd, as_cfg.as_size, &g_cfg.net);
+    server_init(efd, &g_cfg.net);
 
     // run
     epoll_run(efd);

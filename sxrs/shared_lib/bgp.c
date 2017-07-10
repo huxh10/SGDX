@@ -501,7 +501,7 @@ route_node_t* rl_get_selected_route_node(route_list_t *p_rl)
     return NULL;
 }
 
-int rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
+int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
 {
     if (!pp_rl) return -1;
     if (!*pp_rl) {
@@ -514,7 +514,6 @@ int rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, rout
     // create new route node
     route_node_t *p_rn = malloc(sizeof *p_rn);
     p_rn->flag.is_selected = 0;
-    p_rn->advertiser_asn = src_asn;
     p_rn->advertiser_asid = src_asid;
     p_rn->prev = NULL;
     p_rn->next = NULL;
@@ -548,7 +547,7 @@ int rl_add_route(route_list_t **pp_rl, uint32_t src_asn, uint32_t src_asid, rout
     return 0;
 }
 
-int rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uint8_t *selection_policy)
+int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
 {
     if (!pp_rl || !*pp_rl) return -1;
     if (!(*pp_rl)->head) {
@@ -560,7 +559,7 @@ int rl_del_route(route_list_t **pp_rl, uint32_t src_asn, route_t *src_route, uin
     // traverse and delete
     route_node_t *tmp_rn = (*pp_rl)->head;
     while (tmp_rn) {
-        if (tmp_rn->advertiser_asn == src_asn && !strcmp(tmp_rn->route->neighbor, src_route->neighbor)) {
+        if (tmp_rn->advertiser_asid == src_asid && !strcmp(tmp_rn->route->neighbor, src_route->neighbor)) {
             (*pp_rl)->route_num--;
             if (tmp_rn->prev && tmp_rn->next) {
                 tmp_rn->prev->next = tmp_rn->next;
@@ -725,7 +724,7 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
     // previous set is empty, directly add asid
     if (!(*pp_set)->size) {
         while (p_tmp_rn) {
-            if (p_sdn_reach[p_tmp_rn->advertiser_asn]) {
+            if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
                 set_add(*pp_set, p_tmp_rn->advertiser_asid);
             }
             p_tmp_rn = p_tmp_rn->next;

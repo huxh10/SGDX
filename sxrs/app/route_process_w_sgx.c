@@ -84,42 +84,42 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
     SAFE_FREE(line);
 }
 
-void process_bgp_route_w_sgx(const bgp_dec_msg_t *p_bgp_dec_msg)
+void process_bgp_route_w_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
 {
     uint32_t call_status, ret_status;
-    int route_size = get_route_size(p_bgp_dec_msg->p_route);
+    int route_size = get_route_size(p_bgp_dsrlz_msg->p_route);
     int msg_size = sizeof(bgp_enc_msg_t) + route_size;
-    bgp_enc_msg_t *p_bgp_enc_msg = malloc(msg_size);
-    p_bgp_enc_msg->msg_size = msg_size;
-    p_bgp_enc_msg->asn = p_bgp_dec_msg->asn;
-    p_bgp_enc_msg->oprt_type = p_bgp_dec_msg->oprt_type;
-    write_route_to_existed_stream(p_bgp_enc_msg->route, p_bgp_dec_msg->p_route);
+    bgp_route_input_srlz_msg_t *p_bgp_srlz_msg = malloc(msg_size);
+    p_bgp_srlz_msg->msg_size = msg_size;
+    p_bgp_srlz_msg->asn = p_bgp_dsrlz_msg->asn;
+    p_bgp_srlz_msg->oprt_type = p_bgp_dsrlz_msg->oprt_type;
+    write_route_to_existed_stream(p_bgp_srlz_msg->route, p_bgp_dsrlz_msg->p_route);
 
-    call_status = enclave_ecall_compute_route_by_msg_queue(g_enclave_id, &ret_status, (void *) p_bgp_enc_msg, msg_size);
+    call_status = enclave_ecall_process_non_transit_route(g_enclave_id, &ret_status, (void *) p_bgp_srlz_msg, msg_size);
     if (ret_status != SUCCESS) {
-        fprintf(stderr, "enclave_ecall_compute_route_by_msg_queue, errno: %d [%s]\n", ret_status, __FUNCTION__);
+        fprintf(stderr, "enclave_ecall_process_non_transit_route, errno: %d [%s]\n", ret_status, __FUNCTION__);
     }
-    SAFE_FREE(p_bgp_enc_msg);
+    SAFE_FREE(p_bgp_srlz_msg);
     if (g_verbose == 4) enclave_ecall_print_rs_ribs(g_enclave_id, &ret_status);
 }
 
-void process_w_sgx_update_active_parts(uint32_t asn, const uint32_t *p_parts, uint32_t part_num, uint8_t oprt_type)
+void process_sdn_reach_w_sgx(uint32_t asid, const uint32_t *p_ases, uint32_t as_size, uint8_t oprt_type)
 {
     uint32_t call_status, ret_status;
 
-    call_status = enclave_ecall_update_active_parts(g_enclave_id, &ret_status, asn, p_parts, (size_t) part_num, oprt_type);
+    call_status = enclave_ecall_process_sdn_reach(g_enclave_id, &ret_status, asid, p_ases, (size_t) as_size, oprt_type);
     if (ret_status != SUCCESS) {
-        fprintf(stderr, "enclave_ecall_compute_route_by_msg_queue, errno: %d [%s]\n", ret_status, __FUNCTION__);
+        fprintf(stderr, "enclave_ecall_process_sdn_reach, errno: %d [%s]\n", ret_status, __FUNCTION__);
     }
 }
 
-void process_w_sgx_get_prefix_set(uint32_t asn, const char *prefix)
+void get_sdn_reach_by_prefix_w_sgx(uint32_t asid, const char *prefix)
 {
     uint32_t call_status, ret_status;
 
-    call_status = enclave_ecall_get_prefix_set(g_enclave_id, &ret_status, asn, prefix);
+    call_status = enclave_ecall_get_sdn_reach_by_prefix(g_enclave_id, &ret_status, asid, prefix);
     if (ret_status != SUCCESS) {
-        fprintf(stderr, "enclave_ecall_compute_route_by_msg_queue, errno: %d [%s]\n", ret_status, __FUNCTION__);
+        fprintf(stderr, "enclave_ecall_get_sdn_reach_by_prefix, errno: %d [%s]\n", ret_status, __FUNCTION__);
     }
 }
 
@@ -147,7 +147,7 @@ uint32_t ocall_send_bgp_ret(void *msg, size_t msg_size)
     }
     SAFE_FREE(p_bgp_route_output_dsrlz_msgs);
     for (i = 0; i < sdn_msg_num; i++) {
-        handle_sdn_reach(p_resp_dec_set_msgs[i].asn, p_resp_dec_set_msgs[i].prefix, p_resp_dec_set_msgs[i].set, p_resp_dec_set_msgs[i].set_size);
+        handle_sdn_reach(p_sdn_reach_output_dsrlz_msgs[i].asid, p_sdn_reach_output_dsrlz_msgs[i].prefix, p_sdn_reach_output_dsrlz_msgs[i].reachability, p_sdn_reach_output_dsrlz_msgs[i].reach_size);
         free_sdn_reach_output_dsrlz_msg(&p_sdn_reach_output_dsrlz_msgs[i]);
     }
     SAFE_FREE(p_sdn_reach_output_dsrlz_msgs);
@@ -155,7 +155,7 @@ uint32_t ocall_send_bgp_ret(void *msg, size_t msg_size)
     return SUCCESS;
 }
 
-uint32_t ocall_send_sdn_ret(uint32_t *p_resp_set, size_t resp_set_size, uint32_t asn, const char *prefix)
+uint32_t ocall_send_sdn_ret(uint32_t *p_sdn_reach, size_t reach_size, uint32_t asid, const char *prefix)
 {
-    handle_sdn_reach(asn, prefix, p_resp_set, resp_set_size);
+    handle_sdn_reach(asid, prefix, p_sdn_reach, reach_size);
 }

@@ -3,12 +3,14 @@
 
 #include "bgp.h"
 
-void handle_sdn_reach(uint32_t asn, const char *prefix, const uint32_t *p_resp_set, uint32_t resp_set_size);
+void msg_handler_init(as_cfg_t *p_as_cfg);
+
+void handle_sdn_reach(uint32_t asn, const char *prefix, const uint32_t *p_sdn_reach, uint32_t reach_size);
 
 void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
 
 void handle_bgp_msg(char *msg);
 
-void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id, int *pctrlr_bgp_sfds, int *pctrlr_ss_sfds, int as_num);
+void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_src_id);
 
 #endif

@@ -8,71 +8,84 @@
 #include "rs.h"
 #include "route_process_wo_sgx.h"
 
-uint32_t g_num = 0;
-as_policy_t *g_p_policies = NULL;
-rib_map_t **g_pp_ribs = NULL;
+rt_state_t *gp_rt_states = NULL;
 int g_verbose = 0;
 
-void route_process_wo_sgx_init(uint32_t as_num, as_policy_t **pp_as_policies, int verbose)
+void init_wo_sgx(as_cfg_t *p_as_cfg, int verbose)
 {
     uint32_t i = 0;
-
     g_verbose = verbose;
-    g_num = as_num;
-    g_p_policies = malloc(as_num * sizeof *g_p_policies);
-    g_pp_ribs = malloc(as_num * sizeof *g_pp_ribs);
-    for (i = 0; i < as_num; i++) {
-        g_pp_ribs[i] = NULL;
-        g_p_policies[i].asn = i;
-        g_p_policies[i].total_num = as_num;
-        g_p_policies[i].active_parts = malloc(as_num * sizeof *g_p_policies[i].active_parts);
-        memset(g_p_policies[i].active_parts, 0, as_num * sizeof(*g_p_policies[i].active_parts));
-        g_p_policies[i].import_policy = malloc(as_num * sizeof *g_p_policies[i].import_policy);
-        memcpy(g_p_policies[i].import_policy, (*pp_as_policies)[i].import_policy, as_num * sizeof *(*pp_as_policies)[i].import_policy);
-        g_p_policies[i].export_policy = malloc(as_num * as_num * sizeof *g_p_policies[i].export_policy);
-        memcpy(g_p_policies[i].export_policy, (*pp_as_policies)[i].export_policy, as_num * as_num * sizeof *(*pp_as_policies)[i].export_policy);
-        SAFE_FREE((*pp_as_policies)[i].import_policy);
-        SAFE_FREE((*pp_as_policies)[i].export_policy);
+
+    if (load_asmap(&gp_rt_states, p_as_cfg->as_size, p_as_cfg->as_id_2_n) == MALLOC_ERROR)  exit(-1);
+    SAFE_FREE(p_as_cfg->as_id_2_n);
+
+    gp_rt_states->as_policies = p_as_cfg->as_policies;
+
+    if (!p_as_cfg->rib_file_dir) return;
+    int dir_len = strlen(p_as_cfg.rib_file_dir);
+    char rib_file[dir_len + 9] = {0};   // 9 is for rib name (8), such as rib_1000, and '\0' (1)
+    memcpy(rib_file, p_as_cfg.rib_file_dir, dir_len);
+    char *line = NULL;                  // buffer address
+    size_t len = 0;                     // allocated buffer size
+    route_t tmp_route;
+    uint32_t tmp_asn, tmp_asid;
+    for (i = 0; i < p_as_cfg->as_size; i++) {
+        sprinf(rib_file + dir_len, "rib_%d", i);
+        if ((fp = fopen(rib_file, "r")) == NULL) {
+            fprintf(stderr, "can not open file: %s [%s]\n", rib_file, __FUNCTION__);
+            exit(-1);
+        }
+        while (getline(&line, &len, fp) != -1) {
+            process_rib_file_line(i, line, &tmp_asn, &tmp_asid, &tmp_route, gp_rt_states);
+        }
+        fclose(fp);
     }
-    SAFE_FREE(*pp_as_policies);
+    SAFE_FREE(line);
 }
 
-void route_process_wo_sgx_run(const bgp_dec_msg_t *p_bgp_dec_msg)
+void process_bgp_route_wo_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
 {
     uint32_t i = 0;
+    bgp_route_output_dsrlz_msg_t *p_bgp_route_output_dsrlz_msgs = NULL;
+    sdn_reach_output_dsrlz_msg_t *p_sdn_reach_output_dsrlz_msgs = NULL;
+    size_t i, bgp_output_msg_num = 0, sdn_output_msg_num = 0, ret_msg_size = 0;
+    asn_map_t *asmap_entry;
+
     resp_dec_msg_t *p_resp_dec_msgs = NULL;
     resp_dec_set_msg_t *p_resp_dec_set_msgs = NULL;
     size_t resp_msg_num = 0, resp_set_msg_num = 0;
+    HASH_FIND_INT(gp_rt_states->as_n_2_id, p_bgp_dsrlz_msg->asn, asmap_entry);
+    p_bgp_dsrlz_msg->asid = asmap_entry->as_id;
 
-    compute_route_by_msg_queue(p_bgp_dec_msg, g_p_policies, g_pp_ribs, g_num, &p_resp_dec_msgs, &resp_msg_num, &p_resp_dec_set_msgs, &resp_set_msg_num);
+    if (process_non_transit_route(p_bgp_dsrlz_msg, gp_rt_states, &p_bgp_route_output_dsrlz_msgs, &bgp_output_msg_num, &p_sdn_reach_output_dsrlz_msgs, &sdn_output_msg_num) != SUCCESS) exit(-1);
 
-    if (g_verbose == 4) print_rs_ribs(g_pp_ribs, g_num);
+    if (g_verbose == 4) print_rs_ribs(gp_rt_states->ribs, gp_rt_states->as_size);
 
-    for (i = 0; i < resp_msg_num; i++) {
-        handle_resp_route(&p_resp_dec_msgs[i]);
-        free_resp_dec_msg(&p_resp_dec_msgs[i]);
+    for (i = 0; i < bgp_output_msg_num; i++) {
+        handle_bgp_route(&p_bgp_route_output_dsrlz_msgs[i]);
+        free_bgp_route_output_dsrlz_msg(&p_bgp_route_output_dsrlz_msgs[i]);
     }
-    SAFE_FREE(p_resp_dec_msgs);
-    for (i = 0; i < resp_set_msg_num; i++) {
-        handle_resp_set(p_resp_dec_set_msgs[i].asn, p_resp_dec_set_msgs[i].prefix, p_resp_dec_set_msgs[i].set, p_resp_dec_set_msgs[i].set_size);
-        free_resp_dec_set_msg(&p_resp_dec_set_msgs[i]);
+    SAFE_FREE(p_bgp_route_output_dsrlz_msgs);
+    for (i = 0; i < sdn_output_msg_num; i++) {
+        handle_sdn_reach(p_resp_dec_set_msgs[i].asn, p_resp_dec_set_msgs[i].prefix, p_resp_dec_set_msgs[i].set, p_resp_dec_set_msgs[i].set_size);
+        free_sdn_reach_output_dsrlz_msg(&p_sdn_reach_output_dsrlz_msgs[i]);
     }
-    SAFE_FREE(p_resp_dec_set_msgs);
+    SAFE_FREE(p_sdn_reach_output_dsrlz_msgs);
 
     return;
 }
 
-void process_wo_sgx_update_active_parts(uint32_t asn, const uint32_t *p_parts, uint32_t part_num, uint8_t oprt_type)
+void process_sdn_reach_wo_sgx(uint32_t asid, const uint32_t *p_ases, uint32_t as_size, uint8_t oprt_type)
 {
-    update_active_parts(g_p_policies[asn].active_parts, p_parts, part_num, oprt_type);
+    process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_ases, as_size, oprt_type);
 }
 
-void process_wo_sgx_get_prefix_set(uint32_t asn, const char *prefix)
+void get_sdn_reach_by_prefix_wo_sgx(uint32_t asid, const char *prefix)
 {
-    uint32_t *p_resp_set = NULL;
-    uint32_t resp_set_size = 0;
+    uint32_t *p_sdn_reach = NULL;
+    uint32_t reach_size = 0;
 
-    get_prefix_set(prefix, g_p_policies[asn].active_parts, g_num, g_pp_ribs[asn], &p_resp_set, &resp_set_size);
-    handle_resp_set(asn, prefix, p_resp_set, resp_set_size);
-    SAFE_FREE(p_resp_set);
+    get_sdn_reach_by_prefix(prefix, gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, gp_rt_states->as_size, gp_rt_states->ribs[asid], &p_sdn_reach, &reach_size);
+    handle_sdn_reach(asid, prefix, p_sdn_reach, reach_size);
+    SAFE_FREE(p_sdn_reach);
 }

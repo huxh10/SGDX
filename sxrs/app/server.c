@@ -21,8 +21,6 @@ typedef struct {
 } server_read_closure_t;
 
 int g_bgp_serv_sfd, g_bgp_clnt_sfd;
-int *g_pctrlr_bgp_sfds, *g_pctrlr_ss_sfds;
-int g_as_num;
 
 static inline void send_msg(const char *msg, int msg_size, int sfd)
 {
@@ -125,7 +123,7 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
             handle_bgp_msg(s_msg);
         } else {
             printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
-            handle_pctrlr_msg(s_msg, h->fd, &closure->id, g_pctrlr_bgp_sfds, g_pctrlr_ss_sfds, g_as_num);
+            handle_pctrlr_msg(s_msg, h->fd, &closure->id);
         }
         SAFE_FREE(s_msg);
         // -----------------------------------------
@@ -181,7 +179,7 @@ static void server_handle_listen_event(epoll_event_handler_t *h, uint32_t events
                 return;
             }
         } else {
-            // FIXME First session will show 0.0.0.0:16384
+            // FIXME First session will be 0.0.0.0:16384?
             fprintf(stdout, "accept new connection sfd:%d from %s:%d [%s]\n", sfd, inet_ntoa(addr.sin_addr), (int) ntohs(addr.sin_port), __FUNCTION__);
             server_register_read_event_handler(h->efd, sfd);
             if (h->fd == g_bgp_serv_sfd) {
@@ -215,17 +213,8 @@ static int server_register_listen_event_handler(int efd, char *addr, int port)
     return sfd;
 }
 
-void server_init(int efd, int as_num, net_conf_t *p_ncf)
+void server_init(int efd, net_conf_t *p_ncf)
 {
-    int i;
-    g_pctrlr_bgp_sfds = malloc(as_num * sizeof *g_pctrlr_bgp_sfds);
-    g_pctrlr_ss_sfds = malloc(as_num * sizeof *g_pctrlr_ss_sfds);
-    for (i = 0; i < as_num; i++) {
-        g_pctrlr_bgp_sfds[i] = -1;
-        g_pctrlr_ss_sfds[i] = -1;
-    }
-    g_as_num = as_num;
-
     g_bgp_serv_sfd = server_register_listen_event_handler(efd, p_ncf->bgp_serv_addr, p_ncf->bgp_serv_port);
     server_register_listen_event_handler(efd, p_ncf->pctrlr_serv_addr, p_ncf->pctrlr_serv_port);
 }

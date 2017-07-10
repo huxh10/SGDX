@@ -6,26 +6,81 @@
 #include "bgp.h"
 #include "rs.h"
 
-uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asn, uint32_t *tmp_asid, route_t *p_route, rt_state_t *p_rt_states)
+uint32_t load_asmap(rt_state_t **pp_rt_states, uint32_t as_size, uint32_t *as_id_2_n)
+{
+    uint32_t i;
+    asn_map_t *asmap_entry;
+
+    if (!pp_rt_states) return INPUT_NULL_POINTER;
+
+    if (!*pp_rt_states) {
+        *pp_rt_states = malloc(sizeof **pp_rt_states);
+        if (!*pp_rt_states) {
+            printf("malloc error for *pp_rt_states [%s]\n", __FUNCTION__);
+            return MALLOC_ERROR;
+        }
+    }
+
+    // copy as_id_2_n
+    (*pp_rt_states)->as_size = as_size;
+    (*pp_rt_states)->as_id_2_n = malloc(as_size * sizeof *(*pp_rt_states)->as_id_2_n);
+    if (!(*pp_rt_states)->as_id_2_n) {
+        printf("malloc error for (*pp_rt_states)->as_id_2_n [%s]\n", __FUNCTION__);
+        return MALLOC_ERROR;
+    }
+    memcpy((*pp_rt_states)->as_id_2_n, as_id_2_n, as_size * sizeof *as_id_2_n);
+
+    // construct asn_2_id map
+    (*pp_rt_states)->as_n_2_id = NULL;
+    for (i = 0; i < as_size; i++) {
+        asmap_entry = malloc(sizeof *asn_map_t);
+        if (!asmap_entry) {
+            printf("malloc error for asmap_entry, id:%d [%s]\n", i, __FUNCTION__);
+            return MALLOC_ERROR;
+        }
+        asmap_entry->as_n = (*pp_rt_states)->as_id_2_n[i];
+        asmap_entry->as_id = i;
+        HASH_ADD_INT((*pp_rt_states)->as_n_2_id, asmap_entry->as_n, asmap_entry);
+    }
+
+    // allocate memory for the rest states
+    (*pp_rt_states)->as_policies = malloc(as_size * sizeof *(*pp_rt_states)->as_policies);
+    (*pp_rt_states)->sdn_orgnl_reach = malloc(as_size * as_size * sizeof *(*pp_rt_states)->sdn_orgnl_reach);
+    (*pp_rt_states)->ribs = malloc(as_size * sizeof *(*pp_rt_states)->ribs);
+    if (!(*pp_rt_states)->as_policies || !(*pp_rt_states)->sdn_orgnl_reach || !(*pp_rt_states)->ribs) {
+        printf("malloc error for (*pp_rt_states) rest states [%s]\n", __FUNCTION__);
+        return MALLOC_ERROR;
+    }
+    for (i = 0; i < as_size * as_size; i++) {
+        // set default value false
+        (*pp_rt_states)->sdn_orgnl_reach[i] = 0;
+    }
+    return SUCCESS;
+}
+
+uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asid, route_t *p_route, rt_state_t *p_rt_states)
 {
     size_t read = strlen(line);
     char *delimiter = " ", *token, *p_save, *s_tmp;
+    uint32_t asn;
 
     if (!strncmp("PREFIX: ", line, 8)) {
         reset_route(p_route);
         p_route->prefix = strndup(line+8, read-9);  // "PREFIX: " is first 8 bytes, "\n" is the last byte
     } else if (!strncmp("FROM: ", line, 6)) {
+        line[read-1] = 0;                           // strip '\n'
         asn_map_t *asmap_entry;
         token = strtok_r(line, delimiter, &p_save);
         token = strtok_r(0, delimiter, &p_save);
         p_route->neighbor = strdup(token);
         token = strtok_r(0, delimiter, &p_save);
-        *tmp_asn = atoi(token+2);                     // ASXXX
-        HASH_FIND_INT(p_rt_states->as_n_2_id, tmp_asn, asmap_entry);
+        asn = atoi(token+2);                   // ASXXX
+        HASH_FIND_INT(p_rt_states->as_n_2_id, asn, asmap_entry);
         *tmp_asid = asmap_entry->as_id;
     } else if (!strncmp("ORIGIN: ", line, 8)) {
         p_route->origin = strndup(line+8, read-9);  // the same as PREFIX
     } else if (!strncmp("ASPATH: ", line, 8)) {
+        line[read-1] = 0;                           // strip '\n'
         s_tmp = line;
         p_route->as_path.length = 0;                // delimiter count
         while (*s_tmp) {
@@ -48,13 +103,13 @@ uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asn, uin
     } else if (!strncmp("ATOMIC_AGGREGATE", line, 16)) {
         p_route->atomic_aggregate = 1;
     } else if (!strncmp("MULTI_EXIT_DISC: ", line, 17)) {
-        line[read-1] = 0;
+        line[read-1] = 0;                           // strip '\n'
         g_tmp_route->med = atoi(line+17);
     } else if (!strcmp("\n", line)) {
         rib_map_t *p_rib_entry = NULL;
         HASH_FIND_STR(p_rt_states->ribs[asid], p_route->prefix, p_rib_entry);
         if (p_rib_entry) {
-            rl_add_route(&p_rib_entry->rl, *tmp_asn, *tmp_asid, p_route, p_rt_states->as_policies[asid].selection_policy);
+            rl_add_route(&p_rib_entry->rl, *tmp_asid, p_route, p_rt_states->as_policies[asid].selection_policy);
         } else {
             p_rib_entry = malloc(sizeof *p_rib_entry);
             if (!p_rib_entry) {
@@ -64,7 +119,7 @@ uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asn, uin
             p_rib_entry->key = strdup(p_route->prefix);
             p_rib_entry->augmented_reach = NULL;
             p_rib_entry->rl = NULL;
-            rl_add_route(&p_rib_entry->rl, *tmp_asn, *tmp_id, p_route, p_rt_states->as_policies[asid].selection_policy);
+            rl_add_route(&p_rib_entry->rl, *tmp_asid, p_route, p_rt_states->as_policies[asid].selection_policy);
             HASH_ADD_KEYPTR(hh, p_rt_states->ribs[asid], p_rib_entry->key, strlen(p_rib_entry->key), p_rib_entry);
         }
     }
@@ -103,7 +158,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
             p_rib_entry->augmented_reach = NULL;
             p_rib_entry->rl = NULL;
             p_old_rn[i] = NULL;
-            rl_add_route(&p_rib_entry->rl, p_bgp_input_msg->asn, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
+            rl_add_route(&p_rib_entry->rl, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
             p_new_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
             HASH_ADD_KEYPTR(hh, p_rt_states->ribs[i], p_rib_entry->key, strlen(key), p_rib_entry);
         } else {
@@ -111,9 +166,9 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
             p_old_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
             // update route
             if (p_bgp_input_msg->oprt_type == ANNOUNCE) {
-                rl_add_route(&p_rib_entry->rl, p_bgp_input_msg->asn, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
+                rl_add_route(&p_rib_entry->rl, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
             } else if (p_bgp_input_msg->oprt_type == WITHDRAW) {
-                rl_del_route(&p_rib_entry->rl, p_bgp_input_msg->asn, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
+                rl_del_route(&p_rib_entry->rl, p_bgp_input_msg->asid, p_bgp_msg->p_route, p_rt_states->as_policies[i].selection_policy);
             }
             p_new_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
         }
@@ -124,7 +179,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
                 (*p_bgp_output_msg_num)++;
             }
             if (ENABLE_SDX) {
-                reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach);
+                reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach + i * as_size);
                 *p_sdn_output_msg_num += reach_changed[i];
             }
         }
@@ -187,22 +242,21 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
     return SUCCESS;
 }
 
-uint32_t update_active_parts(uint8_t *p_active_parts, const uint32_t *p_parts, uint32_t part_num, uint8_t oprt_type)
+uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_ases, uint32_t as_size, uint8_t oprt_type)
 {
-    if (!p_active_parts || !p_parts) return SUCCESS;
+    if (!p_sdn_reach || !p_ases) return SUCCESS;
     uint32_t i;
     uint8_t v = (oprt_type == ANNOUNCE) ? 1 : 0;
 
-    for (i = 0; i < part_num; i++) {
-        printf("p_parts[%d]:%u [%s]\n", i, p_parts[i], __FUNCTION__);
-        p_active_parts[p_parts[i]] = v;
+    for (i = 0; i < as_size; i++) {
+        printf("p_ases[%d]:%u [%s]\n", i, p_ases[i], __FUNCTION__);
+        p_sdn_reach[p_ases[i]] = v;
     }
 
     return SUCCESS;
 }
 
-
-uint32_t get_prefix_set(const char *prefix, uint8_t *p_active_parts, uint32_t num, rib_map_t *p_rib, uint32_t **pp_resp_set, uint32_t *p_resp_set_size)
+uint32_t get_sdn_reach_by_prefix(const char *prefix, uint8_t *p_sdn_reach, uint32_t num, rib_map_t *p_rib, uint32_t **pp_resp_set, uint32_t *p_resp_set_size)
 {
     if (!pp_resp_set || *pp_resp_set || !p_resp_set_size|| !prefix) {
         return SUCCESS;
@@ -217,14 +271,14 @@ uint32_t get_prefix_set(const char *prefix, uint8_t *p_active_parts, uint32_t nu
 
     p_tmp_rn = p_rib_entry->rl->head;
     while (p_tmp_rn) {
-        if (p_active_parts[p_tmp_rn->advertiser_asn]) (*p_resp_set_size)++;
+        if (p_sdn_reach[p_tmp_rn->advertiser_asid]) (*p_resp_set_size)++;
         p_tmp_rn = p_tmp_rn->next;
     }
     *pp_resp_set = malloc(*p_resp_set_size * sizeof(**pp_resp_set));
     p_tmp_rn = p_rib_entry->rl->head;
     while (p_tmp_rn) {
-        if (p_active_parts[p_tmp_rn->advertiser_asn]) {
-            (*pp_resp_set)[i] = p_tmp_rn->advertiser_asn;
+        if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
+            (*pp_resp_set)[i] = p_tmp_rn->advertiser_asid;
             i++;
         }
         p_tmp_rn = p_tmp_rn->next;
@@ -261,7 +315,7 @@ uint32_t print_rs_best_ribs(rib_map_t **pp_ribs, uint32_t num)
         HASH_ITER(hh, pp_ribs[i], p_rib_entry, tmp_p_rib_entry) {
             p_best_rn = p_rib_entry ? rl_get_selected_route_node(p_rib_entry->rl) : NULL;
             if (p_best_rn) {
-                printf("advertiser_asn: %d, route: ", p_best_rn->advertiser_asn);
+                printf("advertiser_asid: %d, route: ", p_best_rn->advertiser_asid);
                 print_route(p_best_rn->route);
             }
         }
@@ -281,9 +335,9 @@ uint32_t print_rs_ribs(rib_map_t **pp_ribs, uint32_t num)
             p_tmp_rn = p_rib_entry->rl->head;
             while (p_tmp_rn) {
                 if (p_tmp_rn->flag.is_selected) {
-                    printf("[*] advertiser_asn:%d, route: ", p_tmp_rn->advertiser_asn);
+                    printf("[*] advertiser_asid:%d, route: ", p_tmp_rn->advertiser_asid);
                 } else {
-                    printf("    advertiser_asn:%d, route: ", p_tmp_rn->advertiser_asn);
+                    printf("    advertiser_asid:%d, route: ", p_tmp_rn->advertiser_asid);
                 }
                 print_route(p_tmp_rn->route);
                 p_tmp_rn = p_tmp_rn->next;

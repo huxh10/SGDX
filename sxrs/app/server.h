@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "app_types.h"
 
-void server_init(int efd, int as_num, net_conf_t *p_ncf);
+void server_init(int efd, net_conf_t *p_ncf);
 
 void send_bgp_msg_to_pctrlr(const char *msg, uint32_t asn);
 

@@ -10,12 +10,11 @@
 #include "enclave.h"
 
 rt_state_t *gp_rt_states = NULL;
+// tmp states for laoding rib from file
 route_t g_tmp_route;
 uint32_t g_tmp_asn, g_tmp_asid;
 
-uint32_t g_num = 0;
 as_policy_t *g_p_policies = NULL;
-rib_map_t **g_pp_ribs = NULL;
 
 /*
  * printf:
@@ -33,52 +32,10 @@ void printf(const char *fmt, ...)
 
 uint32_t ecall_load_asmap(uint32_t as_size, void *msg, size_t msg_size)
 {
-    uint32_t i;
-    asn_map_t *asmap_entry;
-
-    if (!gp_rt_states) {
-        gp_rt_states = malloc(sizeof *gp_rt_states);
-        if (!gp_rt_states) {
-            printf("malloc error for gp_rt_states [%s]\n", __FUNCTION__);
-            return MALLOC_ERROR;
-        }
-    }
-
-    // copy asid_2_n to enclave
-    gp_rt_states->as_size = as_size;
-    gp_rt_states->as_id_2_n = malloc(as_size * sizeof *gp_rt_states->as_id_2_n);
-    if (!gp_rt_states->as_id_2_n) {
-        printf("malloc error for gp_rt_states->as_id_2_n [%s]\n", __FUNCTION__);
-        return MALLOC_ERROR;
-    }
+    uint32_t ret_status;
+    ret_status = load_asmap(&gp_rt_states, as_size, (uint32_t *) msg);
     assert(msg_size == as_size * sizeof *gp_rt_states->as_id_2_n);
-    memcpy(gp_rt_states->as_id_2_n, msg, msg_size);
-
-    // construct asn_2_id map
-    gp_rt_states->as_n_2_id = NULL;
-    for (i = 0; i < as_size; i++) {
-        asmap_entry = malloc(sizeof *asn_map_t);
-        if (!asmap_entry) {
-            printf("malloc error for asmap_entry, id:%d [%s]\n", i, __FUNCTION__);
-            return MALLOC_ERROR;
-        }
-        asmap_entry->as_n = gp_rt_states->as_id_2_n[i];
-        asmap_entry->as_id = i;
-        HASH_ADD_INT(gp_rt_states->as_n_2_id, asmap_entry->as_n, asmap_entry);
-    }
-
-    // allocate memory for the rest states
-    gp_rt_states->as_policies = malloc(as_size * sizeof *gp_rt_states->as_policies);
-    gp_rt_states->sdn_orgnl_reach = malloc(as_size * sizeof *gp_rt_states->sdn_orgnl_reach);
-    gp_rt_states->ribs = malloc(as_size * sizeof *gp_rt_states->ribs);
-    if (!gp_rt_states->as_policies || !gp_rt_states->sdn_orgnl_reach || !gp_rt_states->ribs) {
-        printf("malloc error for gp_rt_states rest states [%s]\n", __FUNCTION__);
-        return MALLOC_ERROR;
-    }
-    for (i = 0; i < as_size; i++) {
-        // set default value false
-        gp_rt_states->sdn_orgnl_reach[i] = 0;
-    }
+    return ret_status;
 }
 
 uint32_t ecall_load_as_policies(uint32_t asid, void *import_msg, size_t import_msg_size, void *export_msg, size_t export_msg_size, void *selection_msg, size_t selection_msg_size)
@@ -122,13 +79,15 @@ uint32_t ecall_process_non_transit_route(void *msg, size_t msg_size)
     uint8_t *ret_msg = NULL;
     size_t i, bgp_output_msg_num = 0, sdn_output_msg_num = 0, ret_msg_size = 0;
     uint32_t call_status, ret_status;
+    asn_map_t *asmap_entry;
 
     bgp_route_input_srlz_msg_t *p_bgp_route_input_srlz_msg = msg;
     assert(p_bgp_route_input_srlz_msg->msg_size == msg_size);
     // get original route from input message
     bgp_route_input_dsrlz_msg_t bgp_route_input_dsrlz_msg;
     bgp_route_input_dsrlz_msg.asn = p_bgp_route_input_srlz_msg->asn;
-    bgp_route_input_dsrlz_msg.asid = p_bgp_route_input_srlz_msg->asid;
+    HASH_FIND_INT(gp_rt_states->as_n_2_id, bgp_route_input_dsrlz_msg.asn, asmap_entry);
+    bgp_route_input_dsrlz_msg.asid = asmap_entry->as_id;
     bgp_route_input_dsrlz_msg.oprt_type = p_bgp_route_input_srlz_msg->oprt_type;
     bgp_route_input_dsrlz_msg.p_route = NULL;
     parse_route_from_stream(&bgp_route_input_dsrlz_msg.p_route, p_bgp_route_input_srlz_msg->route);
@@ -161,20 +120,20 @@ uint32_t ecall_process_non_transit_route(void *msg, size_t msg_size)
     }
 }
 
-uint32_t ecall_update_active_parts(uint32_t asn, const uint32_t *p_parts, size_t part_num, uint8_t oprt_type)
+uint32_t ecall_process_sdn_reach(uint32_t asid, const uint32_t *p_ases, size_t as_size, uint8_t oprt_type)
 {
-    return update_active_parts(g_p_policies[asn].active_parts, p_parts, part_num, oprt_type);
+    return process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_ases, as_size, oprt_type);
 }
 
-uint32_t ecall_get_prefix_set(uint32_t asn, const char *prefix)
+uint32_t ecall_get_sdn_reach_by_prefix(uint32_t asid, const char *prefix)
 {
     uint32_t call_status, ret_status;
-    uint32_t *p_resp_set = NULL;
-    uint32_t resp_set_size = 0;
+    uint32_t *p_sdn_reach = NULL;
+    uint32_t reach_size = 0;
 
-    get_prefix_set(prefix, g_p_policies[asn].active_parts, g_num, g_pp_ribs[asn], &p_resp_set, &resp_set_size);
-    call_status = ocall_send_sdn_ret(&ret_status, p_resp_set, (size_t) resp_set_size, asn, prefix);
-    SAFE_FREE(p_resp_set);
+    get_sdn_reach_by_prefix(prefix, gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, gp_rt_states->as_size, gp_rt_states->ribs[asid], &p_sdn_reach, &reach_size);
+    call_status = ocall_send_sdn_ret(&ret_status, p_sdn_reach, (size_t) reach_size, asid, prefix);
+    SAFE_FREE(p_sdn_reach);
     if (call_status == SGX_SUCCESS) {
         if (ret_status != SGX_SUCCESS) return ret_status;
     } else {
@@ -184,10 +143,10 @@ uint32_t ecall_get_prefix_set(uint32_t asn, const char *prefix)
 
 uint32_t ecall_get_rs_ribs_num()
 {
-    return get_rs_ribs_num(g_pp_ribs, g_num);
+    return get_rs_ribs_num(gp_rt_states->ribs, gp_rt_states->as_size);
 }
 
 uint32_t ecall_print_rs_ribs()
 {
-    return print_rs_ribs(g_pp_ribs, g_num);
+    return print_rs_ribs(gp_rt_states->ribs, gp_rt_states->as_size);
 }

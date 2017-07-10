@@ -30,17 +30,10 @@ typedef struct {
     UT_hash_handle hh;
 } asn_map_t;
 
-typedef struct {
-    uint32_t as_size;
-    uint32_t *as_id_2_n;
-    as_policy_t *as_policies;
-    char *rib_file_dir;
-} as_cfg_t;
-
 // all runtime related states
 //
-// sdn_orgnl_reach[as_size] for SDX encoding
-//      sdn_orngl_reach[i] is true means as i is a destination in SDN policies
+// sdn_orgnl_reach[as_size * as_size] for SDX encoding
+//      sdn_orngl_reach[as_size * i + j] is true means as j is a destination in i's SDN policies
 //
 // rib_map_t *ribs[as_size] is a list of rib pointers
 typedef struct {
