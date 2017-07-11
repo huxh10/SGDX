@@ -195,6 +195,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
     for (i = 0; i < p_rt_states->as_size; i++) {
         if (!next_hop_changed[i]) continue;
         (*pp_bgp_output_msgs)[j].asid = i;
+        (*pp_bgp_output_msgs)[j].nh_asid = p_bgp_input_msg->asid;
         // assume the new announcement route can overwrite
         // the previous next hop route in AS border router
         if (p_new_rn[i]) {

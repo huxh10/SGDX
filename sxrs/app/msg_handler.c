@@ -145,6 +145,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
     json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
     json_object_set_new(j_msg, "prefix", json_string(p_bgp_msg->prefix));
     json_object_set_new(j_msg, "vnh", json_string(next_hop));
+    json_object_set_new(j_msg, "nh_asid", json_integer(p_bgp_msg->nh_asid));
 
     json_object_set(j_root, "bgp-nh", j_msg);
     json_decref(j_msg);

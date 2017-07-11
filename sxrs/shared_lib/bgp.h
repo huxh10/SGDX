@@ -97,6 +97,7 @@ typedef struct {
 
 typedef struct {
     uint32_t asid;
+    uint32_t nh_asid;
     uint8_t oprt_type;
     char *prefix;
     char *next_hop;

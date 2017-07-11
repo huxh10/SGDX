@@ -315,6 +315,9 @@ int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t
         // asid
         (*pp_bgp_msgs)[i].asid = *((uint32_t *) (p_msg + offset));
         offset += 4;
+        // next hop asid
+        (*pp_bgp_msgs)[i].nh_asid = *((uint32_t *) (p_msg + offset));
+        offset += 4;
         // oprt_type
         (*pp_bgp_msgs)[i].oprt_type = *(p_msg + offset);
         offset++;
@@ -377,7 +380,7 @@ int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bg
     ret_msg_size += 4; // bgp_msg_num (4)
     ret_msg_size += 4; // sdn_msg_num (4)
     for (i = 0; i < bgp_msg_num; i++) {
-        ret_msg_size += 5; // asid (4) + oprt_type (1)
+        ret_msg_size += 9; // asid (4) + nh_asid (4) + oprt_type (1)
         ret_msg_size += 2; // prefix_size (1) + next_hop_size (1)
         ret_msg_size += strlen(p_bgp_msgs[i].prefix);
         ret_msg_size += strlen(p_bgp_msgs[i].next_hop);
@@ -403,6 +406,8 @@ int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bg
     offset += 4;
     for (i = 0; i < bgp_msg_num; i++) {
         *((uint32_t *) (*pp_msg + offset)) = p_bgp_msgs[i].asid;
+        offset += 4;
+        *((uint32_t *) (*pp_msg + offset)) = p_bgp_msgs[i].nh_asid;
         offset += 4;
         *(*pp_msg + offset) = p_bgp_msgs[i].oprt_type;
         offset++;
