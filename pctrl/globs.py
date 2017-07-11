@@ -1,4 +1,0 @@
-CASSANDRA_HOST=["localhost"]
-CASSANDRA_SPACE="demo"
-MONGODB_HOST="localhost"
-MONGODB_PORT=27017

@@ -6,7 +6,7 @@
 from threading import RLock
 from collections import defaultdict
 import math
-from ss_lib import minimize_ss_rules_greedy, best_ss_to_expand_greedy, is_subset_of_superset, removeSubsets, clear_inactive_parts
+from ss_lib import minimize_ss_rules_greedy, best_ss_to_expand_greedy, is_subset_of_superset, removeSubsets
 
 import json
 
@@ -149,14 +149,9 @@ class SuperSets(object):
         self.logger.debug("~Recomputing all Supersets...")
 
         self.run_rulecounts(pctrl)
-        """
         # get all sets of participants advertising the same prefix
-        peer_sets = get_prefix2part_sets(pctrl)
-        # only care about the participants in outbound policy actions
-        peer_sets = clear_inactive_parts(peer_sets, self.rulecounts.keys())
-        peer_sets = removeSubsets(peer_sets)
-        """
         peer_sets = get_all_active_sets(pctrl)
+        peer_sets = removeSubsets(peer_sets)
 
         self.supersets = minimize_ss_rules_greedy(peer_sets, self.rulecounts, self.max_initial_bits)
 
@@ -183,48 +178,18 @@ class SuperSets(object):
         self.logger.debug("Supersets: >> "+str(self.supersets))
 
 
-
     def get_vmac(self, pctrl, vnh):
         """ Returns a VMAC for advertisements.
         """
-        bgp_instance = pctrl.bgp_instance
-        nexthop_2_part = pctrl.nexthop_2_part
-        VNH_2_prefix = pctrl.VNH_2_prefix
-
-
         vmac_bitstring = ""
         vmac_addr = ""
 
-        if vnh not in VNH_2_prefix:
+        if vnh not in pctrl.VNH_2_prefix or vnh not in pctrl.VNH_2_part:
             self.logger.debug("VNH "+str(vnh)+" not found in get_vmac call!")
             return vmac_addr
-        prefix = VNH_2_prefix[vnh]
+        prefix = pctrl.VNH_2_prefix[vnh]
+        nexthop_part = pctrl.VNH_2_part[vnh]
 
-
-        # first part of the returned tuple is next hop
-        route = bgp_instance.get_route('local', prefix)
-        if route is None:
-            self.logger.debug("prefix "+str(prefix)+" not found in local")
-            bgp_instance.rib['local'].dump(self.logger)
-            return vmac_addr
-
-        next_hop = route.next_hop
-        if next_hop not in nexthop_2_part:
-            self.logger.debug("Next Hop "+str(next_hop)+" not found in get_vmac call!")
-            return vmac_addr
-
-        nexthop_part = nexthop_2_part[next_hop]
-
-        """
-        # the participants who are involved in policies
-        active_parts = self.recompute_rulecounts(pctrl).keys()
-
-        # the set of participants which advertise this prefix
-        prefix_set = set(get_all_participants_advertising(pctrl, prefix))
-
-        # remove everyone but the active participants!
-        prefix_set.intersection_update(active_parts)
-        """
         prefix_set = get_active_set(pctrl, prefix)
         self.logger.debug("[get_vmac] get active_set " + str(prefix_set) +  " of prefix " + prefix)
 
@@ -240,7 +205,6 @@ class SuperSets(object):
             self.logger.error(">> Supersets at the moment of failure: "+str(self.supersets))
             self.logger.error(">> Set of advertisers of prefix "+str(prefix)+" is "+str(prefix_set))
             return vmac_addr
-
 
         # build the mask bits
         set_bitstring = ""
@@ -285,39 +249,6 @@ def get_all_active_sets(pctrl):
 
 def get_active_set(pctrl, prefix):
     return pctrl.supersets.prefix2set[prefix]
-    #return pctrl.get_active_set_from_sxrs(prefix)
-
-def get_prefix2part_sets(pctrl):
-    prefixes = pctrl.prefix_2_VNH.keys()
-
-    groups = []
-
-    for prefix in prefixes:
-        group = get_all_participants_advertising(pctrl, prefix)
-        groups.append(group)
-
-    pctrl.logger.debug("Prefix2Part called. Returning "+str(groups[:5])+"(this should not be empty) "+str(len(groups)))
-
-    return groups
-
-def get_all_participants_advertising(pctrl, prefix):
-    bgp_instance = pctrl.bgp_instance
-    nexthop_2_part = pctrl.nexthop_2_part
-
-    routes = bgp_instance.get_routes('input',prefix)
-    pctrl.logger.debug("Supersets all routes:: "+ str(routes))
-
-    parts = set([])
-
-    for route in routes:
-        next_hop = route.next_hop
-
-        if next_hop in nexthop_2_part:
-            parts.add(nexthop_2_part[next_hop])
-        else:
-            pctrl.logger.debug("In subcall of prefix2part: Next hop "+str(next_hop)+" NOT in nexthop_2_part")
-
-    return parts
 
 
 if __name__ == '__main__':

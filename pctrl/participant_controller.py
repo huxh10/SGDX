@@ -55,13 +55,10 @@ class ParticipantController(object):
         # The port 0 MAC is used for tagging outbound rules as belonging to us
         self.port0_mac = self.cfg.port0_mac
 
-        self.nexthop_2_part = self.cfg.get_nexthop_2_part()
-
-        # VNHs related params
-        self.num_VNHs_in_use = 0
+        # BGP and VNHs related params
         self.VNH_2_prefix = {}
         self.prefix_2_VNH = {}
-
+        self.VNH_2_part = {}
 
         # Superset related params
         if self.cfg.isSupersetsMode():
@@ -80,17 +77,13 @@ class ParticipantController(object):
         # Start all clients/listeners/whatevs
         self.logger.info("Starting controller for participant")
 
-        # ExaBGP Peering Instance
-        self.bgp_instance = self.cfg.get_bgp_instance()
-
         # Route server client, supersets RS client, Reference monitor client, Arp Proxy client
         self.xrs_client = self.cfg.get_xrs_client(self.logger)
-        self.xrs_client.send({'msgType': 'hello', 'id': int(self.cfg.id), 'conType': 'bgp'}, add_header=True)
+        self.xrs_client.send({'msgType': 'hello', 'id': int(self.cfg.id)}, add_header=True)
 
-        self.ss_xrs_client = self.cfg.get_xrs_client(self.logger)
-        self.ss_xrs_client.send({'msgType': 'hello', 'id': int(self.cfg.id), 'conType': 'ss'}, add_header=True)
+        # send the initial sdn policy reachability to route server
         self.supersets.run_rulecounts(self)
-        self.ss_xrs_client.send({'msgType': 'participant', 'add': self.supersets.rulecounts.keys()}, add_header=True)
+        self.xrs_client.send({'msgType': 'sdn-reach', 'add': self.supersets.rulecounts.keys()}, add_header=True)
 
         self.arp_client = self.cfg.get_arp_client(self.logger)
         self.arp_client.send({'msgType': 'hello', 'macs': self.cfg.get_macs()})
@@ -161,8 +154,6 @@ class ParticipantController(object):
         final_switch = "main-in"
         if self.cfg.isMultiTableMode():
             final_switch = "main-out"
-
-        self.init_vnh_assignment()
 
         rule_msgs = init_inbound_rules(self.id, self.policies,
                                         self.supersets, final_switch)
@@ -278,17 +269,17 @@ class ParticipantController(object):
     def process_event(self, data):
         "Locally process each incoming network event"
 
-        if 'bgp-best' in data:
-            self.logger.debug("Event Received: bgp-best Update.")
-            route = data['bgp-best']
+        if 'bgp-nh' in data:
+            self.logger.debug("Event Received: bgp-nh Update.")
+            route = data['bgp-nh']
             # Process the incoming BGP updates from XRS
             #self.logger.debug("BGP Route received: "+str(route)+" "+str(type(route)))
-            self.process_bgp_best(route)
+            self.process_bgp_nh(route)
 
-        elif 'bgp-reach' in data:
-            self.logger.debug("Event Received: bgp-reach Update.")
-            parts_set = data['bgp-reach']
-            self.process_bgp_reach(parts_set)
+        elif 'sdn-reach' in data:
+            self.logger.debug("Event Received: sdn-reach Update.")
+            parts_set = data['sdn-reach']
+            self.process_sdn_reach(parts_set)
 
         elif 'policy' in data:
             # Process the event requesting change of participants' policies
@@ -435,8 +426,6 @@ class ParticipantController(object):
         return 0
 
 
-
-
     def process_arp_request(self, part_mac, vnh):
         vmac = ""
         if self.cfg.isSupersetsMode():
@@ -491,40 +480,36 @@ class ParticipantController(object):
             #self.logger.debug("Repeat :: "+str(hsh))
         return self.prefix_lock[hsh]
 
-    def process_bgp_best(self, route):
+    def process_bgp_nh(self, route):
         "Process each incoming BGP advertisement"
-        tstart = time.time()
 
-        self.logger.debug("process_bgp_best:: "+str(route))
-        # TODO: This step should be parallelized
-        #       Multiple routes should be sent in one message
-        updates = self.bgp_instance.decision_process_local(route)
-        for update in updates:
-            self.vnh_assignment(update)
+        self.logger.debug("process_bgp_nh:: "+str(route))
+        vnh_changed = 0
+        if route['oprt-type'] == 'withdraw':
+            if route['prefix'] in self.prefix_2_VNH:
+                del self.prefix_2_VNH[route['prefix']]
+            if route['vnh'] in self.VNH_2_prefix:
+                del self.VNH_2_prefix[route['vnh']]
+            if route['vnh'] in self.VNH_2_part:
+                del self.VNH_2_part[route['vnh']]
+        elif route['oprt-type'] == 'announce':
+            vnh_changed = 1
+            self.prefix_2_VNH[route['prefix']] = route['vnh']
+            self.VNH_2_prefix[route['vnh']] = route['prefix']
+            self.VNH_2_part[route['vnh']] = route['nh_asid']
 
-        if TIMING:
-            elapsed = time.time() - tstart
-            self.logger.debug("Time taken for decision process: "+str(elapsed))
-            tstart = time.time()
+        # XXX temperal trick
+        # to trigger first superset computation
+        # what if my next_hop changed, while reachability/superset not changed
+        self.process_sdn_reach({})
 
-        # XXX temperally fixing
-        self.process_bgp_reach({})
-
-        changed_vnhs, announcements = self.bgp_instance.bgp_update_peers(updates,
-                self.prefix_2_VNH, self.cfg.ports)
-
-        for vnh in changed_vnhs:
+        if vnh_changed:
             self.process_arp_request(None, vnh)
 
-        # Tell Route Server that it needs to announce these routes
-        for announcement in announcements:
-            # TODO: Complete the logic for this function
-            self.send_announcement(announcement)
 
-
-    def process_bgp_reach(self, parts_set):
+    def process_sdn_reach(self, parts_set):
         tstart = time.time()
-        self.logger.debug("process_bgp_reach:: "+str(parts_set))
+        self.logger.debug("process_sdn_reach:: "+str(parts_set))
         if self.cfg.isSupersetsMode():
             ################## SUPERSET RESPONSE TO BGP ##################
             # update supersets
@@ -594,91 +579,6 @@ class ParticipantController(object):
             elapsed = time.time() - tstart
             self.logger.debug("Time taken to send garps/announcements: "+str(elapsed))
             tstart = time.time()
-
-
-    def send_announcement(self, announcement):
-        "Send the announcements to XRS"
-	self.logger.debug("Sending announcements to XRS: %s", announcement)
-	self.xrs_client.send({'msgType': 'route', 'announcement': announcement}, add_header=True)
-
-
-    def vnh_assignment(self, update):
-        "Assign VNHs for the advertised prefixes"
-        if self.cfg.isSupersetsMode():
-            " Superset"
-            # TODO: Do we really need to assign a VNH for each advertised prefix?
-            self.logger.debug("vnh_assignment" + str(update))
-            if ('announce' in update):
-                prefix = update['announce'].prefix
-
-                if (prefix not in self.prefix_2_VNH):
-                    self.logger.debug("assign new prefix_2_VNH, prefix: " + prefix)
-                    # get next VNH and assign it the prefix
-                    self.num_VNHs_in_use += 1
-                    vnh = str(self.cfg.VNHs[self.num_VNHs_in_use])
-
-                    self.prefix_2_VNH[prefix] = vnh
-                    self.VNH_2_prefix[vnh] = prefix
-        else:
-            "Disjoint"
-            # TODO: @Robert: Place your logic here for VNH assignment for MDS scheme
-            self.logger.debug("VNH assignment called for disjoint vmac_mode")
-
-
-    def init_vnh_assignment(self):
-        "Assign VNHs for the advertised prefixes"
-        if self.cfg.isSupersetsMode():
-            " Superset"
-            # TODO: Do we really need to assign a VNH for each advertised prefix?
-            #self.bgp_instance.rib["local"].dump()
-            prefixes = self.bgp_instance.rib["local"].get_prefixes()
-            #print 'init_vnh_assignment: prefixes:', prefixes
-            #print 'init_vnh_assignment: prefix_2_VNH:', self.prefix_2_VNH
-            for prefix in prefixes:
-                if (prefix not in self.prefix_2_VNH):
-                    self.logger.debug("init assign prefix_2_VNH, prefix: " + prefix)
-                    # get next VNH and assign it the prefix
-                    self.num_VNHs_in_use += 1
-                    vnh = str(self.cfg.VNHs[self.num_VNHs_in_use])
-
-                    self.prefix_2_VNH[prefix] = vnh
-                    self.VNH_2_prefix[vnh] = prefix
-        else:
-            "Disjoint"
-            # TODO: @Robert: Place your logic here for VNH assignment for MDS scheme
-            self.logger.debug("VNH assignment called for disjoint vmac_mode")
-
-    def get_active_set_from_sxrs(self, prefix):
-        self.ss_xrs_client.send({'msgType': 'set', 'prefix': prefix}, add_header=True)
-        while True:
-            try:
-                tmp = self.ss_xrs_client.recv()
-            except EOFError:
-                return set([])
-            if not tmp:
-                self.ss_xrs_client.close()
-                return set([])
-            data = json.loads(tmp)
-            if 'set' not in data or prefix not in data['set']:
-                return set([])
-            return set(data['set'][prefix])
-
-def get_prefixes_from_announcements(route):
-    prefixes = []
-    if ('update' in route['neighbor']['message']):
-        if ('announce' in route['neighbor']['message']['update']):
-            announce = route['neighbor']['message']['update']['announce']
-            if ('ipv4 unicast' in announce):
-                for next_hop in announce['ipv4 unicast'].keys():
-                    for prefix in announce['ipv4 unicast'][next_hop].keys():
-                        prefixes.append(prefix)
-
-        elif ('withdraw' in route['neighbor']['message']['update']):
-            withdraw = route['neighbor']['message']['update']['withdraw']
-            if ('ipv4 unicast' in withdraw):
-                for prefix in withdraw['ipv4 unicast'].keys():
-                    prefixes.append(prefix)
-    return prefixes
 
 
 def main():
