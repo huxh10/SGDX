@@ -282,7 +282,7 @@ int write_route_to_stream(uint8_t **pp_msg, route_t *input)
     return write_route_to_existed_stream(*pp_msg, input);
 }
 
-int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t *p_bgp_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_msgs, size_t *p_sdn_msg_num, uint8_t *p_msg);
+int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t *p_bgp_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_msgs, size_t *p_sdn_msg_num, uint8_t *p_msg)
 {
     if (!pp_bgp_msgs || *pp_bgp_msgs || !pp_sdn_msgs || *pp_sdn_msgs || !p_bgp_msg_num || !p_sdn_msg_num) {
         return 0;
@@ -367,7 +367,7 @@ int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t
     return offset;
 }
 
-int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bgp_msgs, size_t bgp_msg_num, sdn_reach_output_dsrlz_msg_t *p_sdn_msgs, size_t sdn_msg_num);
+int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bgp_msgs, size_t bgp_msg_num, sdn_reach_output_dsrlz_msg_t *p_sdn_msgs, size_t sdn_msg_num)
 {
     if (!pp_msg || (!p_bgp_msgs && !p_sdn_msgs)) {
         return 0;
@@ -506,7 +506,7 @@ route_node_t* rl_get_selected_route_node(route_list_t *p_rl)
     return NULL;
 }
 
-int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
+int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint32_t *selection_policy)
 {
     if (!pp_rl) return -1;
     if (!*pp_rl) {
@@ -552,7 +552,7 @@ int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, ui
     return 0;
 }
 
-int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy)
+int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint32_t *selection_policy)
 {
     if (!pp_rl || !*pp_rl) return -1;
     if (!(*pp_rl)->head) {
@@ -645,7 +645,7 @@ static int set_add(set_t *p_set, uint32_t id)
         return 1;
     }
     for (i = 0; i < p_set->size; i++) {
-        if (p_tmp_set->part_asn == asn) return 0;
+        if (p_tmp_set->id == id) return 0;
         p_tmp_set = p_tmp_set->next;
     }
     p_tmp_set = malloc(sizeof *p_tmp_set);
@@ -658,7 +658,7 @@ static int set_add(set_t *p_set, uint32_t id)
     return 1;
 }
 
-static int set_update(set_t *p_set, uint32_t asid, int *original_set, int original_size)
+static int set_update(set_t *p_set, uint32_t id, int *original_set, int original_size)
 {
     if (!p_set) return 0;
     int i;

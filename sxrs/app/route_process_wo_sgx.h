@@ -4,9 +4,9 @@
 #include "shared_types.h"
 #include "bgp.h"
 
-void route_process_wo_sgx_init(uint32_t as_num, as_policy_t **pp_as_policies, int verbose);
+void init_wo_sgx(as_cfg_t *p_as_cfg, int verbose);
 
-void route_process_wo_sgx_run(const bgp_dec_msg_t *p_bgp_dec_msg);
+void process_bgp_route_wo_sgx(bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg);
 
 void process_sdn_reach_wo_sgx(uint32_t asid, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type);
 

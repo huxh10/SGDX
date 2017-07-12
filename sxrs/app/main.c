@@ -6,6 +6,7 @@
 #include "app_types.h"
 #include "shared_types.h"
 #include "server.h"
+#include "msg_handler.h"
 #include "epoll_utils.h"
 
 #ifdef W_SGX
@@ -22,7 +23,7 @@ static struct {
     char *rank_file;
     char *rib_file_dir;
     int verbose;
-} g_cfg = {{NULL, 0, NULL, 0}, NULL, NULL, NULL, NULL, VERBOSE};
+} g_cfg = {{NULL, 0, NULL, 0}, NULL, NULL, NULL, NULL, NULL, VERBOSE};
 
 static void print_help(void)
 {
@@ -49,7 +50,7 @@ static void print_help(void)
 static void parse_args(int argc, char *argv[])
 {
     int option;
-    static const char *optstr = "hb:p:c:t:v:a:";
+    static const char *optstr = "hb:p:c:t:v:a:i:f:r:";
     static struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
         {"bgp_serv_addr", required_argument, NULL, 'b'},
@@ -58,9 +59,10 @@ static void parse_args(int argc, char *argv[])
         {"pctrlr_serv_port", required_argument, NULL, 't'},
         {"verbose", required_argument, NULL, 'v'},
         {"asn_2_id_file", required_argument, NULL, 'a'},
-        {"as_ips_file", required_argument, NULL, "i"},
+        {"as_ips_file", required_argument, NULL, 'i'},
         {"filter_file", required_argument, NULL, 'f'},
-        {"rank_file", required_argument, NULL, "r"},
+        {"rank_file", required_argument, NULL, 'r'},
+        {"rib_file_dir", required_argument, NULL, 'd'},
         {NULL, 0, NULL, 0}
     };
 
@@ -180,7 +182,7 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     // the first line is about the as size
     if (fscanf(fp, "%u\n", &tmp_size) != 1) {
-        fprintf(stderr, "illegal as number format [%s]\n", __function__);
+        fprintf(stderr, "illegal as number format [%s]\n", __FUNCTION__);
         exit(-1);
     }
     assert(tmp_size == p_as_cfg->as_size);
@@ -193,8 +195,8 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     for (i = 0; i < p_as_cfg->as_size; i++) {
         read = getline(&tmp_line, &len, fp);
         assert(read != 0);
-        line[read - 1] = 0;             // strip '\n'
-        token = strtok_r(0, delimiter, &p_save);
+        tmp_line[read - 1] = 0;             // strip '\n'
+        token = strtok_r(tmp_line, delimiter, &p_save);
         tmp_size = atoi(token);
         p_as_cfg->as_ips[i].ip_num = tmp_size;
         p_as_cfg->as_ips[i].ips = malloc(tmp_size * sizeof *p_as_cfg->as_ips[i].ips);
@@ -253,7 +255,7 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     // the first line is about the as size
     if (fscanf(fp, "%u\n", &tmp_size) != 1) {
-        fprintf(stderr, "illegal as number format [%s]\n", __function__);
+        fprintf(stderr, "illegal as number format [%s]\n", __FUNCTION__);
         exit(-1);
     }
     assert(tmp_size == p_as_cfg->as_size);
@@ -280,7 +282,7 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     // the first line is about the as size
     if (fscanf(fp, "%u\n", &tmp_size) != 1) {
-        fprintf(stderr, "illegal as number format [%s]\n", __function__);
+        fprintf(stderr, "illegal as number format [%s]\n", __FUNCTION__);
         exit(-1);
     }
     assert(tmp_size == p_as_cfg->as_size);

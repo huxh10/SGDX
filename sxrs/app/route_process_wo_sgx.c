@@ -22,36 +22,36 @@ void init_wo_sgx(as_cfg_t *p_as_cfg, int verbose)
     gp_rt_states->as_policies = p_as_cfg->as_policies;
 
     if (!p_as_cfg->rib_file_dir) return;
-    int dir_len = strlen(p_as_cfg.rib_file_dir);
-    char rib_file[dir_len + 9] = {0};   // 9 is for rib name (8), such as rib_1000, and '\0' (1)
-    memcpy(rib_file, p_as_cfg.rib_file_dir, dir_len);
+    int dir_len = strlen(p_as_cfg->rib_file_dir);
+    char rib_file[dir_len + 9];         // 9 is for rib name (8), such as rib_1000, and '\0' (1)
+    memcpy(rib_file, p_as_cfg->rib_file_dir, dir_len);
     char *line = NULL;                  // buffer address
     size_t len = 0;                     // allocated buffer size
     route_t tmp_route;
-    uint32_t tmp_asn, tmp_asid;
+    uint32_t tmp_asid;
+    FILE *fp;
     for (i = 0; i < p_as_cfg->as_size; i++) {
-        sprinf(rib_file + dir_len, "rib_%d", i);
+        sprintf(rib_file + dir_len, "rib_%d", i);
         if ((fp = fopen(rib_file, "r")) == NULL) {
             fprintf(stderr, "can not open file: %s [%s]\n", rib_file, __FUNCTION__);
             exit(-1);
         }
         while (getline(&line, &len, fp) != -1) {
-            process_rib_file_line(i, line, &tmp_asn, &tmp_asid, &tmp_route, gp_rt_states);
+            process_rib_file_line(i, line, &tmp_asid, &tmp_route, gp_rt_states);
         }
         fclose(fp);
     }
     SAFE_FREE(line);
 }
 
-void process_bgp_route_wo_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
+void process_bgp_route_wo_sgx(bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
 {
-    uint32_t i = 0;
     bgp_route_output_dsrlz_msg_t *p_bgp_route_output_dsrlz_msgs = NULL;
     sdn_reach_output_dsrlz_msg_t *p_sdn_reach_output_dsrlz_msgs = NULL;
     size_t i, bgp_output_msg_num = 0, sdn_output_msg_num = 0, ret_msg_size = 0;
 
     asn_map_t *asmap_entry;
-    HASH_FIND_INT(gp_rt_states->as_n_2_id, p_bgp_dsrlz_msg->asn, asmap_entry);
+    HASH_FIND_INT(gp_rt_states->as_n_2_id, &p_bgp_dsrlz_msg->asn, asmap_entry);
     p_bgp_dsrlz_msg->asid = asmap_entry->as_id;
 
     if (process_non_transit_route(p_bgp_dsrlz_msg, gp_rt_states, &p_bgp_route_output_dsrlz_msgs, &bgp_output_msg_num, &p_sdn_reach_output_dsrlz_msgs, &sdn_output_msg_num) != SUCCESS) exit(-1);

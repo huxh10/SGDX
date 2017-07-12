@@ -14,7 +14,7 @@
 #define ANNOUNCE                1
 #define WITHDRAW                2
 
-#define ENABLE_SDX 1
+#define ENABLE_SDX              1
 
 #ifndef SAFE_FREE
 #define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
@@ -127,8 +127,8 @@ int write_route_to_existed_stream(uint8_t *route, route_t *input);
 int parse_bgp_ret_from_stream(bgp_route_output_dsrlz_msg_t **pp_bgp_msgs, size_t *p_bgp_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_msgs, size_t *p_sdn_msg_num, uint8_t *p_msg);
 int write_bgp_ret_to_stream(uint8_t **pp_msg, bgp_route_output_dsrlz_msg_t *p_bgp_msgs, size_t bgp_msg_num, sdn_reach_output_dsrlz_msg_t *p_sdn_msgs, size_t sdn_msg_num);
 route_node_t* rl_get_selected_route_node(route_list_t *p_rl);
-int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy);
-int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint8_t *selection_policy);
+int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint32_t *selection_policy);
+int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, uint32_t *selection_policy);
 void set_free(set_t **pp_set);
 void set_write_elmnts_to_array(uint32_t *p, set_t *p_set);
 int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_reach);

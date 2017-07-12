@@ -2,6 +2,7 @@
 #define __MSG_HANDLER_H__
 
 #include "bgp.h"
+#include "app_types.h"
 
 void msg_handler_init(as_cfg_t *p_as_cfg);
 

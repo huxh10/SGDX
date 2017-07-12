@@ -12,7 +12,7 @@
 rt_state_t *gp_rt_states = NULL;
 // tmp states for laoding rib from file
 route_t g_tmp_route;
-uint32_t g_tmp_asn, g_tmp_asid;
+uint32_t g_tmp_asid;
 
 as_policy_t *g_p_policies = NULL;
 
@@ -45,7 +45,7 @@ uint32_t ecall_load_as_policies(uint32_t asid, void *import_msg, size_t import_m
         printf("malloc error for gp_rt_states->as_policies[%d].import_policy [%s]\n", asid, __FUNCTION__);
         return MALLOC_ERROR;
     }
-    assert(import_msg_size == gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].import_policy)
+    assert(import_msg_size == gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].import_policy);
     memcpy(gp_rt_states->as_policies[asid].import_policy, import_msg, import_msg_size);
 
     gp_rt_states->as_policies[asid].export_policy = malloc(gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].export_policy);
@@ -53,7 +53,7 @@ uint32_t ecall_load_as_policies(uint32_t asid, void *import_msg, size_t import_m
         printf("malloc error for gp_rt_states->as_policies[%d].export_policy [%s]\n", asid, __FUNCTION__);
         return MALLOC_ERROR;
     }
-    assert(export_msg_size == gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].export_policy)
+    assert(export_msg_size == gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].export_policy);
     memcpy(gp_rt_states->as_policies[asid].export_policy, export_msg, export_msg_size);
 
     gp_rt_states->as_policies[asid].selection_policy = malloc(gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].selection_policy);
@@ -61,7 +61,7 @@ uint32_t ecall_load_as_policies(uint32_t asid, void *import_msg, size_t import_m
         printf("malloc error for gp_rt_states->as_policies[%d].selection_policy [%s]\n", asid, __FUNCTION__);
         return MALLOC_ERROR;
     }
-    assert(selection_msg_size == gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].selection_policy)
+    assert(selection_msg_size == gp_rt_states->as_size * sizeof *gp_rt_states->as_policies[asid].selection_policy);
     memcpy(gp_rt_states->as_policies[asid].selection_policy, selection_msg, selection_msg_size);
 
     return SGX_SUCCESS;
@@ -69,7 +69,7 @@ uint32_t ecall_load_as_policies(uint32_t asid, void *import_msg, size_t import_m
 
 uint32_t ecall_load_rib_file_line(uint32_t asid, char *line)
 {
-    return process_rib_file_line(asid, line, &g_tmp_asn, &g_tmp_asid, &g_tmp_route, gp_rt_states);
+    return process_rib_file_line(asid, line, &g_tmp_asid, &g_tmp_route, gp_rt_states);
 }
 
 uint32_t ecall_process_non_transit_route(void *msg, size_t msg_size)
@@ -86,7 +86,7 @@ uint32_t ecall_process_non_transit_route(void *msg, size_t msg_size)
     // get original route from input message
     bgp_route_input_dsrlz_msg_t bgp_route_input_dsrlz_msg;
     bgp_route_input_dsrlz_msg.asn = p_bgp_route_input_srlz_msg->asn;
-    HASH_FIND_INT(gp_rt_states->as_n_2_id, bgp_route_input_dsrlz_msg.asn, asmap_entry);
+    HASH_FIND_INT(gp_rt_states->as_n_2_id, &bgp_route_input_dsrlz_msg.asn, asmap_entry);
     bgp_route_input_dsrlz_msg.asid = asmap_entry->as_id;
     bgp_route_input_dsrlz_msg.oprt_type = p_bgp_route_input_srlz_msg->oprt_type;
     bgp_route_input_dsrlz_msg.p_route = NULL;

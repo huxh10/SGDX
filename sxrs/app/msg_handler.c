@@ -24,11 +24,11 @@ void msg_handler_init(as_cfg_t *p_as_cfg)
         fprintf(stderr, "malloc error for g_msg_states.pctrlr_sfds [%s]\n", __FUNCTION__);
         exit(-1);
     }
-    for (i = 0; i < as_size; i++) {
+    for (i = 0; i < p_as_cfg->as_size; i++) {
         g_msg_states.pctrlr_sfds[i] = -1;
     }
-    g_msg_states.as_size = as_size;
-    g_msg_states.as_ips = p_as_cfg.as_ips;
+    g_msg_states.as_size = p_as_cfg->as_size;
+    g_msg_states.as_ips = p_as_cfg->as_ips;
     g_msg_states.vnh_states.crnt_vnh = 0;
     g_msg_states.vnh_states.vnh_map = NULL;
 }
@@ -93,7 +93,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
             next_hop = strdup(inet_ntoa(ip_addr));
             vnh_entry->prefix = strdup(p_bgp_msg->prefix);
             vnh_entry->vnh = next_hop;
-            HASH_ADD_KEYPTR(hh, g_msg_states.vnh_states.vnh_map, vnh_entry->prefix, vnh_entry);
+            HASH_ADD_KEYPTR(hh, g_msg_states.vnh_states.vnh_map, vnh_entry->prefix, strlen(vnh_entry->prefix), vnh_entry);
         }
     } else {
         next_hop = p_bgp_msg->next_hop;
@@ -125,7 +125,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
         if (p_bgp_msg->oprt_type == ANNOUNCE) {
             memcpy(msg_to_as + offset, " as-path [ ( ", 13);
             offset += 13;
-            for (j = 0, j < p_bgp_msg->as_path.length; j++) {
+            for (j = 0; j < p_bgp_msg->as_path.length; j++) {
                 offset += sprintf(msg_to_as + offset, "%d ", p_bgp_msg->as_path.asns[i]);
             }
             memcpy(msg_to_as + offset, ") ]", 3);
@@ -341,7 +341,7 @@ void handle_exabgp_msg(char *msg)
 
 void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
 {
-    json_t *j_root, *j_msg_type, *j_asid, *j_con_type, *j_announcement, *j_reach, *j_reach, *j_reach_elmnt, *j_prefix;
+    json_t *j_root, *j_msg_type, *j_asid, *j_con_type, *j_announcement, *j_reach, *j_reach_elmnt, *j_prefix;
     json_error_t j_err;
     const char *msg_type, *con_type, *announcement, *prefix;
     uint32_t asid, *p_reach, i;

@@ -1,6 +1,6 @@
 enclave {
     trusted {
-        public uint32_t ecall_load_asmap(uint32_t as_size, [in, size = msg_size] void *msg, msg_size);
+        public uint32_t ecall_load_asmap(uint32_t as_size, [in, size = msg_size] void *msg, size_t msg_size);
         public uint32_t ecall_load_as_policies(uint32_t asid, [in, size = import_msg_size] void *import_msg, size_t import_msg_size, [in, size = export_msg_size] void *export_msg, size_t export_msg_size, [in, size = selection_msg_size] void *selection_msg, size_t selection_msg_size);
         public uint32_t ecall_load_rib_file_line(uint32_t asid, [in, string] char *line);
         public uint32_t ecall_process_non_transit_route([in, size = msg_size] void *msg, size_t msg_size);
