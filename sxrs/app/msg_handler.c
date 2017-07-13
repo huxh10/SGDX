@@ -29,7 +29,7 @@ void msg_handler_init(as_cfg_t *p_as_cfg)
     }
     g_msg_states.as_size = p_as_cfg->as_size;
     g_msg_states.as_ips = p_as_cfg->as_ips;
-    g_msg_states.vnh_states.crnt_vnh = 0;
+    g_msg_states.vnh_states.crnt_vnh = 2885681408;      // 172.0.1.0
     g_msg_states.vnh_states.vnh_map = NULL;
 }
 
@@ -88,8 +88,9 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
             next_hop = vnh_entry->vnh;
         } else {
             // new vnh assignment
+            vnh_entry = malloc(sizeof *vnh_entry);
             g_msg_states.vnh_states.crnt_vnh++;
-            ip_addr.s_addr = g_msg_states.vnh_states.crnt_vnh;
+            ip_addr.s_addr = htonl(g_msg_states.vnh_states.crnt_vnh);
             next_hop = strdup(inet_ntoa(ip_addr));
             vnh_entry->prefix = strdup(p_bgp_msg->prefix);
             vnh_entry->vnh = next_hop;
@@ -126,13 +127,14 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
             memcpy(msg_to_as + offset, " as-path [ ( ", 13);
             offset += 13;
             for (j = 0; j < p_bgp_msg->as_path.length; j++) {
-                offset += sprintf(msg_to_as + offset, "%d ", p_bgp_msg->as_path.asns[i]);
+                offset += sprintf(msg_to_as + offset, "%d ", p_bgp_msg->as_path.asns[j]);
             }
             memcpy(msg_to_as + offset, ") ]", 3);
             offset += 3;
         }
         msg_to_as[offset] = 0;
         // send to exabgp's client.py
+        fprintf(stdout, "prepare to send msg:%s to asid:%d router [%s]\n", msg_to_as, p_bgp_msg->asid, __FUNCTION__);
         send_msg_to_as(msg_to_as);
         SAFE_FREE(msg_to_as);
     }
@@ -145,7 +147,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
     json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
     json_object_set_new(j_msg, "prefix", json_string(p_bgp_msg->prefix));
     json_object_set_new(j_msg, "vnh", json_string(next_hop));
-    json_object_set_new(j_msg, "nh_asid", json_integer(p_bgp_msg->nh_asid));
+    json_object_set_new(j_msg, "nh-asid", json_integer(p_bgp_msg->nh_asid));
 
     json_object_set(j_root, "bgp-nh", j_msg);
     json_decref(j_msg);
@@ -383,10 +385,15 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
         assert(*p_con_id == -1);
         *p_con_id = asid;
         g_msg_states.pctrlr_sfds[asid] = src_sfd;
-    } else if (!strcmp(msg_type, "sdn_reach")) {
+    } else if (!strcmp(msg_type, "sdn-reach")) {
         j_reach = json_object_get(j_root, "add");
         if (json_is_array(j_reach)) {
             p_reach = malloc(json_array_size(j_reach) * sizeof *p_reach);
+            if (!p_reach) {
+                fprintf(stderr, "malloc for sdn-reach add p_reach [%s]\n", __FUNCTION__);
+                json_decref(j_root);
+                return;
+            }
             for (i = 0; i < json_array_size(j_reach); i++) {
                 j_reach_elmnt = json_array_get(j_reach, i);
                 if (!json_is_integer(j_reach_elmnt)) {
@@ -398,15 +405,20 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
             }
             // process msg
 #ifdef W_SGX
-            process_sdn_reach_w_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), ANNOUNCE);
+            process_sdn_reach_w_sgx(*p_con_id, p_reach, json_array_size(j_reach), ANNOUNCE);
 #else
-            process_sdn_reach_wo_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), ANNOUNCE);
+            process_sdn_reach_wo_sgx(*p_con_id, p_reach, json_array_size(j_reach), ANNOUNCE);
 #endif
             SAFE_FREE(p_reach);
         }
         j_reach = json_object_get(j_root, "del");
         if (json_is_array(j_reach)) {
             p_reach = malloc(json_array_size(j_reach) * sizeof *p_reach);
+            if (!p_reach) {
+                fprintf(stderr, "malloc for sdn-reach del p_reach [%s]\n", __FUNCTION__);
+                json_decref(j_root);
+                return;
+            }
             for (i = 0; i < json_array_size(j_reach); i++) {
                 j_reach_elmnt = json_array_get(j_reach, i);
                 if (!json_is_integer(j_reach_elmnt)) {
@@ -418,25 +430,22 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
             }
             // process msg
 #ifdef W_SGX
-            process_sdn_reach_w_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), WITHDRAW);
+            process_sdn_reach_w_sgx(*p_con_id, p_reach, json_array_size(j_reach), WITHDRAW);
 #else
-            process_sdn_reach_wo_sgx(*p_con_id, (const uint32_t*) p_reach, json_array_size(j_reach), WITHDRAW);
+            process_sdn_reach_wo_sgx(*p_con_id, p_reach, json_array_size(j_reach), WITHDRAW);
 #endif
             SAFE_FREE(p_reach);
         }
         j_prefix = json_object_get(j_root, "get");
-        if (!json_is_string(j_prefix)) {
-            fprintf(stderr, "fmt error: msg[prefix] is not string [%s]\n", __FUNCTION__);
-            json_decref(j_root);
-            return;
-        }
-        prefix = json_string_value(j_prefix);
-        // process msg
+        if (json_is_string(j_prefix)) {
+            prefix = json_string_value(j_prefix);
+            // process msg
 #ifdef W_SGX
-        get_sdn_reach_by_prefix_w_sgx(*p_con_id, prefix);
+            get_sdn_reach_by_prefix_w_sgx(*p_con_id, prefix);
 #else
-        get_sdn_reach_by_prefix_wo_sgx(*p_con_id, prefix);
+            get_sdn_reach_by_prefix_wo_sgx(*p_con_id, prefix);
 #endif
+        }
     }
 
     json_decref(j_root);

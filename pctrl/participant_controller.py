@@ -496,7 +496,7 @@ class ParticipantController(object):
             vnh_changed = 1
             self.prefix_2_VNH[route['prefix']] = route['vnh']
             self.VNH_2_prefix[route['vnh']] = route['prefix']
-            self.VNH_2_part[route['vnh']] = route['nh_asid']
+            self.VNH_2_part[route['vnh']] = route['nh-asid']
 
         # XXX temperal trick
         # to trigger first superset computation
@@ -504,7 +504,7 @@ class ParticipantController(object):
         self.process_sdn_reach({})
 
         if vnh_changed:
-            self.process_arp_request(None, vnh)
+            self.process_arp_request(None, route['vnh'])
 
 
     def process_sdn_reach(self, parts_set):

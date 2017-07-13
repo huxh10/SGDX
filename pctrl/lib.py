@@ -19,7 +19,6 @@ if np not in sys.path:
     sys.path.append(np)
 from xctrl.flowmodmsg import FlowModMsgBuilder
 
-from peer import BGPPeer
 from participant_server import ParticipantServer
 
 
@@ -94,9 +93,6 @@ class PConfig(object):
 
     def get_ports(self):
         return [port['IP'] for port in self.ports]
-
-    def get_bgp_instance(self):
-        return BGPPeer(self.id, self.asn, self.ports)
 
     def get_xrs_client(self, logger):
         config = self.config

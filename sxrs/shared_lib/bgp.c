@@ -729,6 +729,7 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
     // previous set is empty, directly add asid
     if (!(*pp_set)->size) {
         while (p_tmp_rn) {
+            printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
             if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
                 set_add(*pp_set, p_tmp_rn->advertiser_asid);
             }
@@ -744,6 +745,7 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
         original_set[i] = 0;
     }
     while (p_tmp_rn) {
+        printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
         if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
             if (set_update(*pp_set, p_tmp_rn->advertiser_asid, original_set, original_size)) updated_flag = 1;
         }

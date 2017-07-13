@@ -120,9 +120,9 @@ uint32_t ecall_process_non_transit_route(void *msg, size_t msg_size)
     }
 }
 
-uint32_t ecall_process_sdn_reach(uint32_t asid, const uint32_t *p_ases, size_t as_size, uint8_t oprt_type)
+uint32_t ecall_process_sdn_reach(uint32_t asid, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type)
 {
-    return process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_ases, as_size, oprt_type);
+    return process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_reach, reach_size, oprt_type);
 }
 
 uint32_t ecall_get_sdn_reach_by_prefix(uint32_t asid, const char *prefix)
@@ -132,7 +132,7 @@ uint32_t ecall_get_sdn_reach_by_prefix(uint32_t asid, const char *prefix)
     uint32_t reach_size = 0;
 
     get_sdn_reach_by_prefix(prefix, gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, gp_rt_states->as_size, gp_rt_states->ribs[asid], &p_sdn_reach, &reach_size);
-    call_status = ocall_send_sdn_ret(&ret_status, p_sdn_reach, (size_t) reach_size, asid, prefix);
+    call_status = ocall_send_sdn_ret(&ret_status, p_sdn_reach, reach_size, asid, prefix);
     SAFE_FREE(p_sdn_reach);
     if (call_status == SGX_SUCCESS) {
         if (ret_status != SGX_SUCCESS) return ret_status;

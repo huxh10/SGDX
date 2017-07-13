@@ -37,7 +37,7 @@ static void print_help(void)
         "   -t, --pctrlr_serv_port PORT specify the participant controller server port, default is 6666\n"
         "   -v, --verbose num           0(default): print selected time, 4: print bgp_msgs and the ribs, 5: print as policies\n"
         "   -a, --asn_2_id_file FILE    specify an asn to id configuration file, e.g. ../examples/test-rs/config/asn_2_id.cfg\n"
-        "   -i, --as_ips_file   FILE    specify as connected port ips file, e.g. ../examples/test-rs/config/as_ips.cfg"
+        "   -i, --as_ips_file   FILE    specify as connected port ips file, e.g. ../examples/test-rs/config/as_ips.cfg\n"
         "   -f, --filter_file   FILE    specify filtering policy file, e.g. ../examples/test-rs/bgp_policies/peers_uni_62_020.cfg\n"
         "   -r, --rank_file     FILE    specify ranking policy file, e.g. ../examples/test-rs/bgp_policies/prefer_rand_62.cfg\n"
         "   -d, --rib_file_dir  DIR     specify rib directory name to load ribs from file, e.g. ../examples/test-rs/ribs/\n"

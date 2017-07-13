@@ -180,6 +180,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
             }
             if (ENABLE_SDX) {
                 reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach + i * p_rt_states->as_size);
+                printf("reach_changed[%d]:%d [%s]\n", i, reach_changed[i], __FUNCTION__);
                 *p_sdn_output_msg_num += reach_changed[i];
             }
         }
@@ -250,7 +251,7 @@ uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32
     uint8_t v = (oprt_type == ANNOUNCE) ? 1 : 0;
 
     for (i = 0; i < reach_size; i++) {
-        printf("p_reach[%d]:%u [%s]\n", i, p_reach[i], __FUNCTION__);
+        printf("updated p_reach[%u]:%u,%u [%s]\n", i, p_reach[i], v, __FUNCTION__);
         p_sdn_reach[p_reach[i]] = v;
     }
 
