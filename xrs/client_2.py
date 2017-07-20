@@ -3,32 +3,25 @@
 #  Muhammad Shahbaz (muhammad.shahbaz@gatech.edu)
 
 from multiprocessing import Queue
-from multiprocessing.connection import Listener
+from multiprocessing.connection import Client
 from threading import Thread
 
 ''' bgp server '''
-class server(object):
+class client(object):
 
     def __init__(self, logger, endpoint=('localhost', 6000), authkey=None):
         self.logger = logger
 
-        self.listener = Listener(endpoint, authkey=authkey)
-        self.port=endpoint[1]
+        self.conn = Client(endpoint, authkey=authkey)
 
         self.sender_queue = Queue()
         self.receiver_queue = Queue()
 
     def start(self):
-        self.logger.debug('waiting for connection')
-        self.conn = self.listener.accept()
-        self.logger.debug('Connection accepted from '+str(self.listener.last_accepted))
-
         self.sender = Thread(target=_sender, args=(self.conn,self.sender_queue))
-        self.sender.setName("sender server " + str(self.port))
         self.sender.start()
 
         self.receiver = Thread(target=_receiver, args=(self.conn,self.receiver_queue))
-        self.receiver.setName("receiver server " + str(self.port))
         self.receiver.start()
 
 ''' sender '''
