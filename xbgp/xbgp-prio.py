@@ -20,11 +20,10 @@ from multiprocessing.connection import Client
 import threading
 import util.log
 from util.crypto_util import AESCipher
-from ppsdx.route import Route
-from ppsdx.participant_db import ParticipantDB
+from pprs.route import Route
+from pprs.participant_db import ParticipantDB
 import pickle
-import ppsdx.port_config as port_config
-from util.statistics_collector_2 import StatisticsCollector
+import pprs.port_config as port_config
 import xbgp_process
 from multiprocessing import Process, Manager
 
@@ -44,8 +43,6 @@ class ExaBGPEmulator(object):
         self.input_file = input_file
 
         self.route_id_counter=0
-
-        self.statistics = StatisticsCollector()
 
         self.real_start_time = time()
         self.simulation_start_time = 0
@@ -257,49 +254,28 @@ class ExaBGPEmulator(object):
         if "announce" in bgp_update["neighbor"]["message"]["update"]:
 
             # GENERATE ANNOUNCEMENTS
-            communities = self.get_export_policies(bgp_update)
-            export_policies_communities = communities["export_policies_communities"]
-
-            # 0. generate export data structure. Each export policy is modeled
-            # by a list of boolean values: True if export is allowed, False otherwise
-            export_policy = self.get_export_policy_array(export_policies_communities)
-
-            # 1. generate nonce
-            random_nonce = self.get_nonce()
-
-            # 3. XOR nonce with export policy
-            encrypted_export_policy = self.get_xored_export_policy(export_policy,random_nonce)
-
-
             for prefix in bgp_update["neighbor"]["message"]["update"]["announce"]["ipv4 unicast"]:
 
                 route = Route()
                 route.neighbor = bgp_update["neighbor"]["ip"]
                 route.prefix = prefix
                 self.logger.debug("prefix: " + str(prefix))
-                route.time=bgp_update["time"]
+                route.time = bgp_update["time"]
                 route.id = self.route_id_counter
-                self.route_id_counter+=1
-
-                self.statistics.xbgp_update_processing(route.id)
+                self.route_id_counter += 1
 
                 route.as_path =self.parse_as_path(bgp_update["neighbor"]["message"]["update"]["attribute"]["as-path"])
                 route.next_hop = bgp_update["neighbor"]["message"]["update"]["announce"]["nexthop"]
-                encrypted_exp_policies_rs1 = random_nonce
-                encrypted_exp_policies_rs2 = encrypted_export_policy
-                route.communities = communities["non_export_policies_communities"]
+                route.communities = bgp_update["neighbor"]["message"]["update"]["announce"]["community"]
                 route.type="announce"
 
-                # 3. encrypting the route
                 self.logger.debug("Encrypting route, id: " + str(route.id))
                 encrypted_route = self.cipher.encrypt(pickle.dumps(route)) #encrypt serialized route object
-                #encrypted_route = route#self.cipher.encrypt(pickle.dumps(route)) #encrypt serialized route object
+                #encrypted_route = route
 
                 self.logger.debug("encrypted-route: " + str(encrypted_route))
 
-                routes.append({"prefix" : prefix, "bgp_next_hop" : bgp_update["neighbor"]["ip"], "asn" : bgp_update["neighbor"]["asn"]["peer"], "route-in-clear" : None, "route_id" : route.id, "encrypted_route" : encrypted_route , "encrypted_exp_policies_rs1" : encrypted_exp_policies_rs1, "encrypted_exp_policies_rs2" : encrypted_exp_policies_rs2, "key" : keystr, "type" : route.type , "announcement_id" : route.id,})
-
-                self.statistics.xbgp_update_end_processing(route.id)
+                routes.append({"prefix" : prefix, "asn" : bgp_update["neighbor"]["asn"]["peer"], "route-in-clear" : None, "route_id" : route.id, "encrypted_route" : encrypted_route, "key" : keystr, "type" : route.type , "announcement_id" : route.id})
 
             '''
             # COMPUTE THE PER-DIFFERENCE FOR EACH PREFIX
@@ -389,63 +365,6 @@ class ExaBGPEmulator(object):
         self.logger.debug("encrypting the export policy")
         return map(lambda x,y : x ^ y, export_policy, random_nonce)
 
-    def get_nonce(self):
-        self.logger.debug("generating nonce")
-        #return map(lambda x : random.random() > 0.5,[0] * self.number_of_participants)
-        return  [True] * self.number_of_participants
-
-    def get_export_policy_array(self,export_policies_communities):
-        self.logger.debug("generating export_policy structure")
-        is_export_all=True
-        # check whether it is a blacklist (ie, is_export_all=True) or a white-list (ie, is_export_all=False)
-        for community in export_policies_communities:
-            if(community[0]=="0" and community[1]=="6695"):
-                is_export_all=False
-        if is_export_all:
-            export_policy = [True] * self.number_of_participants
-        else:
-            export_policy = [False] * self.number_of_participants
-        self.logger.debug("export policy is export all? " + str(is_export_all))
-        self.logger.debug("export policy communities:  " + str(export_policies_communities))
-        sum =0
-        # extract the ASes that are black- or white-listed
-        for community in export_policies_communities:
-            if(community[0]=="0" and community[1]=="6695") or (community[0]=="6695" and community[1]=="6695"):
-                continue
-            else:
-                self.logger.debug("community: " + str(community))
-                if community[1] not in self.participant_db.asnumber_2_bgp_speakers.keys():
-                    continue
-                for bgp_speaker in self.participant_db.asnumber_2_bgp_speakers[community[1]]:
-                    if bgp_speaker not in self.participant_db.bgp_speaker_2_id:
-                        continue
-                    index = self.participant_db.bgp_speaker_2_id[bgp_speaker]
-                    self.logger.debug("community for speaker " + str(bgp_speaker) + " with id: " + str(index) + " as-number:" + str(community[1]))
-                    self.logger.debug("community[0]: " + str(community[0]) + " community[1]==0 : " + str(community[1]=="6695") )
-                    if community[0]=="0" and community[1]!="6695":
-                        export_policy[index] = False
-                        self.logger.debug("export-policy[index]: " + str(export_policy[index]))
-                    if community[0]=="6695" and community[1]!="6695":
-                        export_policy[index] = True
-
-        #self.logger.debug("export policy is: " + str(export_policy))
-        return export_policy
-
-
-    def get_export_policies(self,bgp_update):
-        bgp_update = bgp_update["neighbor"]
-        # parse communities from the bgp update
-        export_policies_communities = []
-        non_export_policies_communities = []
-        if("community" in bgp_update["message"]["update"]["announce"]):
-            split_communities = bgp_update["message"]["update"]["announce"]["community"].split(" ")
-            for community in split_communities:
-                if community.split(":")[0] == "0" or community.split(":")[0] == "6695":
-                    export_policies_communities.append((community.split(":")[0],community.split(":")[1]))
-                else:
-                    non_export_policies_communities.append((community.split(":")[0],community.split(":")[1]))
-        return {"export_policies_communities" : export_policies_communities , "non_export_policies_communities" : non_export_policies_communities}
-
 
     def bgp_update_sender(self):
         counter=0
@@ -494,15 +413,6 @@ class ExaBGPEmulator(object):
 
                     self.send_update_rs2(route)'''
 
-
-        '''f=open('statistics-xbgp-prio.txt','w')
-        f.write("announcement_id start_xbgp_processing_time end_xbgp_processing_time xbgp_update_send_update\n")
-        for bgp_update_id in self.statistics.observations.keys():
-            start_xbgp_processing_time = self.statistics.observations[bgp_update_id]["start-xbgp-processing-time"]
-            end_xbgp_processing_time = self.statistics.observations[bgp_update_id]["end-xbgp-processing-time"]
-            xbgp_update_send_update = self.statistics.observations[bgp_update_id]["xbgp_update_send_update"]
-
-            f.write(str(bgp_update_id) + " " + str("{0:.15f}".format(start_xbgp_processing_time)) +" " + str("{0:.15f}".format(end_xbgp_processing_time))+" " + str("{0:.15f}".format(xbgp_update_send_update)) + "\n")'''
         sleep(10)
 
 

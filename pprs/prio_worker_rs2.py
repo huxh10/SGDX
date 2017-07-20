@@ -109,9 +109,9 @@ class AllWorker2():
                     local_prefs += "0000"   # indicator
                     for nh_id in list_of_msg_for_prefix.keys():
                         local_prefs += "0000" if nh_id == as_id else self.selection_policies[as_id][nh_id]
-                myinput = "4" + "\n" + str(msg["as_id"]) + "\n" + str(number_of_routes) + "\n" + keys_str + "\n" + local_prefs + "\n" + "0"
+                myinput = "4" + "\n" + str(number_of_routes) + "\n" + str(msg["as_id"]) + "\n" + keys_str + "\n" + local_prefs + "\n" + "0"
             else:
-                myinput = "3" + "\n" + str(msg["as_id"]) + "\n" + str(number_of_routes) + "\n" + keys_str + "\n" + "0"
+                myinput = "3" + "\n" + str(number_of_routes) + "\n" + str(msg["as_id"]) + "\n" + keys_str + "\n" + "0"
 
 
             # invoking the MPC

@@ -147,13 +147,13 @@ void Filter_Pref(BooleanCircuit *circ, share*** shr_data, share*** shr_cond, uin
 }
 
 
-int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
-		uint32_t test_val, uint32_t mode, uint32_t outsourced, uint32_t num_as) {
+int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes, uint32_t test_val, uint32_t mode, uint32_t outsourced, uint32_t num_as, uint32_t *in_v) {
 
 	vector<Sharing*>& sharings = party->GetSharings();
 	string input_line;
 
 	uint32_t ixp_iterations = 1;
+    uint32_t as_id = 0;
 
 	// do multiple iterations for interactive outsourcing (==1) or run a predefined number of iterations. stop in any case if num_as <= 0.
 	while ((outsourced == 1 || ixp_iterations-- > 0) && num_as > 0) {
@@ -164,7 +164,7 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 #endif
 			// provide parameters from stdin. overwrites cmd-line parameters
 			getline(cin, input_line);
-			sscanf(input_line.c_str(), "%ul", &num_as);
+			sscanf(input_line.c_str(), "%ul", &as_id);
 			if (num_as > 0) {
 				getline(cin, input_line);
 				sscanf(input_line.c_str(), "%ul", &num_routes);
@@ -189,7 +189,6 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 		cout << "id_size: " << id_bits << " num_routes: " << num_routes << " num_as: " << num_as << " key_bits: " << key_bits << " testval: " << test_val << endl;
 #endif
 
-		uint32_t *in_v = (uint32_t *) calloc(sizeof(uint32_t), num_as); // the "publish" matrix
 		uint8_t *in_k = (uint8_t *) calloc(sizeof(uint8_t), total_r_bytes); // keys+ids
 		uint8_t *kt = (uint8_t *) calloc(sizeof(uint8_t), num_kt * num_as); // transposed keys+ids
 
@@ -238,10 +237,6 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 
 		} else { // interactively outsourced. inputs supplied via stdin
 			getline(cin, input_line);
-			assert(input_line.length() == num_as * 8);
-			parseUInts(input_line, in_v);
-
-			getline(cin, input_line);
 			assert(input_line.length() == total_r_bytes * 2);
 			parseBytes(input_line, in_k);
 		}
@@ -270,48 +265,11 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 	    share** shr_keys = (share**) malloc(sizeof(share*) * num_routes);
 	    share** shr_vs = (share**) malloc(sizeof(share*) * vs_num_routes);
 
-		if (outsourced > 0) {
-
-			// create random dummy values
-			if (outsourced == 2) {
-
-				// separate pre-shared inputs from client and server.
-				// currently generated here from above dummy data.
-				uint32_t *in_v_rnd = (uint32_t*) malloc(sizeof(uint32_t) * num_as);
-				uint8_t *kt_rnd = (uint8_t *) malloc(sizeof(uint8_t) * num_kt * num_as);
-
-				// generate random stream and XOR to plain text inputs
-				for (uint32_t i = 0; i < num_as; ++i) {
-					in_v_rnd[i] = rand();
-					in_v[i] ^= in_v_rnd[i];
-				}
-
-				for (uint32_t i = 0; i < num_kt * num_as; ++i) {
-					kt_rnd[i] = rand();
-					kt[i] ^= kt_rnd[i];
-				}
-				
-				// use different inputs for client and server ("pre-shared")
-				if (role == SERVER) {
-					shr_v = circ->PutSharedSIMDINGate(num_as, in_v_rnd, num_routes);
-					shr_k = circ->PutSharedSIMDINGate((key_bits + id_bits) * num_as, kt_rnd, num_routes);
-				} else {
-					shr_v = circ->PutSharedSIMDINGate(num_as, in_v, num_routes);
-					shr_k = circ->PutSharedSIMDINGate((key_bits + id_bits) * num_as, kt, num_routes);
-				}
-
-				// values have been copied. free memory
-				free(kt_rnd);
-				free(in_v_rnd);
-			}
-			else { // outsourced == 1
-				// put SharedInput gates (no role) use stdin inputs
-				shr_v = circ->PutSharedSIMDINGate(num_as, in_v, vs_num_routes);
-				shr_k = circ->PutSharedSIMDINGate((key_bits + id_bits) * num_as, kt, num_routes);
-			}
-
-		} else { // no outsourcing. outsourced == 0
-
+		if (outsourced == 1) {
+			// put SharedInput gates (no role) use stdin inputs
+			shr_v = circ->PutSharedSIMDINGate(num_as, in_v + as_id * num_as, vs_num_routes);
+			shr_k = circ->PutSharedSIMDINGate((key_bits + id_bits) * num_as, kt, num_routes);
+		} else if (outsourced == 0) { // no outsourcing. outsourced == 0
 			// dummy inputs selected by server for benchmarking, not pre-shared (not outsourced)
 			shr_v = circ->PutSIMDINGate(num_as, in_v, num_routes, SERVER);
 			shr_k = circ->PutSIMDINGate((key_bits + id_bits) * num_as, kt, num_routes, SERVER);
@@ -484,7 +442,6 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 		// free memory
 		free(shr_keys);
 		free(shr_vs);
-		free(in_v);
 		free(in_k);
 		free(kt);
 	}
@@ -493,16 +450,16 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 }
 
 
-int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes, uint32_t test_val, uint32_t mode, uint32_t outsourced,
-		uint32_t num_as) {
+int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes, uint32_t test_val, uint32_t mode, uint32_t outsourced, uint32_t num_as, uint32_t *in_v) {
 
 	vector<Sharing*>& sharings = party->GetSharings();
 	string input_line;
 	
 	uint32_t ixp_iterations = 1;
+    uint32_t as_id = 0;
 
 	// do multiple iterations for interactive outsourcing (==1) or run a predefined number of iterations. stop in any case if num_as <= 0.
-	while ((outsourced == 1 || ixp_iterations-- > 0) && num_as > 0) {
+	while ((outsourced == 1 || ixp_iterations-- > 0) && num_routes > 0) {
 
 		if (outsourced == 1) {
 #if IXP_DBG_OUT
@@ -510,10 +467,10 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 #endif
 			// provide parameters from stdin. overwrites cmd-line parameters
 			getline(cin, input_line);
-			sscanf(input_line.c_str(), "%ul", &num_as);
-			if (num_as > 0) {
+			sscanf(input_line.c_str(), "%ul", &num_routes);
+			if (num_routes > 0) {
 				getline(cin, input_line);
-				sscanf(input_line.c_str(), "%ul", &num_routes);
+				sscanf(input_line.c_str(), "%ul", &as_id);
 			} else {
 				break;
 			}
@@ -539,7 +496,6 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 				<< p_bits << " testval: " << test_val << endl;
 #endif
 
-		uint32_t *in_v = (uint32_t *) calloc(sizeof(uint32_t), num_as); // the "publish" matrix
 		uint8_t *in_k = (uint8_t *) calloc(sizeof(uint8_t), total_r_bytes); // keys+ids
 		uint8_t *in_p = (uint8_t *) calloc(sizeof(uint8_t), num_as * num_routes * p_bytes); // the preferences. one for each route and AS.
 		uint8_t *pt = (uint8_t *) calloc(sizeof(uint8_t), num_as * p_bits * pt_bytes); // the preferences. one for each route and AS
@@ -606,18 +562,12 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 
 		} else { // interactively outsourced. inputs supplied via stdin
 			getline(cin, input_line);
-			assert(input_line.length() == num_as * 8);
-			parseUInts(input_line, in_v);
-
-			getline(cin, input_line);
 			assert(input_line.length() == total_r_bytes * 2);
 			parseBytes(input_line, in_k);
 
 			getline(cin, input_line);
 			assert(input_line.length() == p_bytes * num_routes * num_as * 2);
 			parseBytes(input_line, in_p);
-
-
 		}
 
 		// transpose preferences for SIMD processing
@@ -692,7 +642,7 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 
 			} else { //outsourced == 1
 					 // put SharedInput gates (no role) use stdin inputs
-				shr_v = circ->PutSharedSIMDINGate(num_as, in_v, vs_num_routes);
+				shr_v = circ->PutSharedSIMDINGate(num_as, in_v + as_id * num_as, vs_num_routes);
 				shr_p = circ->PutSharedSIMDINGate(num_as * p_bits, pt, num_routes);
 				for (uint32_t i = 0; i < num_routes; i++) {
 					shr_keys[i] = circ->PutSharedINGate(in_k + i * r_bytes, key_bits + id_bits);
@@ -890,7 +840,6 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 		free(shr_vs);
 		free(shr_prefs);
 		free(shr_pref_transposed);
-		free(in_v);
 		free(in_k);
 		free(in_p);
 		free(pt);
@@ -901,11 +850,27 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 	return 0;
 }
 
+static int32_t get_export_policies(uint32_t *p_num_as, uint32_t **pp_in_v)
+{
+    string input_line;
+    getline(cin, input_line);
+    sscanf(input_line.c_str(), "%ul", p_num_as);
+
+    *pp_in_v = (uint32_t *) calloc(sizeof **pp_in_v, *p_num_as * *p_num_as);
+
+    for (uint32_t i = 0; i < *p_num_as; i++) {
+        getline(cin, input_line);
+        assert(input_line.length() == *p_num_as * 8);
+        parseUInts(input_line, *pp_in_v + i * *p_num_as);
+    }
+
+    return 1;   // True
+}
 
 int32_t init_ixp_circuit(e_role role, char* address, seclvl seclvl, uint32_t num_routes, e_mt_gen_alg mt_alg,
 		uint32_t test_val, uint32_t mode, uint32_t outsourced, uint32_t num_as, uint16_t port) {
 
-	ABYParty* party;
+	ABYParty* party = NULL;
 
 	switch (mode) {
 	case 0: //single
@@ -916,49 +881,57 @@ int32_t init_ixp_circuit(e_role role, char* address, seclvl seclvl, uint32_t num
 		break;
 	case 2: //pref
 	case 3:	//interactive (uses biggest size)
-#if IXP_PREF_DBG
-		// printing debug info requires slightly more gates
-		party = new ABYParty(role, address, seclvl, 32, 1, mt_alg, 700 * num_routes, port);
-#else
-		party = new ABYParty(role, address, seclvl, 32, 1, mt_alg, 500 * num_routes, port);
-#endif
+        // initialize party when we get num_as
 		break;
-
 	}
 
 	string input_line;
 
 	uint32_t inner_mode = mode;
 
+    // states for export policies
+    uint32_t policy_loaded = 0;
+    uint32_t num_as = 0;
+    uint32_t *in_v = NULL;
+
 	// when interactive, read the actual mode for next iteration
 	if (mode == 3) {
 		getline(cin, input_line);
 		sscanf(input_line.c_str(), "%ul", &inner_mode);
-        cout << "inner_mode:" << inner_mode << endl;
 	}
 
-	//exit if inner_mode > 2
-	while (inner_mode < 5) {
+	//exit if inner_mode > 5
+	while (inner_mode < 6) {
 		switch (inner_mode) {
 		case 0: //single
 		case 1: //all
         case 3: // single export policy testing
-			test_ixp_circuit(role, party, num_routes, test_val, inner_mode, outsourced, num_as);
+			test_ixp_circuit(role, party, num_routes, test_val, inner_mode, outsourced, num_as, in_v);
 			break;
 		case 2: //pref
         case 4: // single export policy testing
-			test_ixp_circuit_pref(role, party, num_routes, test_val, inner_mode, outsourced, num_as);
+			test_ixp_circuit_pref(role, party, num_routes, test_val, inner_mode, outsourced, num_as, in_v);
 			break;
+        case 5:
+            policy_loaded = get_export_policies(&num_as, &in_v);
+            if (policy_loaded) {
+                delete party;
+                if (mode == 2 || mode == 3) {
+                    // assume max num_routes for each prefix is num_as + 1
+                    // FIXME: how many gates do we actually need?
+		            party = new ABYParty(role, address, seclvl, 32, 1, mt_alg, 1000 * num_as * (num_as + 1), port);
+                }
+            }
 		}
 
 		//read mode for next round
-		if(mode==3){
+		if (mode == 3) {
 			getline(cin, input_line);
 			sscanf(input_line.c_str(), "%ul", &inner_mode);
-            cout << "inner_mode:" << inner_mode << endl;
 		}
 	}
 
+    if (in_v) free(in_v);
 	delete party;
 	return 0;
 }

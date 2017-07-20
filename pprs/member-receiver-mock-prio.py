@@ -12,50 +12,43 @@ np = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if np not in sys.path:
     sys.path.append(np)
 import util.log
-from xrs.server import server as Server
-from route import Route
 #from Crypto.Cipher import AES
-from participant_db import ParticipantDB
 import subprocess
-import math
-from time import sleep
 from util.crypto_util import AESCipher
-from ppsdx.route import Route
 import multiprocessing as mp
-from participant_db import ParticipantDB
 import port_config
+
 
 logger = util.log.getLogger('Mock-Host')
 
-NUMBER_OF_PARTICIPANTS=3
-
-#ABY_EXEC_PATH="/home/ubuntu/pp-ixp/aby/bin/ixp.exe"
-ABY_EXEC_PATH="/home/vagrant/aby/bin/ixp.exe"
-
-AS_ROW_ENCODING_SIZE = 32 # bits
-KEY_LENGTH = 16
-KEY_ID_SIZE = 8 # bits
+KEY_LENGTH = 16             # bytes
+KEY_ID_SIZE = 16            # bits
+KEY_HEX_LENGTH = 32         # number of hex of key, KEY_LENGTH * 2
+KEY_AND_ID_HEX_LENGTH = 36  # number of hex of key and id, KEY_LENGTH * 2 + KEY_ID_SIZE / 4
 
 DUMMY_KEY="00000000000000000000000000000000"
 
 RS1_MODE =1
 RS2_MODE =2
 
+
 class Host:
     def __init__(self):
         logger.info("Initializing the Host.")
 
-        # Init the Route Server
-        self.server = None
+        with open(asn_2_id_file, 'r') as f:
+            self.asn_2_id = json.load(f)
+        self.id_2_asn = [ '' for i in xrange(0, len(self.asn_2_id))]
+        for asn, as_id in self.asn_2_id.items():
+            self.id_2_asn[as_id] = asn
 
-        # Initialize a XRS Server
+        # connect to XRS Server
         self.conn_to_rs1 = Client((port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_send_mpc_output"]), authkey=None)
         self.conn_to_rs2 = Client((port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_send_mpc_output"]), authkey=None)
         self.run = True
 
         self.stop_received_from_one_rs=False
         self.route_id_to_msges = {}
-        self.participant_db = ParticipantDB()
 
     def start(self):
         self.lock = mp.Manager().Lock()
@@ -78,7 +71,6 @@ class Host:
             conn = self.conn_to_rs2
         waiting = 0
 
-        #sleep(5)
         # start the MPC process in background
         i=0
         while self.run:
@@ -107,15 +99,14 @@ class Host:
                 logger.debug("received message for announcement_id " + str(msg["announcement_id"]))
                 if mode == RS1_MODE:
                     if msg["announcement_id"] not in self.route_id_to_msges:
-                        self.route_id_to_msges[msg["announcement_id"]]={}
-                    self.route_id_to_msges[msg["announcement_id"]]["rs1"]=msg["key"]
+                        self.route_id_to_msges[msg["announcement_id"]] = {}
+                    self.route_id_to_msges[msg["announcement_id"]]["rs1"] = msg["key"]
                     self.route_id_to_msges[msg["announcement_id"]]["encrypted_route"] = msg["encrypted_route"]
                     self.route_id_to_msges[msg["announcement_id"]]["list_of_route_ids"] = msg["list_of_route_ids"]
                 else:
                     if msg["announcement_id"] not in self.route_id_to_msges:
                         self.route_id_to_msges[msg["announcement_id"]]={}
-                    self.route_id_to_msges[msg["announcement_id"]]["rs2"]=msg["key"]
-                #print self.route_id_to_msges[msg["announcement_id"]].keys()
+                    self.route_id_to_msges[msg["announcement_id"]]["rs2"] = msg["key"]
                 if "rs1" in self.route_id_to_msges[msg["announcement_id"]] and \
                    "rs2" in self.route_id_to_msges[msg["announcement_id"]]:
                     self.reconstruct_message(msg["announcement_id"])
@@ -126,42 +117,32 @@ class Host:
 
     def reconstruct_message(self, announcement_id):
         encrypted_route = self.route_id_to_msges[announcement_id]["encrypted_route"]
-        #print "key_rs1: " + str(self.route_id_to_msges[route_id]["rs1"])
         keys_from_rs1 = self.route_id_to_msges[announcement_id]["rs1"].decode("hex")
         keys_from_rs2 = self.route_id_to_msges[announcement_id]["rs2"].decode("hex")
-        key = xor_strings(keys_from_rs1,keys_from_rs2).encode("hex")
+        key = xor_strings(keys_from_rs1, keys_from_rs2).encode("hex")
         list_of_route_ids = self.route_id_to_msges[announcement_id]["list_of_route_ids"]
         #print "key1: " + self.route_id_to_msges[route_id]["rs1"]
         #print "key2: " + self.route_id_to_msges[route_id]["rs2"]
-        #self.statistics.record_time_after_mpc_execution(route_id)
         logger.debug("key: " + key)
-        keys=[]
-        ids=[]
-        for i in range(0,len(key)/34):
-
-            keys.append(key[i*34:i*34+32])
-            ids.append(key[i*34+32:i*34+34])
+        keys = []
+        ids = []
+        for i in range(0, len(key) / KEY_AND_ID_HEX_LENGTH):
+            keys.append(key[i * KEY_AND_ID_HEX_LENGTH: i * KEY_AND_ID_HEX_LENGTH + KEY_HEX_LENGTH])
+            ids.append(key[i * KEY_AND_ID_HEX_LENGTH + KEY_HEX_LENGTH: i * KEY_AND_ID_HEX_LENGTH + KEY_AND_ID_HEX_LENGTH])
             logger.info("key received for route_id: " + ids[i])
                  #print "getting encrypted key:" + key
             if keys[i] == DUMMY_KEY:
-                logger.info("BGP-speaker " + str(self.participant_db.id_2_bgp_speaker[i]) + " received dummy key for announcement " + str(announcement_id))
+                logger.info("BGP-speaker " + self.id_2_asn[i] + " received dummy key for announcement " + str(announcement_id))
                 pass
             else:
                 logger.debug("ready to decrypt with key " + str(keys[i]))
                 cipher = AESCipher(keys[i].decode("hex"))
-                route_id= list_of_route_ids[int(ids[i], 10)-1];
-
+                route_id = list_of_route_ids[int(ids[i], 16)-1];
                 encrypted_route =self.route_id_to_msges[route_id]["encrypted_route"]
-                #print "ready to decrypt route " + str(encrypted_route)
-
-                #route=Route()
-                #encrypted_route2 = cipher.encrypt(pickle.dumps(route))
                 decrypted_object = cipher.decrypt(encrypted_route)
-                #print "decrypted object: " + str(decrypted_object)
                 decrypted_route = pickle.loads(decrypted_object) # decrypt serialized route object
-                logger.info("decrypted route: " + str(pickle.loads(decrypted_object)))
-                logger.info("BGP-speaker " + str(self.participant_db.id_2_bgp_speaker[i]) + " decrypted route: " + str(decrypted_route.id) + " for announcement " + str(announcement_id))
-
+                logger.info("decrypted route: " + str(decrypted_route)))
+                logger.info("BGP-speaker " + self.id_2_asn[i] + " decrypted route: " + str(decrypted_route.id) + " for announcement " + str(announcement_id))
 
     def stop(self):
         logger.info("Stopping.")
@@ -172,9 +153,10 @@ def xor_strings(xs, ys):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("asn_2_id_file", type=str, help="specify asn_2_id json file")
     args = parser.parse_args()
 
-    pprs = Host()
+    pprs = Host(args.asn_2_id_file)
     rs_thread = Thread(target=pprs.start)
     rs_thread.daemon = True
     rs_thread.start()
