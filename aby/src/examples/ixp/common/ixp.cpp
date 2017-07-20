@@ -109,11 +109,16 @@ void PutGEMuxTree(BooleanCircuit *circ, share*** shr_k, share*** shr_cond, uint3
  * @param shr_cond - the publish matrix (export policy)
  * @param len - the number of entries to filter (==routes (keys))
  */
-void Filter(BooleanCircuit *circ, share*** shr_data, share*** shr_cond, uint32_t len) {
-
+void Filter(BooleanCircuit *circ, share*** shr_data, share*** shr_cond, uint32_t len, uint32_t mode) {
+    if (mode == 3) {
+	    for(uint32_t i = 1; i < len; ++i) {
+		    (*shr_data)[i] = circ->PutVecANDMUXGate((*shr_data)[i], (*shr_data)[0], (*shr_cond)[1]); // cond ? a : b
+	    }
+        return;
+    }
 	// a number of MUXes that pass through the data if cond==1 or dummy data (from shr_data[len-1])
-	for(uint32_t i = 0; i < len - 1; ++i) {
-		(*shr_data)[i] = circ->PutVecANDMUXGate((*shr_data)[i], (*shr_data)[len - 1], (*shr_cond)[i]); // cond ? a : b
+	for(uint32_t i = 1; i < len; ++i) {
+		(*shr_data)[i] = circ->PutVecANDMUXGate((*shr_data)[i], (*shr_data)[0], (*shr_cond)[i]); // cond ? a : b
 	}
 }
 
@@ -128,10 +133,15 @@ void Filter(BooleanCircuit *circ, share*** shr_data, share*** shr_cond, uint32_t
  * @param shr_cond - the publish matrix (export policy)
  * @param len - the number of entries to filter (==routes (keys))
  */
-void Filter_Pref(BooleanCircuit *circ, share*** shr_data, share*** shr_cond, uint32_t len) {
-
+void Filter_Pref(BooleanCircuit *circ, share*** shr_data, share*** shr_cond, uint32_t len, uint32_t mode) {
+    if (mode == 4) {
+        for (uint32_t i = 1; i < len; ++i) {
+		    (*shr_data)[i] = circ->PutVecANDMUXGate((*shr_data)[i], (*shr_data)[0], (*shr_cond)[1]); // cond ? a : b
+        }
+        return;
+    }
 	// a number of MUXes that pass through the data if cond==1 or dummy data (from shr_data[0])
-	for(uint32_t i = 1; i < len ; ++i) {
+	for(uint32_t i = 1; i < len; ++i) {
 		(*shr_data)[i] = circ->PutVecANDMUXGate((*shr_data)[i], (*shr_data)[0], (*shr_cond)[i]); // cond ? a : b
 	}
 }
@@ -164,7 +174,7 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 		}
 
 		//parameters
-		uint32_t id_bits = 8; // length of a route id in bits
+		uint32_t id_bits = 16; // length of a route id in bits
 		uint32_t key_bits = 128; // length of 1 symmetric key in bits
 		uint32_t r_bytes = ceil_divide((key_bits + id_bits), 8); // bytes of 1 route (key+id), padded to byte
 		uint32_t rt_bytes = ceil_divide(num_routes, 8); // bytes of the transposed routes, padded to byte
@@ -256,6 +266,9 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 		BooleanCircuit* circ = (BooleanCircuit*) sharings[S_BOOL]->GetCircuitBuildRoutine(); //Fixed to GMW currently
 
 		share *shr_v, *shr_k;
+        uint32_t vs_num_routes = (mode == 3) ? 2 : num_routes;
+	    share** shr_keys = (share**) malloc(sizeof(share*) * num_routes);
+	    share** shr_vs = (share**) malloc(sizeof(share*) * vs_num_routes);
 
 		if (outsourced > 0) {
 
@@ -293,7 +306,7 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 			}
 			else { // outsourced == 1
 				// put SharedInput gates (no role) use stdin inputs
-				shr_v = circ->PutSharedSIMDINGate(num_as, in_v, num_routes);
+				shr_v = circ->PutSharedSIMDINGate(num_as, in_v, vs_num_routes);
 				shr_k = circ->PutSharedSIMDINGate((key_bits + id_bits) * num_as, kt, num_routes);
 			}
 
@@ -304,13 +317,12 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 			shr_k = circ->PutSIMDINGate((key_bits + id_bits) * num_as, kt, num_routes, SERVER);
 		}
 
-		share** shr_keys = (share**) malloc(sizeof(share*) * num_routes);
-		share** shr_vs = (share**) malloc(sizeof(share*) * num_routes);
-
-		for (uint32_t i = 0; i < num_routes; i++) {
-			shr_keys[i] = shr_k->get_wire_as_share(i);
-			shr_vs[i] = shr_v->get_wire_as_share(i);
-		}
+	    for (uint32_t i = 0; i < num_routes; i++) {
+	    	shr_keys[i] = shr_k->get_wire_as_share(i);
+	    }
+        for (uint32_t i = 0; i < vs_num_routes; i++) {
+	    	shr_vs[i] = shr_v->get_wire_as_share(i);
+        }
 
 
 #if IXP_MUX_DBG
@@ -406,17 +418,17 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 			free(out_kb);
 			free(shr_out);
 
-		} else if (mode == 1) { //mode == 1, simple ALL case. filters routes
-			Filter(circ, &shr_keys, &shr_vs, num_routes);
+		} else if (mode == 1 || mode == 3) { //mode == 1, simple ALL case. filters routes
+			Filter(circ, &shr_keys, &shr_vs, num_routes, mode);
 
 			share ** shr_out = (share **) calloc(sizeof(share*), num_routes);
 
 			if (outsourced > 0) {
-				for (uint32_t i = 0; i < num_routes - 1; i++) {
+				for (uint32_t i = 1; i < num_routes; i++) {
 					shr_out[i] = circ->PutSharedOUTGate(shr_keys[i]);
 				}
 			} else {
-				for (uint32_t i = 0; i < num_routes - 1; i++) {
+				for (uint32_t i = 1; i < num_routes; i++) {
 					shr_out[i] = circ->PutOUTGate(shr_keys[i], ALL);
 				}
 			}
@@ -433,7 +445,7 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 
 			uint8_t *out_kb = (uint8_t *) calloc(sizeof(uint8_t), total_r_bytes * num_as);
 
-			for (uint32_t i = 0; i < num_routes - 1; i++) { // iterate through all result keys
+			for (uint32_t i = 1; i < num_routes; i++) { // iterate through all result keys
 				shr_out[i]->get_clear_value_vec(&out_k, &bl, &nv);
 
 #if IXP_DBG_OUT
@@ -481,7 +493,7 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes,
 }
 
 
-int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes, uint32_t test_val, uint32_t outsourced,
+int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes, uint32_t test_val, uint32_t mode, uint32_t outsourced,
 		uint32_t num_as) {
 
 	vector<Sharing*>& sharings = party->GetSharings();
@@ -508,12 +520,12 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 		}
 
 		//parameters
-		uint32_t id_bits = 8; // length of a route id in bits
+		uint32_t id_bits = 16; // length of a route id in bits
 		uint32_t key_bits = 128; // length of 1 symmetric key in bits
 		uint32_t r_bytes = ceil_divide((key_bits + id_bits), 8); // bytes of 1 route (key+id), padded to byte
 		uint32_t rt_bytes = ceil_divide(num_routes, 8); // bytes of the transposed routes, padded to byte
 		uint32_t total_r_bytes = r_bytes * num_routes; // total number of bytes of all routes
-		uint32_t p_bits = 8; // bit length of a preference
+		uint32_t p_bits = 16; // bit length of a preference
 		uint32_t p_bytes = ceil_divide(p_bits, 8); // bytes of a pref, padded to full byte
 		uint32_t pt_bytes = ceil_divide(num_routes, 8); // byte length of transposed prefs, padded to byte
 		uint32_t num_pt = p_bits * pt_bytes;
@@ -625,8 +637,10 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 
 		BooleanCircuit* circ = (BooleanCircuit*) sharings[S_BOOL]->GetCircuitBuildRoutine();
 
+        uint32_t vs_num_routes = (mode == 4) ? 2 : num_routes;
+
 		share *shr_v, *shr_k, *shr_p;
-		share **shr_vs = (share**) malloc(sizeof(share*) * num_routes);
+		share **shr_vs = (share**) malloc(sizeof(share*) * vs_num_routes);
 		share **shr_prefs = (share**) malloc(sizeof(share*) * num_routes);
 		share **shr_keys = (share**) malloc(sizeof(share*) * num_routes);
 
@@ -678,7 +692,7 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 
 			} else { //outsourced == 1
 					 // put SharedInput gates (no role) use stdin inputs
-				shr_v = circ->PutSharedSIMDINGate(num_as, in_v, num_routes);
+				shr_v = circ->PutSharedSIMDINGate(num_as, in_v, vs_num_routes);
 				shr_p = circ->PutSharedSIMDINGate(num_as * p_bits, pt, num_routes);
 				for (uint32_t i = 0; i < num_routes; i++) {
 					shr_keys[i] = circ->PutSharedINGate(in_k + i * r_bytes, key_bits + id_bits);
@@ -700,11 +714,13 @@ int32_t test_ixp_circuit_pref(e_role role, ABYParty* party, uint32_t num_routes,
 		for (uint32_t i = 0; i < num_routes; i++) {
 			shr_keys[i] = circ->PutRepeaterGate(num_as, shr_keys[i]);
 			shr_prefs[i] = shr_p->get_wire_as_share(i);
-			shr_vs[i] = shr_v->get_wire_as_share(i);
 		}
+        for (uint32_t i = 0; i < vs_num_routes; i++) {
+			shr_vs[i] = shr_v->get_wire_as_share(i);
+        }
 
 		//set preference of all forbidden routes to zero
-		Filter_Pref(circ, &shr_prefs, &shr_vs, num_routes);
+		Filter_Pref(circ, &shr_prefs, &shr_vs, num_routes, mode);
 
 		share **shr_pref_transposed = (share**) malloc(sizeof(share*) * num_routes);
 		uint32_t *posids = (uint32_t*) calloc(sizeof(uint32_t), num_as);
@@ -922,14 +938,16 @@ int32_t init_ixp_circuit(e_role role, char* address, seclvl seclvl, uint32_t num
 	}
 
 	//exit if inner_mode > 2
-	while (inner_mode < 3) {
+	while (inner_mode < 5) {
 		switch (inner_mode) {
 		case 0: //single
 		case 1: //all
+        case 3: // single export policy testing
 			test_ixp_circuit(role, party, num_routes, test_val, inner_mode, outsourced, num_as);
 			break;
 		case 2: //pref
-			test_ixp_circuit_pref(role, party, num_routes, test_val, outsourced, num_as);
+        case 4: // single export policy testing
+			test_ixp_circuit_pref(role, party, num_routes, test_val, inner_mode, outsourced, num_as);
 			break;
 		}
 

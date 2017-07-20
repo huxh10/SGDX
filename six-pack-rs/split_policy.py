@@ -17,7 +17,7 @@ def xor_string(s_x, s_y):
 def split_policy(filter_file, rank_file):
     with open(filter_file, 'r') as f:
         as_num = int(f.readline()[:-1])
-        export_policies = [[False] * as_num] * as_num
+        export_policies = [[False for i in range(0, as_num)] for j in range(0, as_num)]
         i = 0
         for line in f:
             for asn in line[:-1].split(' ')[1:]:
@@ -36,7 +36,7 @@ def split_policy(filter_file, rank_file):
     # priority is 16 bits long
     with open(rank_file, 'r') as f:
         assert as_num == int(f.readline()[:-1])
-        selection_policies = [[]] * as_num
+        selection_policies = [[] for i in range(0, as_num)]
         i = 0
         for line in f:
             # in six-pack the bigger value the higher priority, reverse the value

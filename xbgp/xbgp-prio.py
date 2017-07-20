@@ -297,7 +297,7 @@ class ExaBGPEmulator(object):
 
                 self.logger.debug("encrypted-route: " + str(encrypted_route))
 
-                routes.append({"prefix" : prefix, "bgp_next_hop" : bgp_update["neighbor"]["ip"],"route-in-clear" : None, "route_id" : route.id, "encrypted_route" : encrypted_route , "encrypted_exp_policies_rs1" : encrypted_exp_policies_rs1, "encrypted_exp_policies_rs2" : encrypted_exp_policies_rs2, "key" : keystr, "type" : route.type , "announcement_id" : route.id,})
+                routes.append({"prefix" : prefix, "bgp_next_hop" : bgp_update["neighbor"]["ip"], "asn" : bgp_update["neighbor"]["asn"]["peer"], "route-in-clear" : None, "route_id" : route.id, "encrypted_route" : encrypted_route , "encrypted_exp_policies_rs1" : encrypted_exp_policies_rs1, "encrypted_exp_policies_rs2" : encrypted_exp_policies_rs2, "key" : keystr, "type" : route.type , "announcement_id" : route.id,})
 
                 self.statistics.xbgp_update_end_processing(route.id)
 
