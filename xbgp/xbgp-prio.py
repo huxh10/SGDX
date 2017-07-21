@@ -21,7 +21,6 @@ import threading
 import util.log
 from util.crypto_util import AESCipher
 from pprs.route import Route
-from pprs.participant_db import ParticipantDB
 import pickle
 import pprs.port_config as port_config
 import xbgp_process
@@ -63,11 +62,6 @@ class ExaBGPEmulator(object):
         self.logger.debug('connecting to RS2')
         self.conn_rs2 = Client((port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_receive_bgp_messages"]), authkey=None)
         self.logger.debug('connected to RS2')
-        self.participant_db = ParticipantDB()
-        self.number_of_participants = len(self.participant_db.bgp_speaker_2_id.keys())
-        self.neighbor2prefix2exported_to = {}
-        for participant in self.participant_db.bgp_speaker_2_id:
-            self.neighbor2prefix2exported_to[participant]={}
 
         self.number_of_processes=number_of_processes
         self.manager = Manager()

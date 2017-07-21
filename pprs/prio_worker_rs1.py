@@ -29,7 +29,7 @@ FILTER_SHARE = 'filter_share1.json'
 RANK_SHARE = 'rank_share1.json'
 
 
-class AllWorker1():
+class PrioWorker1():
 
     def __init__(self,handler_to_worker_queue,worker_to_handler_queue, workers_pool):
         # get port
@@ -51,7 +51,7 @@ class AllWorker1():
     def load_policy(self):
         # filter
         with open(FILTER_SHARE, 'r') as f:
-            self.export_policies = json.laod(f)
+            self.export_policies = json.load(f)
         self.number_of_participants = len(self.export_policies)
         # rank
         with open(RANK_SHARE, 'r') as f:
@@ -64,17 +64,16 @@ class AllWorker1():
             for j in xrange(0, self.number_of_participants):
                 v = 2 if self.export_policies[i][j] else 0
                 export_rows_strings[i] += '{num:0{width}x}'.format(num=v, width=AS_ROW_ENCODING_SIZE/4)
-        logger.debug("export_rows_string: " + export_rows_strings)
+        logger.debug("export_rows_string: " + str(export_rows_strings))
 
-        myinput = "5" + "\n" + str(self.number_of_participants) + "\n"
+        myinput = "5" + "\n" + str(self.number_of_participants)
         # invoking the MPC
         logger.info("input-to-mpc: " + myinput)
         print >> self.p.stdin, myinput # write input
         self.p.stdin.flush() # not necessary in this case
         for i in xrange(0, self.number_of_participants):
-            print >> self.p.stdin, export_rows_strings[i] + "\n"
-        print >> self.p.stdin, 0
-        self.p.stdin.flush() # not necessary in this case
+            print >> self.p.stdin, export_rows_strings[i]
+            self.p.stdin.flush() # not necessary in this case
 
     def process_update(self):
         print str(self.port) + " is ready"
@@ -130,7 +129,7 @@ class AllWorker1():
                 logger.info(line)
                 str_host += line
 
-            self.worker_to_handler_queue.put({"type" : "to-hosts",  "announcement_id" : announcement_id, "encrypted_route" : msg["encrypted_route"], "key" : str_host, "prefix" : msg["prefix"], "list_of_route_ids" : list_of_route_ids})
+            self.worker_to_handler_queue.put({"type" : "to-hosts",  "announcement_id" : msg["announcement_id"], "encrypted_route" : msg["encrypted_route"], "key" : str_host, "prefix" : msg["prefix"], "list_of_route_ids" : list_of_route_ids})
 
         #close the process
         myinput = "6\n"
@@ -141,6 +140,6 @@ class AllWorker1():
         print "stop sent to handler" + str(self.port)
 
 
-def prio_worker_main(handler_to_worker_queue,workers_to_rs2_queue, workers_pool):
-    worker = AllWorker1(handler_to_worker_queue,workers_to_rs2_queue, workers_pool)
+def prio_worker_main(handler_to_worker_queue, workers_to_rs2_queue, workers_pool):
+    worker = PrioWorker1(handler_to_worker_queue, workers_to_rs2_queue, workers_pool)
     worker.process_update()

@@ -164,10 +164,10 @@ int32_t test_ixp_circuit(e_role role, ABYParty* party, uint32_t num_routes, uint
 #endif
 			// provide parameters from stdin. overwrites cmd-line parameters
 			getline(cin, input_line);
-			sscanf(input_line.c_str(), "%ul", &as_id);
-			if (num_as > 0) {
+			sscanf(input_line.c_str(), "%ul", &num_routes);
+			if (num_routes > 0) {
 				getline(cin, input_line);
-				sscanf(input_line.c_str(), "%ul", &num_routes);
+				sscanf(input_line.c_str(), "%ul", &as_id);
 			} else{
 				break;
 			}

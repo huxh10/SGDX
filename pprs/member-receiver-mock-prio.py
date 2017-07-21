@@ -12,8 +12,8 @@ np = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if np not in sys.path:
     sys.path.append(np)
 import util.log
-#from Crypto.Cipher import AES
 import subprocess
+import json
 from util.crypto_util import AESCipher
 import multiprocessing as mp
 import port_config
@@ -33,7 +33,7 @@ RS2_MODE =2
 
 
 class Host:
-    def __init__(self):
+    def __init__(self, asn_2_id_file):
         logger.info("Initializing the Host.")
 
         with open(asn_2_id_file, 'r') as f:
@@ -129,7 +129,7 @@ class Host:
         for i in range(0, len(key) / KEY_AND_ID_HEX_LENGTH):
             keys.append(key[i * KEY_AND_ID_HEX_LENGTH: i * KEY_AND_ID_HEX_LENGTH + KEY_HEX_LENGTH])
             ids.append(key[i * KEY_AND_ID_HEX_LENGTH + KEY_HEX_LENGTH: i * KEY_AND_ID_HEX_LENGTH + KEY_AND_ID_HEX_LENGTH])
-            logger.info("key received for route_id: " + ids[i])
+            logger.info("key received for route_id in list: " + ids[i])
                  #print "getting encrypted key:" + key
             if keys[i] == DUMMY_KEY:
                 logger.info("BGP-speaker " + self.id_2_asn[i] + " received dummy key for announcement " + str(announcement_id))
@@ -141,7 +141,7 @@ class Host:
                 encrypted_route =self.route_id_to_msges[route_id]["encrypted_route"]
                 decrypted_object = cipher.decrypt(encrypted_route)
                 decrypted_route = pickle.loads(decrypted_object) # decrypt serialized route object
-                logger.info("decrypted route: " + str(decrypted_route)))
+                logger.info("decrypted route: " + str(decrypted_route))
                 logger.info("BGP-speaker " + self.id_2_asn[i] + " decrypted route: " + str(decrypted_route.id) + " for announcement " + str(announcement_id))
 
     def stop(self):

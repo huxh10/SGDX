@@ -1,4 +1,5 @@
 
+
 import pickle
 import json
 import util.log
@@ -29,8 +30,7 @@ FILTER_SHARE = 'filter_share2.json'
 RANK_SHARE = 'rank_share2.json'
 
 
-class AllWorker2():
-
+class PrioWorker2(object):
     def __init__(self,port,handler_to_worker_queue,worker_2_handler_queue):
         # get port
         self.port = port
@@ -45,11 +45,12 @@ class AllWorker2():
         self.p.stdout.readline()
         logger.debug("process launched")
         self.load_policy()
+        self.send_export_policy_to_mpc()
 
     def load_policy(self):
         # filter
         with open(FILTER_SHARE, 'r') as f:
-            self.export_policies = json.laod(f)
+            self.export_policies = json.load(f)
         self.number_of_participants = len(self.export_policies)
         # rank
         with open(RANK_SHARE, 'r') as f:
@@ -62,17 +63,16 @@ class AllWorker2():
             for j in xrange(0, self.number_of_participants):
                 v = 2 if self.export_policies[i][j] else 0
                 export_rows_strings[i] += '{num:0{width}x}'.format(num=v, width=AS_ROW_ENCODING_SIZE/4)
-        logger.debug("export_rows_string: " + export_rows_strings)
+        logger.debug("export_rows_string: " + str(export_rows_strings))
 
-        myinput = "5" + "\n" + str(self.number_of_participants) + "\n"
+        myinput = "5" + "\n" + str(self.number_of_participants)
         # invoking the MPC
         logger.info("input-to-mpc: " + myinput)
         print >> self.p.stdin, myinput # write input
         self.p.stdin.flush() # not necessary in this case
         for i in xrange(0, self.number_of_participants):
-            print >> self.p.stdin, export_rows_strings[i] + "\n"
-        print >> self.p.stdin, 0
-        self.p.stdin.flush() # not necessary in this case
+            print >> self.p.stdin, export_rows_strings[i]
+            self.p.stdin.flush() # not necessary in this case
 
     # process a BGP update message
     def process_update(self):
@@ -98,7 +98,7 @@ class AllWorker2():
             i = 1
             list_of_route_ids = []
             for nh_id in list_of_msg_for_prefix.keys():
-                list_of_route_ids.append(list_of_msg_for_prefix[nh_id]["announcement_id"])
+                list_of_route_ids.append(list_of_msg_for_prefix[nh_id])
                 keys_str += '{num:0{width}x}'.format(num = 0, width = KEY_LENGTH * 2)
                 keys_str += '{num:0{width}x}'.format(num = 0, width= KEY_ID_SIZE / 4)
                 i += 1
@@ -136,6 +136,6 @@ class AllWorker2():
         self.worker_2_handler_queue.put({"stop" : None})
 
 
-def prio_worker_main(port,handler_to_worker_queue,worker_2_handler_queue):
-    worker = AllWorker2(port,handler_to_worker_queue,worker_2_handler_queue)
+def prio_worker_main(port, handler_to_worker_queue, worker_2_handler_queue):
+    worker = PrioWorker2(port, handler_to_worker_queue, worker_2_handler_queue)
     worker.process_update()

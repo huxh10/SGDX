@@ -4,7 +4,6 @@ receives BGP messages and assign them to the set of SMPC workers
 
 
 import argparse
-import json
 from multiprocessing.connection import Listener
 import os
 import Queue
@@ -13,6 +12,7 @@ import sys
 np = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if np not in sys.path:
     sys.path.append(np)
+import json
 import util.log
 from xrs.server import server as Server
 import random
@@ -31,7 +31,7 @@ import port_config
 logger = util.log.getLogger('prio-handler-rs2')
 
 
-class PrioHandlerRs2:
+class PrioHandlerRs2(object):
     def __init__(self, asn_2_id_file, number_of_processes):
         logger.info("Initializing the All Handler for RS2.")
 
@@ -129,7 +129,7 @@ class PrioHandlerRs2:
                             self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]={}
                         as_id = self.asn_2_id[self.id_2_msg[announcement_id]["asn"]]
                         self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]][as_id] = announcement_id
-                        self.handler_2_worker_queues[self.id_2_port[announcement_id]].put({"announcement_id" : msg["announcement_id"], "as_id" : as_id, "messages" : self.prefix_2_bgp_next_hop_2_route[self.id_2_msg[announcement_id]["prefix"]]})
+                        self.handler_2_worker_queues[self.id_2_port[announcement_id]].put({"announcement_id" : msg["announcement_id"], "as_id" : as_id, "messages" : self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]})
                         del self.id_2_port[announcement_id]
                         del self.id_2_msg[announcement_id]
 
@@ -190,11 +190,11 @@ class PrioHandlerRs2:
                     self.id_2_msg[announcement_id] = msg
                     if announcement_id in self.id_2_port:
                         #send message to the correct worker
-                        if self.id_2_msg[announcement_id]["prefix"] not in self.prefix_2_nh_id_2_route_id.keys():
-                            self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]={}
+                        if msg["prefix"] not in self.prefix_2_nh_id_2_route_id.keys():
+                            self.prefix_2_nh_id_2_route_id[msg["prefix"]]={}
                         logger.info("adding route " + str(announcement_id) + " into the worker queue")
-                        as_id = self.asn_2_id[self.id_2_msg[announcement_id]["asn"]]
-                        self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]][as_id] = announcement_id
+                        as_id = self.asn_2_id[msg["asn"]]
+                        self.prefix_2_nh_id_2_route_id[msg["prefix"]][as_id] = announcement_id
                         self.handler_2_worker_queues[self.id_2_port[announcement_id]].put({"announcement_id" : announcement_id, "as_id": as_id, "messages" : self.prefix_2_nh_id_2_route_id[msg["prefix"]]})
 
                         del self.id_2_port[announcement_id]
