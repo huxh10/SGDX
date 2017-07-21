@@ -11,8 +11,8 @@ FILTER_SHARE2 = 'filter_share2.json'
 RANK_SHARE1 = 'rank_share1.json'
 RANK_SHARE2 = 'rank_share2.json'
 
-def xor_string(s_x, s_y):
-    return "".join(chr(ord(x) ^ ord(y)) for x, y in zip(s_x, s_y))
+def xor_hex_encoded_string(s_x, s_y):
+    return "".join(chr(ord(x) ^ ord(y)) for x, y in zip(s_x.decode('hex'), s_y.decode('hex'))).encode('hex')
 
 def split_policy(filter_file, rank_file):
     with open(filter_file, 'r') as f:
@@ -45,7 +45,7 @@ def split_policy(filter_file, rank_file):
         assert i == as_num
 
     selection_policies_1 = [map(lambda x: os.urandom(2).encode('hex'), [0] * as_num) for i in range(0, as_num)]
-    selection_policies_2 = [map(xor_string, selection_policies_1[i], selection_policies[i]) for i in range(0, as_num)]
+    selection_policies_2 = [map(xor_hex_encoded_string, selection_policies_1[i], selection_policies[i]) for i in range(0, as_num)]
 
     with open(RANK_SHARE1, 'w+') as f:
         json.dump(selection_policies_1, f)
