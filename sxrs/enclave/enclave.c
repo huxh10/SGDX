@@ -11,7 +11,7 @@
 
 rt_state_t *gp_rt_states = NULL;
 // tmp states for laoding rib from file
-route_t g_tmp_route;
+route_t g_tmp_route = {NULL, NULL, NULL, NULL, {0, NULL}, NULL, 0, 0};
 uint32_t g_tmp_asid;
 
 as_policy_t *g_p_policies = NULL;
@@ -102,6 +102,7 @@ uint32_t ecall_process_non_transit_route(void *msg, size_t msg_size)
     // return messages
     if (!bgp_output_msg_num && !sdn_output_msg_num) return SUCCESS;
     if ((ret_msg_size = write_bgp_ret_to_stream(&ret_msg, p_bgp_route_output_dsrlz_msgs, bgp_output_msg_num, p_sdn_reach_output_dsrlz_msgs, sdn_output_msg_num)) == -1) return MALLOC_ERROR;
+    if (ret_msg_size == 0) return SUCCESS;
     call_status = ocall_send_bgp_ret(&ret_status, (void *) ret_msg, ret_msg_size);
     SAFE_FREE(ret_msg);
     for (i = 0; i < bgp_output_msg_num; i++) {

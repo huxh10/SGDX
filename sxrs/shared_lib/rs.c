@@ -107,6 +107,7 @@ uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asid, ro
         p_route->med = atoi(line+17);
     } else if (!strcmp("\n", line)) {
         rib_map_t *p_rib_entry = NULL;
+        //print_route(p_route);
         HASH_FIND_STR(p_rt_states->ribs[asid], p_route->prefix, p_rib_entry);
         if (p_rib_entry) {
             rl_add_route(&p_rib_entry->rl, *tmp_asid, p_route, p_rt_states->as_policies[asid].selection_policy);
@@ -123,6 +124,8 @@ uint32_t process_rib_file_line(uint32_t asid, char *line, uint32_t *tmp_asid, ro
             HASH_ADD_KEYPTR(hh, p_rt_states->ribs[asid], p_rib_entry->key, strlen(p_rib_entry->key), p_rib_entry);
         }
     }
+
+    return SUCCESS;
 }
 
 uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_input_msg, rt_state_t *p_rt_states, bgp_route_output_dsrlz_msg_t **pp_bgp_output_msgs, size_t *p_bgp_output_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_output_msgs, size_t *p_sdn_output_msg_num)
@@ -304,6 +307,27 @@ uint32_t get_rs_ribs_num(rib_map_t **pp_ribs, uint32_t num)
     printf("total ribs entry num: %d\n", count);
     return SUCCESS;
 
+}
+
+uint32_t print_rs_rib_size(rib_map_t **pp_ribs, uint32_t num)
+{
+    uint32_t i, count;
+
+    rib_map_t *p_rib_entry = NULL, *tmp_p_rib_entry = NULL;
+    route_node_t *p_tmp_rn = NULL;
+
+    for (i = 0; i < num; i++) {
+        count = 0;
+        HASH_ITER(hh, pp_ribs[i], p_rib_entry, tmp_p_rib_entry) {
+            p_tmp_rn = p_rib_entry->rl->head;
+            while (p_tmp_rn) {
+                count++;
+                p_tmp_rn = p_tmp_rn->next;
+            }
+        }
+        printf("as_id: %u, rib size: %u\n", i, count);
+    }
+    return SUCCESS;
 }
 
 uint32_t print_rs_best_ribs(rib_map_t **pp_ribs, uint32_t num)

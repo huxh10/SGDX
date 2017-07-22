@@ -18,8 +18,10 @@ void init_wo_sgx(as_cfg_t *p_as_cfg, int verbose)
 
     if (load_asmap(&gp_rt_states, p_as_cfg->as_size, p_as_cfg->as_id_2_n) == MALLOC_ERROR)  exit(-1);
     SAFE_FREE(p_as_cfg->as_id_2_n);
+    fprintf(stderr, "load as id map done [%s]\n", __FUNCTION__);
 
     gp_rt_states->as_policies = p_as_cfg->as_policies;
+    fprintf(stderr, "load as policies done [%s]\n", __FUNCTION__);
 
     if (!p_as_cfg->rib_file_dir) return;
     int dir_len = strlen(p_as_cfg->rib_file_dir);
@@ -27,7 +29,7 @@ void init_wo_sgx(as_cfg_t *p_as_cfg, int verbose)
     memcpy(rib_file, p_as_cfg->rib_file_dir, dir_len);
     char *line = NULL;                  // buffer address
     size_t len = 0;                     // allocated buffer size
-    route_t tmp_route;
+    route_t tmp_route = {NULL, NULL, NULL, NULL, {0, NULL}, NULL, 0, 0};
     uint32_t tmp_asid;
     FILE *fp;
     for (i = 0; i < p_as_cfg->as_size; i++) {
@@ -42,6 +44,7 @@ void init_wo_sgx(as_cfg_t *p_as_cfg, int verbose)
         fclose(fp);
     }
     SAFE_FREE(line);
+    fprintf(stderr, "load rib from file done [%s]\n", __FUNCTION__);
 }
 
 void process_bgp_route_wo_sgx(bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)

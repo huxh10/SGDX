@@ -43,7 +43,7 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
     // as map
     call_status = enclave_ecall_load_asmap(g_enclave_id, &ret_status, p_as_cfg->as_size, (void *) p_as_cfg->as_id_2_n, p_as_cfg->as_size * sizeof *p_as_cfg->as_id_2_n);
     if (ret_status == SUCCESS) {
-        fprintf(stderr, "enclave_load_asmap done [%s]\n", __FUNCTION__);
+        fprintf(stderr, "load as id map done [%s]\n", __FUNCTION__);
     } else {
         fprintf(stderr, "enclave_load_asmap failed, errno:%u [%s]\n", ret_status, __FUNCTION__);
     }
@@ -53,15 +53,16 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
     for (i = 0; i < p_as_cfg->as_size; i++) {
         call_status = enclave_ecall_load_as_policies(g_enclave_id, &ret_status, i, (void *) p_as_cfg->as_policies[i].import_policy, p_as_cfg->as_size * sizeof *p_as_cfg->as_policies[i].import_policy, (void *) p_as_cfg->as_policies[i].export_policy, p_as_cfg->as_size * sizeof *p_as_cfg->as_policies[i].export_policy, (void *) p_as_cfg->as_policies[i].selection_policy, p_as_cfg->as_size * sizeof *p_as_cfg->as_policies[i].selection_policy);
         if (ret_status == SUCCESS) {
-            fprintf(stderr, "enclave_load_as_policies asn:%u done [%s]\n", i, __FUNCTION__);
+            //fprintf(stderr, "enclave_load_as_policies as_id:%u done [%s]\n", i, __FUNCTION__);
         } else {
-            fprintf(stderr, "enclave_load_as_policies failed, asn:%u, errno:%u [%s]\n", i, ret_status, __FUNCTION__);
+            fprintf(stderr, "enclave_load_as_policies failed, as_id:%u, errno:%u [%s]\n", i, ret_status, __FUNCTION__);
             exit(-1);
         }
         SAFE_FREE(p_as_cfg->as_policies[i].import_policy);
         SAFE_FREE(p_as_cfg->as_policies[i].export_policy);
         SAFE_FREE(p_as_cfg->as_policies[i].selection_policy);
     }
+    fprintf(stderr, "load as policies done [%s]\n", __FUNCTION__);
 
     // ribs
     if (!p_as_cfg->rib_file_dir) return;
@@ -79,10 +80,14 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
         }
         while (getline(&line, &len, fp) != -1) {
             enclave_ecall_load_rib_file_line(g_enclave_id, &ret_status, i, line);
+            if (ret_status != SUCCESS) {
+                fprintf(stderr, "enclave_ecall_load_rib_file_line failed, errno:%u, line:%s [%s]\n", ret_status, line, __FUNCTION__);
+            }
         }
         fclose(fp);
     }
     SAFE_FREE(line);
+    fprintf(stderr, "load rib from file done [%s]\n", __FUNCTION__);
 }
 
 void process_bgp_route_w_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)

@@ -14,7 +14,7 @@
 #define ANNOUNCE                1
 #define WITHDRAW                2
 
-#define ENABLE_SDX              1
+#define ENABLE_SDX              0
 
 #ifndef SAFE_FREE
 #define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}

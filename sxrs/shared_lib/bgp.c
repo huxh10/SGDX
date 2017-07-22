@@ -6,6 +6,7 @@
 
 char *my_strdup(const char *s)
 {
+    if (!s) return NULL;
     int l = strlen(s);
     char *d = malloc(l + 1);
     if (!d) return NULL;

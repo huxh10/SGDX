@@ -11,6 +11,8 @@ uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32
 
 uint32_t get_sdn_reach_by_prefix(const char *prefix, uint8_t *p_sdn_reach, uint32_t num, rib_map_t *p_rib, uint32_t **pp_ret_reach, uint32_t *p_ret_reach_size);
 
+uint32_t print_rs_rib_size(rib_map_t **pp_ribs, uint32_t num);
+
 uint32_t get_rs_ribs_num(rib_map_t **pp_ribs, uint32_t num);
 
 uint32_t print_rs_ribs(rib_map_t **pp_ribs, uint32_t num);

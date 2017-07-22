@@ -50,7 +50,7 @@ static void print_help(void)
 static void parse_args(int argc, char *argv[])
 {
     int option;
-    static const char *optstr = "hb:p:c:t:v:a:i:f:r:";
+    static const char *optstr = "hb:p:c:t:v:a:i:f:r:d:";
     static struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
         {"bgp_serv_addr", required_argument, NULL, 'b'},
@@ -211,6 +211,7 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     SAFE_FREE(tmp_line);
     fclose(fp);
+    fprintf(stderr, "load as ips done [%s]\n", __FUNCTION__);
 
     // alloc memory for as_policies
     p_as_cfg->as_policies = malloc(p_as_cfg->as_size * sizeof *p_as_cfg->as_policies);
@@ -302,6 +303,11 @@ static void load_cfg(as_cfg_t *p_as_cfg)
 
     if (g_cfg.verbose == 5) {
         for (i = 0; i < p_as_cfg->as_size; i++) {
+            printf("AS %u asn %u ips:\n", i, p_as_cfg->as_id_2_n[i]);
+            for (j = 0; j < p_as_cfg->as_ips[i].ip_num; j++) {
+                printf("%s ", p_as_cfg->as_ips[i].ips[j]);
+            }
+            printf("\n");
             printf("AS %u import_policy:\n", i);
             for (j = 0; j < p_as_cfg->as_size; j++) {
                 printf("%u ", p_as_cfg->as_policies[i].import_policy[j]);
@@ -343,10 +349,8 @@ int main(int argc, char *argv[])
     // initialization
     load_cfg(&as_cfg);
 #ifdef W_SGX
-    printf("wsgx\n");
     init_w_sgx(&as_cfg, g_cfg.verbose);
 #else
-    printf("wosgx\n");
     init_wo_sgx(&as_cfg, g_cfg.verbose);
 #endif
     msg_handler_init(&as_cfg);

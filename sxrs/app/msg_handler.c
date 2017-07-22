@@ -181,7 +181,7 @@ void handle_exabgp_msg(char *msg)
         return;
     }
 
-    // get as id, currently use asn as consecutive id
+    // get asn
     j_neighbor = json_object_get(j_root, "neighbor");
     if (!json_is_object(j_neighbor)) {
         fprintf(stderr, "fmt error: key [neighbor] is wrong [%s]\n", __FUNCTION__);
