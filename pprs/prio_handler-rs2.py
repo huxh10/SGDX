@@ -24,20 +24,23 @@ import time
 import multiprocessing as mp
 from multiprocessing import Process, Manager
 import prio_worker_rs2
+from load_ribs import load_ribs
 from Queue import Empty
 import threading
 import port_config
 
 logger = util.log.getLogger('prio-handler-rs2')
-
+RS2_MODE = 2
 
 class PrioHandlerRs2(object):
-    def __init__(self, asn_2_id_file, number_of_processes):
+    def __init__(self, asn_2_id_file, rib_file, number_of_processes):
         logger.info("Initializing the All Handler for RS2.")
 
         self.number_of_processes = number_of_processes
         with open(asn_2_id_file, 'r') as f:
             self.asn_2_id = json.load(f)
+
+        self.prefix_2_nh_id_2_route_id = load_ribs(rib_file, self.asn_2_id, RS2_MODE) if rib_file else {}
 
         # Initialize a XRS Server
         self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_receive_bgp_messages"]))
@@ -262,10 +265,11 @@ class PrioHandlerRs2(object):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("asn_2_id_file", type=str, help="specify asn_2_id json file")
+    parser.add_argument('-r', '--rib_file', type=str, help='specify the rib file, eg.g. ../examples/test-rs/ribs/bview')
     parser.add_argument("-p","--processes", help="number of parallel SMPC processes", type=int, default=1)
     args = parser.parse_args()
 
-    pprs = PrioHandlerRs2(args.asn_2_id_file, args.processes)
+    pprs = PrioHandlerRs2(args.asn_2_id_file, args.rib_file, args.processes)
     rs_thread = Thread(target=pprs.start)
     rs_thread.setName("PrioHandler2")
     rs_thread.daemon = True

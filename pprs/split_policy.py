@@ -40,7 +40,7 @@ def split_policy(filter_file, rank_file):
         i = 0
         for line in f:
             # in six-pack the bigger value the higher priority, reverse the value
-            selection_policies[i] = map(lambda x: "{0:0{1}x}".format(as_num-int(x), 4), line[:-1].split(' '))
+            selection_policies[i] = map(lambda x: "{0:0{1}x}".format(as_num-int(x), 4), line[:-1].split(' ')[1:])
             i += 1
         assert i == as_num
 
@@ -55,8 +55,8 @@ def split_policy(filter_file, rank_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--filter_file', type=str, help='specify the filtering policy file')
-    parser.add_argument('--rank_file', type=str, help='specify the ranking policy file')
+    parser.add_argument('-f', '--filter_file', type=str, help='specify the filtering policy file')
+    parser.add_argument('-r', '--rank_file', type=str, help='specify the ranking policy file')
     args = parser.parse_args()
 
     if args.filter_file and args.rank_file:

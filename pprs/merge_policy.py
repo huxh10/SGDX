@@ -23,7 +23,7 @@ def merge_policy():
     with open(RANK_SHARE2, 'r') as f:
         selection_policies_2 = json.load(f)
 
-    print [map(lambda s_x, s_y: as_num - int("".join(chr(ord(x) ^ ord(y)) for x, y in zip(s_x, s_y)), 16), selection_policies_1[i], selection_policies_2[i]) for i in range(0, as_num)]
+    print [map(lambda s_x, s_y: as_num - int("".join(chr(ord(x) ^ ord(y)) for x, y in zip(s_x.decode('hex'), s_y.decode('hex'))).encode('hex'), 16), selection_policies_1[i], selection_policies_2[i]) for i in range(0, as_num)]
 
 if __name__ == "__main__":
     merge_policy()

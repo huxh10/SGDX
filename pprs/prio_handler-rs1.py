@@ -24,6 +24,7 @@ import time
 import multiprocessing as mp
 from multiprocessing import Process, Manager
 import prio_worker_rs1
+from load_ribs import load_ribs
 from Queue import Empty
 import threading
 import port_config
@@ -31,15 +32,17 @@ from Queue import Queue, PriorityQueue
 import sys
 
 logger = util.log.getLogger('prio-handler-rs1')
-
+RS1_MODE = 1
 
 class PrioHandlerRs1:
-    def __init__(self, asn_2_id_file, number_of_processes):
+    def __init__(self, asn_2_id_file, rib_file, number_of_processes):
         logger.info("Initializing the Priority Handler for RS1.")
 
         self.number_of_processes = number_of_processes
         with open(asn_2_id_file, 'r') as f:
             self.asn_2_id = json.load(f)
+
+        self.prefix_2_nh_id_2_route = load_ribs(rib_file, self.asn_2_id, RS1_MODE) if rib_file else {}
 
         # Initialize a XRS Server
         self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_receive_bgp_messages"]),authkey=None)
@@ -59,8 +62,6 @@ class PrioHandlerRs1:
         self.worker_to_handler_queue = self.manager.Queue()
         self.worker_ids_queue = self.manager.Queue()
         map(self.worker_ids_queue.put,range(port_config.ports_assignment["worker_port"],port_config.ports_assignment["worker_port"]+self.number_of_processes))
-
-        self.prefix_2_nh_id_2_route = {}
 
         self.prefix_2_messages_queued={}
         self.prefixes_under_processing=set()
@@ -173,8 +174,6 @@ class PrioHandlerRs1:
                     break
                 else:
                     self.lock.acquire()
-                    if msg["announcement_id"] % 100 ==0:
-                        print str(msg["announcement_id"])
                     logger.debug("received route-id: " + str(msg["announcement_id"]))
                     if msg["prefix"] in self.prefixes_under_processing:
                         logger.info("adding route " + str(msg["announcement_id"]) + " into the QUEUE queue")
@@ -218,10 +217,11 @@ class PrioHandlerRs1:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("asn_2_id_file", type=str, help="specify asn_2_id json file")
+    parser.add_argument('-r', '--rib_file', type=str, help='specify the rib file, eg.g. ../examples/test-rs/ribs/bview')
     parser.add_argument("-p","--processes", help="number of parallel SMPC processes", type=int, default=1)
     args = parser.parse_args()
 
-    pprs = PrioHandlerRs1(args.asn_2_id_file, args.processes)
+    pprs = PrioHandlerRs1(args.asn_2_id_file, args.rib_file, args.processes)
     rs_thread = Thread(target=pprs.start)
     rs_thread.setName("PrioHandler1Thread")
     rs_thread.daemon = True
