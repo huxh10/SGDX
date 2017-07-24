@@ -9,6 +9,7 @@
 
 #define VERBOSE         1
 
+#define GEN_SIG_FILE    "sig"
 #define RESULT_FILE     "result"
 
 #ifndef SAFE_FREE

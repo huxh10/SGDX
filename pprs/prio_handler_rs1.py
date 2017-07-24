@@ -157,6 +157,8 @@ class PrioHandlerRs1:
                     #self.lock_stop.acquire()
                     logger.info("Sending closing message " + str(close_msg))
                     print "Sending closing message"
+                    while not self.handler_to_worker_queue.empty():
+                        sleep(1)
                     for _ in range(0,self.number_of_processes):
                         self.handler_to_worker_queue.put((sys.maxint,msg))
                     #self.lock_stop.release()

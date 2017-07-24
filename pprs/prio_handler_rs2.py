@@ -101,6 +101,8 @@ class PrioHandlerRs2(object):
                     self.port2stop_lock.acquire()
                     logger.info("received stop message")
                     port = msg["port"]
+                    while not self.handler_2_worker_queues[port].empty():
+                        sleep(1)
                     if self.stop_port:
                         self.handler_2_worker_queues[port].put(msg)
                     self.port2stop[port] = None
@@ -165,6 +167,13 @@ class PrioHandlerRs2(object):
                     self.port2stop_lock.acquire()
                     logger.info("received stop message")
 
+                    exit_flag = 0
+                    while not exit_flag:
+                        exit_flag = 1
+                        for port in self.port2stop.keys():
+                            if not self.handler_2_worker_queues[port].empty():
+                                exit_flag = 0
+                        sleep(1)
                     for port in self.port2stop.keys():
                         self.handler_2_worker_queues[port].put(msg)
                     else:

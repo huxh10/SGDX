@@ -107,7 +107,13 @@ class ExaBGPEmulator(object):
                         elif line.startswith("ASPATH"):
                             if "attribute" not in tmp["neighbor"]["message"]["update"]:
                                 tmp["neighbor"]["message"]["update"]["attribute"] = {}
-                            tmp["neighbor"]["message"]["update"]["attribute"]["as-path"] = [int(asn) for asn in x[1].split(' ')]
+                            tmp["neighbor"]["message"]["update"]["attribute"]["as-path"] = []
+                            for asn in x[1].split(' '):
+                                if asn[0] == '{':
+                                    for i in asn[1:-1].split(','):
+                                        tmp["neighbor"]["message"]["update"]["attribute"]["as-path"].append(int(i))
+                                else:
+                                    tmp["neighbor"]["message"]["update"]["attribute"]["as-path"].append(int(asn))
 
                         elif line.startswith("MULTI_EXIT_DISC"):
                             if "attribute" not in tmp["neighbor"]["message"]["update"]:
@@ -175,7 +181,7 @@ class ExaBGPEmulator(object):
 
     def create_routes_per_prefix(self, bgp_update):
         routes = []
-        if len(bgp_update["neighbor"]["message"]["update"]["announce"]) == 0:
+        if "announce" not in bgp_update["neighbor"]["message"]["update"]:
             return routes
         nh_dict = bgp_update["neighbor"]["message"]["update"]["announce"]["ipv4 unicast"]
         for next_hop in nh_dict:
@@ -192,7 +198,7 @@ class ExaBGPEmulator(object):
 
         routes = []
         # for each IP prefix destination add a route in the queue
-        if len(bgp_update["neighbor"]["message"]["update"]["announce"]) != 0:
+        if "announce" in bgp_update["neighbor"]["message"]["update"]:
             # GENERATE ANNOUNCEMENTS
             for next_hop in bgp_update["neighbor"]["message"]["update"]["announce"]["ipv4 unicast"]:
                 for prefix in bgp_update["neighbor"]["message"]["update"]["announce"]["ipv4 unicast"][next_hop]:
@@ -273,6 +279,23 @@ class ExaBGPEmulator(object):
 
         self.stop()
 
+    def bgp_update_fast_sender(self):
+        count = 0
+        while not self.update_queue.empty() or self.run:
+            try:
+                msg = self.update_queue.get(True, 1)
+            except Empty:
+                continue
+            count += 1
+            if self.rs == SIX_PACK_RS:
+                self.send_update_rs1(msg["route"])
+                self.send_update_rs2(msg["route"])
+            elif self.rs == SGX_RS:
+                self.send_update(msg["route"])
+
+        print "total sent announcements: " + str(count)
+        self.stop()
+
     def sleep_time(self, update_time):
         time_diff = update_time - self.simulation_start_time
         wake_up_time = self.real_start_time + time_diff
@@ -302,6 +325,9 @@ class ExaBGPEmulator(object):
             self.us_thread.start()
         if self.mode == 1:
             self.us_thread = Thread(target=self.bgp_update_rate_sender)
+            self.us_thread.start()
+        if self.mode == 2:
+            self.us_thread = Thread(target=self.bgp_update_fast_sender)
             self.us_thread.start()
 
     def stop(self):
@@ -348,7 +374,7 @@ if __name__ == '__main__':
     parser.add_argument('port', help='port of the xrs', type=int)
     parser.add_argument('input', help='bgp input file')
     parser.add_argument('rate', help='bgp updates rate/second')
-    parser.add_argument('mode', help='xbgp mode 0: bgp update time based 1: bgp update rate based')
+    parser.add_argument('mode', help='xbgp mode 0: bgp update time based 1: bgp update rate based 2: as fast as possible')
     parser.add_argument('--speedup', help='speed up of replay', type=float)
     args = parser.parse_args()
     main(args)

@@ -30,6 +30,9 @@ FILTER_SHARE = 'filter_share2.json'
 
 RANK_SHARE = 'rank_share2.json'
 
+RESULT_FILE = 'result_2_'
+
+GEN_SIG_FILE = 'sig_2'
 
 class PrioWorker2(object):
     def __init__(self,port,handler_to_worker_queue,worker_2_handler_queue):
@@ -46,7 +49,13 @@ class PrioWorker2(object):
         self.p.stdout.readline()
         self.load_policy()
         self.send_export_policy_to_mpc()
+        self.result_file = open(RESULT_FILE + str(self.port), 'w+')
+        self.send_start_sig_2_gen()
         logger.debug("process launched")
+
+    def send_start_sig_2_gen(self):
+        with open(GEN_SIG_FILE, 'w+') as f:
+            pass
 
     def load_policy(self):
         # filter
@@ -123,7 +132,8 @@ class PrioWorker2(object):
                 str_host += line
 
             end_time = time.time()
-            logger.info("Performance test: announcement_id:%d start_time:%.6f end_time:%.6f" % (msg["announcement_id"], start_time, end_time))
+            self.result_file.write("Performance test: announcement_id:%d start_time:%.6f end_time:%.6f\n" % (msg["announcement_id"], start_time, end_time))
+            self.result_file.flush()
             self.worker_2_handler_queue.put({"type" : "to-hosts",  "announcement_id" : msg["announcement_id"],  "key" : str_host, "list_of_route_ids" : list_of_route_ids})
 
         #close the process
@@ -131,6 +141,7 @@ class PrioWorker2(object):
         print >> self.p.stdin, myinput # write input
         self.p.stdin.flush() # not necessary in this case
 
+        self.result_file.close()
         self.worker_2_handler_queue.put({"stop" : None})
 
 
