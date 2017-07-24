@@ -41,12 +41,12 @@ class PrioHandlerRs1:
         self.number_of_processes = number_of_processes
         with open(asn_2_id_file, 'r') as f:
             self.asn_2_id = json.load(f)
-
         self.prefix_2_nh_id_2_route = load_ribs(rib_file, self.asn_2_id, RS1_MODE) if rib_file else {}
 
         # Initialize a XRS Server
         self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_receive_bgp_messages"]),authkey=None)
-        self.server_send_mpc_output = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_send_mpc_output"]),authkey=None)
+        # NOTE: fake sending, only for performance test
+        #self.server_send_mpc_output = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_send_mpc_output"]),authkey=None)
         self.rs1_to_rs2_client = Client((port_config.process_assignement["rs2"], port_config.ports_assignment["rs1_rs2"]), authkey=None)
         logger.debug("connected to rs2")
         self.run = True
@@ -63,8 +63,8 @@ class PrioHandlerRs1:
         self.worker_ids_queue = self.manager.Queue()
         map(self.worker_ids_queue.put,range(port_config.ports_assignment["worker_port"],port_config.ports_assignment["worker_port"]+self.number_of_processes))
 
-        self.prefix_2_messages_queued={}
-        self.prefixes_under_processing=set()
+        self.prefix_2_messages_queued = {}
+        self.prefixes_under_processing = set()
 
         self.workers_pool = mp.Pool(self.number_of_processes, prio_worker_rs1.prio_worker_main,(self.handler_to_worker_queue,self.worker_to_handler_queue,self.worker_ids_queue,))
 
@@ -80,31 +80,26 @@ class PrioHandlerRs1:
         stop_counter=self.number_of_processes
         while True:
             try:
-                #logger.info("waiting for message from worker")
                 msg = self.worker_to_handler_queue.get(True, 1)
-
-                logger.info("received message from worker")
-                #logger.debug("received message from worker: " + str(msg))
 
                 if "stop" in msg:
                     logger.info("received STOP message from worker")
-                    stop_counter-=1
+                    stop_counter -= 1
                     print "stop received " + str(stop_counter)
                     self.rs1_to_rs2_client.send(pickle.dumps(msg))
                     if stop_counter == 0:
-                        self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
+                        # NOTE: fake sending, only for performance test
+                        #self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
                         time.sleep(5)
                         break
                     continue
 
                 if msg["type"] == "to-rs2" or msg["type"] == "to-rs2-init":
-                    logger.info("received TO-RS2 message from worker")
                     self.rs1_to_rs2_client.send(pickle.dumps(msg))
 
                 if msg["type"] == "to-hosts":
-                    logger.info("received TO-HOSTS message from worker")
-                    logger.debug("processed route-id: " + str(msg["announcement_id"]))
-                    self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
+                    # NOTE: fake sending, only for performance test
+                    #self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
                     self.lock.acquire()
                     if msg["prefix"] in self.prefix_2_messages_queued.keys():
                         old_msg = self.prefix_2_messages_queued[msg["prefix"]].pop(0)
@@ -112,7 +107,6 @@ class PrioHandlerRs1:
                         self.prefix_2_nh_id_2_route[msg["prefix"]][as_id] = {}
                         self.prefix_2_nh_id_2_route[msg["prefix"]][as_id]["announcement_id"] = old_msg["announcement_id"]
                         self.prefix_2_nh_id_2_route[msg["prefix"]][as_id]["key"] = old_msg["key"]
-                        logger.info("adding route " + str(old_msg["announcement_id"]) + " into the worker queue")
                         self.handler_to_worker_queue.put((old_msg["announcement_id"], {"prefix" : old_msg["prefix"], "announcement_id" : old_msg["announcement_id"], "encrypted_route" : old_msg["encrypted_route"], "as_id" : as_id, "messages" : self.prefix_2_nh_id_2_route[old_msg["prefix"]]}))
                         if len(self.prefix_2_messages_queued[old_msg["prefix"]]) == 0:
                             del self.prefix_2_messages_queued[old_msg["prefix"]]
@@ -125,13 +119,11 @@ class PrioHandlerRs1:
 
             except Empty:
                 if waiting == 0:
-                    #logger.debug("Waiting for BGP update...")
                     waiting = 1
                 else:
                     waiting = (waiting % 30) + 1
                     if waiting == 30:
                         pass
-                        #logger.debug("Waiting for BGP update...")
         self.rs1_to_rs2_client.close()
         logger.debug("shutting down receive from workers")
 
@@ -140,30 +132,27 @@ class PrioHandlerRs1:
         logger.info("Starting the Server to handle incoming BGP Updates from ExaBGP. Listening on port 6000")
         self.server_receive_bgp_messages.start()
         logger.info("Connected to ExaBGP via port 6000")
-        self.server_send_mpc_output.start()
-        logger.info("RS1 connected to Host Receiver Mock ")
+        # NOTE: fake sending, only for performance test
+        #self.server_send_mpc_output.start()
+        #logger.info("RS1 connected to Host Receiver Mock ")
 
-        waiting=0
+        waiting = 0
         while self.run:
             # get BGP messages from ExaBGP
             try:
                 msg = self.server_receive_bgp_messages.receiver_queue.get(True, 1)
                 msg = pickle.loads(msg)
-
                 waiting = 0
 
-                logger.info("Got bgp_route from ExaBGP. " + str(msg))
-                #logger.debug("Got bgp_update from ExaBGP.")
                 # Received BGP bgp_update advertisement from ExaBGP
-
                 if "stop" in msg:
                     close_msg = {"stop" : 1}
                     logger.info("Waiting 20 seconds before sending closing message " + str(close_msg))
-                    print str("getting lock ")
+                    print "getting stop lock..."
                     self.lock.acquire()
                     self.stop_received=True
                     self.lock.release()
-                    print str("Waiting 20 seconds before sending closing message ")
+                    print "Waiting 20 seconds before sending closing message "
                     time.sleep(20)
                     #self.lock_stop.acquire()
                     logger.info("Sending closing message " + str(close_msg))
@@ -174,9 +163,7 @@ class PrioHandlerRs1:
                     break
                 else:
                     self.lock.acquire()
-                    logger.debug("received route-id: " + str(msg["announcement_id"]))
                     if msg["prefix"] in self.prefixes_under_processing:
-                        logger.info("adding route " + str(msg["announcement_id"]) + " into the QUEUE queue")
                         if msg["prefix"] not in self.prefix_2_messages_queued.keys():
                             self.prefix_2_messages_queued[msg["prefix"]]=[]
                         self.prefix_2_messages_queued[msg["prefix"]].append(msg)
@@ -189,19 +176,16 @@ class PrioHandlerRs1:
                         self.prefix_2_nh_id_2_route[msg["prefix"]][as_id] = {}
                         self.prefix_2_nh_id_2_route[msg["prefix"]][as_id]["announcement_id"] = msg["announcement_id"]
                         self.prefix_2_nh_id_2_route[msg["prefix"]][as_id]["key"] = msg["key"]
-                        logger.info("adding route " + str(msg["announcement_id"]) + " into the worker queue")
                         self.handler_to_worker_queue.put((msg["announcement_id"], {"prefix" : msg["prefix"], "announcement_id" : msg["announcement_id"], "encrypted_route" : msg["encrypted_route"], "as_id" : as_id, "messages" : self.prefix_2_nh_id_2_route[msg["prefix"]]}))
                         self.prefixes_under_processing.add(msg["prefix"])
 
             except Empty:
                 if waiting == 0:
-                    #logger.debug("Waiting for BGP update...")
                     waiting = 1
                 else:
                     waiting = (waiting % 30) + 1
                     if waiting == 30:
                         pass
-                        #logger.debug("Waiting for BGP update...")
         logger.debug("receive_routes_shut_down")
 
     def stop(self):
@@ -213,6 +197,7 @@ class PrioHandlerRs1:
                 self.run=False
         logger.info("Stopping.")
         self.run = False
+
 
 def main():
     parser = argparse.ArgumentParser()

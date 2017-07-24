@@ -9,6 +9,8 @@
 
 #define VERBOSE         1
 
+#define RESULT_FILE     "result"
+
 #ifndef SAFE_FREE
 #define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
 #endif

@@ -44,7 +44,8 @@ class PrioHandlerRs2(object):
 
         # Initialize a XRS Server
         self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_receive_bgp_messages"]))
-        self.server_send_mpc_output = Server(logger, endpoint=(port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_send_mpc_output"]))
+        # NOTE: fake sending, only for performance test
+        #self.server_send_mpc_output = Server(logger, endpoint=(port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_send_mpc_output"]))
         self.server_rs1 = Server(logger, endpoint=(port_config.process_assignement["rs2"],  port_config.ports_assignment["rs1_rs2"]))
         self.run = True
 
@@ -61,8 +62,6 @@ class PrioHandlerRs2(object):
         self.lock = mp.Manager().Lock()
         self.port2stop_lock = mp.Manager().Lock()
         self.stop_port = False
-
-        self.prefix_2_nh_id_2_route_id = {}
 
         self.handler_2_worker_queues={}
         self.worker_2_handler_queue = mp.Queue()
@@ -95,13 +94,9 @@ class PrioHandlerRs2(object):
             try:
                 msg = self.server_rs1.receiver_queue.get(True, 1)
                 msg = pickle.loads(msg)
-
                 waiting = 0
 
-                logger.info("Got mapping message from RS1. " + str(msg))
-                #logger.debug("Got bgp_update from ExaBGP.")
                 # Received BGP bgp_update advertisement from ExaBGP
-
                 if "stop" in msg:
                     self.port2stop_lock.acquire()
                     logger.info("received stop message")
@@ -117,16 +112,14 @@ class PrioHandlerRs2(object):
                     continue
 
                 if msg["type"] == "to-rs2-init":
-                    logger.info("received initialization message")
+                    logger.info("received initialization message from rs1")
                     pass
 
                 if "announcement_id" in msg:
-                    logger.info("received route_id message")
                     announcement_id = msg["announcement_id"]
                     self.lock.acquire()
                     self.id_2_port[announcement_id] = msg["worker_port"]
                     if announcement_id in self.id_2_msg:
-                        logger.info("adding route " + str(announcement_id) + " into the worker queue")
                         #send message to the correct worker
                         if self.id_2_msg[announcement_id]["prefix"] not in self.prefix_2_nh_id_2_route_id.keys():
                             self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]={}
@@ -140,13 +133,11 @@ class PrioHandlerRs2(object):
 
             except Empty:
                 if waiting == 0:
-                    #logger.debug("Waiting for RS1 mapping...")
                     waiting = 1
                 else:
                     waiting = (waiting % 30) + 1
                     if waiting == 30:
                         pass
-                        #logger.debug("Waiting for RS1 mapping...")
 
         logger.debug("closing reception from RS1")
 
@@ -155,8 +146,9 @@ class PrioHandlerRs2(object):
         logger.info("Starting the Server to handle incoming BGP Updates from ExaBGP. Listening on port 6002")
         self.server_receive_bgp_messages.start()
         logger.info("Connected to ExaBGP via port 6002")
-        self.server_send_mpc_output.start()
-        logger.info("RS2 connected to Host Receiver Mock ")
+        # NOTE: fake sending, only for performance test
+        #self.server_send_mpc_output.start()
+        #logger.info("RS2 connected to Host Receiver Mock ")
 
         while self.run:
             # get BGP messages from ExaBGP
@@ -164,16 +156,12 @@ class PrioHandlerRs2(object):
             try:
                 msg = self.server_receive_bgp_messages.receiver_queue.get(True, 1)
                 msg = pickle.loads(msg)
-
                 waiting = 0
 
-                logger.debug("Got bgp_route from ExaBGP. ")
-                #logger.debug("Got bgp_update from ExaBGP.")
                 # Received BGP bgp_update advertisement from ExaBGP
-
                 if "stop" in msg:
                     close_msg = {"stop" : 1}
-                    logger.info("Shutting down  exa receiver.")
+                    logger.info("Shutting down exa receiver.")
                     self.port2stop_lock.acquire()
                     logger.info("received stop message")
 
@@ -187,7 +175,6 @@ class PrioHandlerRs2(object):
                     time.sleep(5)
                     break
                 else:
-                    logger.info("msg received: " + str(msg))
                     announcement_id = msg["announcement_id"]
                     self.lock.acquire()
                     self.id_2_msg[announcement_id] = msg
@@ -195,26 +182,22 @@ class PrioHandlerRs2(object):
                         #send message to the correct worker
                         if msg["prefix"] not in self.prefix_2_nh_id_2_route_id.keys():
                             self.prefix_2_nh_id_2_route_id[msg["prefix"]]={}
-                        logger.info("adding route " + str(announcement_id) + " into the worker queue")
                         as_id = self.asn_2_id[msg["asn"]]
                         self.prefix_2_nh_id_2_route_id[msg["prefix"]][as_id] = announcement_id
                         self.handler_2_worker_queues[self.id_2_port[announcement_id]].put({"announcement_id" : announcement_id, "as_id": as_id, "messages" : self.prefix_2_nh_id_2_route_id[msg["prefix"]]})
-
                         del self.id_2_port[announcement_id]
                         del self.id_2_msg[announcement_id]
                     self.lock.release()
 
             except Queue.Empty:
                 if waiting == 0:
-                    #logger.debug("Waiting for BGP update...")
                     waiting = 1
                 else:
                     waiting = (waiting % 30) + 1
                     if waiting == 30:
                         pass
-                        #logger.debug("Waiting for BGP update...")
-        logger.debug("Closing reception from hosts")
 
+        logger.debug("Closing reception from hosts")
         logger.debug("joining RS1 and worker receiver threads ")
         self.receive_mappings_from_rs1_th.join()
         logger.debug("joined RS1 ")
@@ -223,7 +206,6 @@ class PrioHandlerRs2(object):
         for p in self.processes:
             p.join()
 
-
     def receive_from_workers(self):
         waiting = 0
         stop_counter = 0
@@ -231,31 +213,28 @@ class PrioHandlerRs2(object):
             try:
                 msg = self.worker_2_handler_queue.get(True, 1)
 
-                logger.debug("received message from worker")
-                #logger.debug("received message from worker: " + str(msg))
-
                 if "stop" in msg:
                     logger.debug("received STOP message from worker")
                     stop_counter += 1
                     if stop_counter == self.number_of_processes:
                         logger.debug("sending STOP message to member")
-                        self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
+                        # NOTE: fake sending, only for performance test
+                        #self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
                         break
                     continue
 
                 if msg["type"] == "to-hosts":
-                    logger.debug("sending TO-HOSTS message from worker")
-                    self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
+                    pass
+                    # NOTE: fake sending, only for performance test
+                    #self.server_send_mpc_output.sender_queue.put(pickle.dumps(msg))
 
             except Empty:
                 if waiting == 0:
-                    #logger.debug("Waiting for BGP update...")
                     waiting = 1
                 else:
                     waiting = (waiting % 30) + 1
                     if waiting == 30:
                         pass
-                        #logger.debug("Waiting for BGP update...")
 
     def stop(self):
         logger.info("Stopping.")

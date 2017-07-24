@@ -1,6 +1,7 @@
 
 import pickle
 import json
+import time
 import util.log
 from Queue import Empty
 import subprocess
@@ -30,7 +31,6 @@ RANK_SHARE = 'rank_share1.json'
 
 
 class PrioWorker1():
-
     def __init__(self,handler_to_worker_queue,worker_to_handler_queue, workers_pool):
         # get port
         self.port = workers_pool.get()
@@ -44,9 +44,9 @@ class PrioWorker1():
         args = ("taskset -c " + str(self.port-FIRST_PORT) + " " + ABY_EXEC_PATH +' -r 0 -a 0.0.0.0 -o 1 -f 3 -p ' + str(self.port))
         self.p = subprocess.Popen(args.split(" "),stdout=subprocess.PIPE,stdin=subprocess.PIPE, bufsize=8096)
         self.p.stdout.readline()
-        logger.debug("process launched")
         self.load_policy()
         self.send_export_policy_to_mpc()
+        logger.debug("process launched")
 
     def load_policy(self):
         # filter
@@ -64,16 +64,15 @@ class PrioWorker1():
             for j in xrange(0, self.number_of_participants):
                 v = 2 if self.export_policies[i][j] else 0
                 export_rows_strings[i] += '{num:0{width}x}'.format(num=v, width=AS_ROW_ENCODING_SIZE/4)
-        logger.debug("export_rows_string: " + str(export_rows_strings))
 
         myinput = "5" + "\n" + str(self.number_of_participants)
         # invoking the MPC
-        logger.info("input-to-mpc: " + myinput)
         print >> self.p.stdin, myinput # write input
         self.p.stdin.flush() # not necessary in this case
         for i in xrange(0, self.number_of_participants):
             print >> self.p.stdin, export_rows_strings[i]
             self.p.stdin.flush() # not necessary in this case
+        logger.debug("export policies sent to smpc")
 
     def process_update(self):
         print str(self.port) + " is ready"
@@ -88,7 +87,7 @@ class PrioWorker1():
                 print "stop received" + str(self.port)
                 break
 
-            logger.info("msg: " + str(msg))
+            start_time = time.time()
             msg = msg[1]
             list_of_msg_for_prefix = msg["messages"] # remove the route_id used to prioritize the announcements in the queue
 
@@ -118,17 +117,16 @@ class PrioWorker1():
                 myinput = "3" + "\n" + str(number_of_routes) + "\n" + str(msg["as_id"]) + "\n" + keys_str + "\n" + "0"
 
             # invoking the MPC
-            logger.info("input-to-mpc: " + myinput)
             print >> self.p.stdin, myinput # write input
             self.p.stdin.flush() # not necessary in this case
-            logger.debug("reading line")
-            logger.debug(self.p.stdout.readline())
+            self.p.stdout.readline()
             str_host = ""
             for i in xrange(0, self.number_of_participants):
                 line = self.p.stdout.readline().rstrip()
-                logger.info(line)
                 str_host += line
 
+            end_time = time.time()
+            logger.info("Performance test: announcement_id:%d start_time:%.6f end_time:%.6f" % (msg["announcement_id"], start_time, end_time))
             self.worker_to_handler_queue.put({"type" : "to-hosts",  "announcement_id" : msg["announcement_id"], "encrypted_route" : msg["encrypted_route"], "key" : str_host, "prefix" : msg["prefix"], "list_of_route_ids" : list_of_route_ids})
 
         #close the process

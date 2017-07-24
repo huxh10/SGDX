@@ -10,6 +10,7 @@
 #include <errno.h>
 #include "epoll_utils.h"
 #include "socket_utils.h"
+#include "time_utils.h"
 #include "msg_buffer.h"
 #include "app_types.h"
 #include "msg_handler.h"
@@ -21,6 +22,7 @@ typedef struct {
 } server_read_closure_t;
 
 int g_bgp_serv_sfd, g_bgp_clnt_sfd;
+FILE *g_result_fp;
 
 static inline void send_msg(const char *msg, int msg_size, int sfd)
 {
@@ -58,17 +60,19 @@ void send_msg_to_as(const char *msg)
     char *msg_with_header = malloc(msg_len);
     memcpy(msg_with_header, &msg_len, 2);
     memcpy(msg_with_header + 2, msg, msg_len - 2);
-    send_msg(msg_with_header, msg_len, g_bgp_clnt_sfd);
+    // NOTE: fake sending for performance tests
+    //send_msg(msg_with_header, msg_len, g_bgp_clnt_sfd);
 }
 
 static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
 {
-    int bytes, msg_size, i;
+    int bytes, msg_size;
     char buffer[BUFFER_SIZE], *s_msg;
     const uint8_t *u8_msg = NULL;
     server_read_closure_t *closure = h->closure;
+    uint64_t start_time, end_time;
 
-    fprintf(stdout, "\nread event for sfd:%d client_id:%d [%s]\n", h->fd, closure->id, __FUNCTION__);
+    //fprintf(stdout, "\nread event for sfd:%d client_id:%d [%s]\n", h->fd, closure->id, __FUNCTION__);
 
     // receive msgs from socket
     while (1) {
@@ -94,7 +98,7 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
             return;
         }
 
-        fprintf(stdout, "read %d bytes from sfd:%d client_id:%d [%s]\n", bytes, h->fd, closure->id, __FUNCTION__);
+        //fprintf(stdout, "read %d bytes from sfd:%d client_id:%d [%s]\n", bytes, h->fd, closure->id, __FUNCTION__);
 
         // add received buffer to local flow buffer
         // to extract dst_id from messages
@@ -105,22 +109,26 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         get_msg(closure->p_ds, &u8_msg, &msg_size);
         if (!u8_msg || msg_size == 0) {
             // we have processed all available msgs
-            printf("finish processing [%s]\n", __FUNCTION__);
+            //printf("finish msg processing [%s]\n", __FUNCTION__);
             break;
         }
 
         // ---------- message processing -----------
+        start_time = get_us_time();
         s_msg = malloc((msg_size - 2 + 1) * sizeof *s_msg);
         memcpy(s_msg, u8_msg + 2, msg_size -2);
         s_msg[msg_size - 2] = '\0';
         if (h->fd == g_bgp_clnt_sfd) {
-            printf("handle_exabgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
+            //printf("handle_exabgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
             handle_exabgp_msg(s_msg);
         } else {
-            printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
+            //printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
             handle_pctrlr_msg(s_msg, h->fd, &closure->id);
         }
         SAFE_FREE(s_msg);
+        end_time = get_us_time();
+        fprintf(g_result_fp, "latency: %lu\n", end_time - start_time);
+        fflush(g_result_fp);
         // -----------------------------------------
     }
 }
@@ -212,4 +220,8 @@ void server_init(int efd, net_conf_t *p_ncf)
 {
     g_bgp_serv_sfd = server_register_listen_event_handler(efd, p_ncf->bgp_serv_addr, p_ncf->bgp_serv_port);
     server_register_listen_event_handler(efd, p_ncf->pctrlr_serv_addr, p_ncf->pctrlr_serv_port);
+    if ((g_result_fp = fopen(RESULT_FILE, "w+")) == NULL) {
+        fprintf(stderr, "can not open file: %s [%s]\n", RESULT_FILE, __FUNCTION__);
+        exit(-1);
+    }
 }

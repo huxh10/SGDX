@@ -50,7 +50,7 @@ void handle_sdn_reach(uint32_t asid, const char *prefix, const uint32_t *p_sdn_r
     json_decref(j_msg);
 
     s_sdn_reach = json_dumps(j_root, 0);
-    fprintf(stdout, "prepare to send s_sdn_reach:%s to asid:%d pctrlr [%s]\n", s_sdn_reach, asid, __FUNCTION__);
+    //fprintf(stdout, "prepare to send s_sdn_reach:%s to asid:%d pctrlr [%s]\n", s_sdn_reach, asid, __FUNCTION__);
     send_msg_to_pctrlr((const char *) s_sdn_reach, g_msg_states.pctrlr_sfds[asid]);
     SAFE_FREE(s_sdn_reach);
     json_decref(j_root);
@@ -134,7 +134,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
         }
         msg_to_as[offset] = 0;
         // send to exabgp's client.py
-        fprintf(stdout, "prepare to send msg:%s to asid:%d router [%s]\n", msg_to_as, p_bgp_msg->asid, __FUNCTION__);
+        //fprintf(stdout, "prepare to send msg:%s to asid:%d router [%s]\n", msg_to_as, p_bgp_msg->asid, __FUNCTION__);
         send_msg_to_as(msg_to_as);
         SAFE_FREE(msg_to_as);
     }
@@ -153,7 +153,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
     json_decref(j_msg);
 
     msg_to_pctrlr = json_dumps(j_root, 0);
-    fprintf(stdout, "prepare to send msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
+    //fprintf(stdout, "prepare to send msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
     send_msg_to_pctrlr(msg_to_pctrlr, g_msg_states.pctrlr_sfds[p_bgp_msg->asid]);
     SAFE_FREE(msg_to_pctrlr);
     json_decref(j_root);
@@ -162,7 +162,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
 void handle_exabgp_msg(char *msg)
 {
     uint32_t i;
-    json_t *j_root, *j_neighbor, *j_asn, *j_peer_id, *j_neighbor_ip, *j_state, *j_message, *j_update, *j_attr, *j_origin, *j_as_path, *j_as_path_elmnt, *j_med, *j_community, *j_atomic_aggregate, *j_oprt_type, *j_ipv4_uni, *j_prefixes, *j_prefix;
+    json_t *j_root, *j_stop, *j_neighbor, *j_asn, *j_peer_id, *j_neighbor_ip, *j_state, *j_message, *j_update, *j_attr, *j_origin, *j_as_path, *j_as_path_elmnt, *j_med, *j_community, *j_atomic_aggregate, *j_oprt_type, *j_ipv4_uni, *j_prefixes, *j_prefix;
     json_error_t j_err;
     const char *key_next_hop, *key_prefix;
     bgp_route_input_dsrlz_msg_t bgp_dsrlz_msg;
@@ -179,6 +179,14 @@ void handle_exabgp_msg(char *msg)
         fprintf(stderr, "fmt error: json object required [%s]\n", __FUNCTION__);
         json_decref(j_root);
         return;
+    }
+
+    // should we exit
+    j_stop = json_object_get(j_root, "stop");
+    if (json_is_integer(j_stop)) {
+        json_decref(j_root);
+        // FIXME: brute force exiting
+        exit(0);
     }
 
     // get asn
@@ -212,7 +220,7 @@ void handle_exabgp_msg(char *msg)
     // route assignment
     bgp_dsrlz_msg.p_route = malloc(sizeof *bgp_dsrlz_msg.p_route);
     bgp_dsrlz_msg.p_route->neighbor = my_strdup(json_string_value(j_neighbor_ip));
-    fprintf(stdout, "neighbor ip: %s [%s]\n", json_string_value(j_neighbor_ip), __FUNCTION__);
+    //fprintf(stdout, "neighbor ip: %s [%s]\n", json_string_value(j_neighbor_ip), __FUNCTION__);
 
     // peer is down
     j_state = json_object_get(j_neighbor, "state");
@@ -256,7 +264,7 @@ void handle_exabgp_msg(char *msg)
     }
     bgp_dsrlz_msg.p_route->as_path.length = json_array_size(j_as_path);
     bgp_dsrlz_msg.p_route->as_path.asns = malloc(bgp_dsrlz_msg.p_route->as_path.length * sizeof * bgp_dsrlz_msg.p_route->as_path.asns);
-    fprintf(stdout, "as_path: ");
+    //fprintf(stdout, "as_path: ");
     for (i = 0; i < json_array_size(j_as_path); i++) {
         j_as_path_elmnt = json_array_get(j_as_path, i);
         if (!json_is_integer(j_as_path_elmnt)) {
@@ -266,9 +274,9 @@ void handle_exabgp_msg(char *msg)
             return;
         }
         bgp_dsrlz_msg.p_route->as_path.asns[i] = json_integer_value(j_as_path_elmnt);
-        fprintf(stdout, "%d ", (int) json_integer_value(j_as_path_elmnt));
+        //fprintf(stdout, "%d ", (int) json_integer_value(j_as_path_elmnt));
     }
-    fprintf(stdout, "[%s]\n", __FUNCTION__);
+    //fprintf(stdout, "[%s]\n", __FUNCTION__);
     // med
     j_med = json_object_get(j_attr, "med");
     bgp_dsrlz_msg.p_route->med = json_is_integer(j_med) ? json_integer_value(j_med) : 0;
@@ -304,7 +312,6 @@ void handle_exabgp_msg(char *msg)
         return;
     }
 
-    printf("start msg processing [%s]\n", __FUNCTION__);
     // get next_hop and prefix, then process each msg
     if (bgp_dsrlz_msg.oprt_type == ANNOUNCE) {
         json_object_foreach(j_ipv4_uni, key_next_hop, j_prefixes) {
@@ -312,7 +319,7 @@ void handle_exabgp_msg(char *msg)
             bgp_dsrlz_msg.p_route->next_hop = my_strdup(key_next_hop);
             json_object_foreach(j_prefixes, key_prefix, j_prefix) {
                 bgp_dsrlz_msg.p_route->prefix = my_strdup(key_prefix);
-                fprintf(stdout, "route prefix:%s next_hop:%s [%s]\n", key_prefix, key_next_hop, __FUNCTION__);
+                //fprintf(stdout, "route prefix:%s next_hop:%s [%s]\n", key_prefix, key_next_hop, __FUNCTION__);
                 // process msg
 #ifdef W_SGX
                 process_bgp_route_w_sgx(&bgp_dsrlz_msg);
