@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <jansson.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include "server.h"
 #include "bgp.h"
 #include "app_types.h"
@@ -15,6 +16,19 @@
 #endif
 
 msg_state_t g_msg_states;
+int g_crnt_route_id;
+int g_first_sdn_reach_counter = 0;
+
+void create_start_signal()
+{
+    FILE *fp;
+
+    if ((fp = fopen(GEN_SIG_FILE, "w+")) == NULL) {
+        fprintf(stderr, "can not open file: %s [%s]\n", GEN_SIG_FILE, __FUNCTION__);
+        exit(-1);
+    }
+    fclose(fp);
+}
 
 void msg_handler_init(as_cfg_t *p_as_cfg)
 {
@@ -48,6 +62,9 @@ void handle_sdn_reach(uint32_t asid, const char *prefix, const uint32_t *p_sdn_r
     json_decref(j_sdn_reach);
     json_object_set(j_root, "sdn-reach", j_msg);
     json_decref(j_msg);
+    if (g_crnt_route_id != -1) {
+        json_object_set_new(j_root, "route_id", json_integer(g_crnt_route_id));
+    }
 
     s_sdn_reach = json_dumps(j_root, 0);
     //fprintf(stdout, "prepare to send s_sdn_reach:%s to asid:%d pctrlr [%s]\n", s_sdn_reach, asid, __FUNCTION__);
@@ -151,6 +168,9 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
 
     json_object_set(j_root, "bgp-nh", j_msg);
     json_decref(j_msg);
+    if (g_crnt_route_id != -1) {
+        json_object_set_new(j_root, "route_id", json_integer(g_crnt_route_id));
+    }
 
     msg_to_pctrlr = json_dumps(j_root, 0);
     //fprintf(stdout, "prepare to send msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
@@ -159,10 +179,10 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
     json_decref(j_root);
 }
 
-void handle_exabgp_msg(char *msg)
+int handle_exabgp_msg(char *msg)
 {
     uint32_t i;
-    json_t *j_root, *j_stop, *j_neighbor, *j_asn, *j_peer_id, *j_neighbor_ip, *j_state, *j_message, *j_update, *j_attr, *j_origin, *j_as_path, *j_as_path_elmnt, *j_med, *j_community, *j_atomic_aggregate, *j_oprt_type, *j_ipv4_uni, *j_prefixes, *j_prefix;
+    json_t *j_root, *j_stop, *j_route_id, *j_neighbor, *j_asn, *j_peer_id, *j_neighbor_ip, *j_state, *j_message, *j_update, *j_attr, *j_origin, *j_as_path, *j_as_path_elmnt, *j_med, *j_community, *j_atomic_aggregate, *j_oprt_type, *j_ipv4_uni, *j_prefixes, *j_prefix;
     json_error_t j_err;
     const char *key_next_hop, *key_prefix;
     bgp_route_input_dsrlz_msg_t bgp_dsrlz_msg;
@@ -172,41 +192,56 @@ void handle_exabgp_msg(char *msg)
     if (!j_root) {
         fprintf(stderr, "error: on line %d:%s [%s]\n", j_err.line, j_err.text, __FUNCTION__);
         json_decref(j_root);
-        return;
+        return 0;
     }
 
     if (!json_is_object(j_root)) {
         fprintf(stderr, "fmt error: json object required [%s]\n", __FUNCTION__);
         json_decref(j_root);
-        return;
+        return 0;
     }
 
-    // should we exit
+    // should we exit?
     j_stop = json_object_get(j_root, "stop");
     if (json_is_integer(j_stop)) {
         json_decref(j_root);
         // FIXME: brute force exiting
+        if (ENABLE_SDX) {
+            for (i = 0; i < g_msg_states.as_size; i++) {
+                send_msg_to_pctrlr("stop", g_msg_states.pctrlr_sfds[i]);
+                close(g_msg_states.pctrlr_sfds[i]);
+            }
+        }
         exit(0);
     }
+
+    // get route_id
+    j_route_id = json_object_get(j_root, "route_id");
+    if (!json_is_integer(j_route_id)) {
+        fprintf(stderr, "fmt error: key [route_id] is wrong [%s]\n", __FUNCTION__);
+        json_decref(j_root);
+        return 0;
+    }
+    g_crnt_route_id = json_integer_value(j_route_id);
 
     // get asn
     j_neighbor = json_object_get(j_root, "neighbor");
     if (!json_is_object(j_neighbor)) {
         fprintf(stderr, "fmt error: key [neighbor] is wrong [%s]\n", __FUNCTION__);
         json_decref(j_root);
-        return;
+        return 0;
     }
     j_asn = json_object_get(j_neighbor, "asn");
     if (!json_is_object(j_asn)) {
         fprintf(stderr, "fmt error: key [neighbor][asn] is wrong [%s]\n", __FUNCTION__);
         json_decref(j_root);
-        return;
+        return 0;
     }
     j_peer_id = json_object_get(j_asn, "peer");
     if (!json_is_string(j_peer_id)) {
         fprintf(stderr, "fmt error: value [neighbor][asn][peer] is wrong [%s]\n", __FUNCTION__);
         json_decref(j_root);
-        return;
+        return 0;
     }
     bgp_dsrlz_msg.asn = atoi(json_string_value(j_peer_id));
     // get neighbor addr
@@ -214,7 +249,7 @@ void handle_exabgp_msg(char *msg)
     if (!json_is_string(j_neighbor_ip)) {
         fprintf(stderr, "fmt error: value [neighbor][ip] is wrong [%s]\n", __FUNCTION__);
         json_decref(j_root);
-        return;
+        return 0;
     }
 
     // route assignment
@@ -235,21 +270,21 @@ void handle_exabgp_msg(char *msg)
         fprintf(stderr, "fmt error: key [neighbor][message] is wrong [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);
-        return;
+        return 0;
     }
     j_update = json_object_get(j_message, "update");
     if (!json_is_object(j_update)) {
         fprintf(stdout, "no udpate messages [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);
-        return;
+        return 0;
     }
     j_attr = json_object_get(j_update, "attribute");
     if (!json_is_object(j_attr)) {
         fprintf(stderr, "fmt error: key [neighbor][message][update][attribute] is wrong [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);
-        return;
+        return 0;
     }
     // origin
     j_origin = json_object_get(j_attr, "origin");
@@ -260,7 +295,7 @@ void handle_exabgp_msg(char *msg)
         fprintf(stderr, "fmt error: [neighbor][message][update][attribute][as-path] is wrong [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);
-        return;
+        return 0;
     }
     bgp_dsrlz_msg.p_route->as_path.length = json_array_size(j_as_path);
     bgp_dsrlz_msg.p_route->as_path.asns = malloc(bgp_dsrlz_msg.p_route->as_path.length * sizeof * bgp_dsrlz_msg.p_route->as_path.asns);
@@ -271,7 +306,7 @@ void handle_exabgp_msg(char *msg)
             fprintf(stderr, "fmt error: [neighbor][message][update][attribute][as-path][%d] is wrong [%s]\n", i, __FUNCTION__);
             free_route_ptr(&bgp_dsrlz_msg.p_route);
             json_decref(j_as_path_elmnt);
-            return;
+            return 0;
         }
         bgp_dsrlz_msg.p_route->as_path.asns[i] = json_integer_value(j_as_path_elmnt);
         //fprintf(stdout, "%d ", (int) json_integer_value(j_as_path_elmnt));
@@ -302,14 +337,14 @@ void handle_exabgp_msg(char *msg)
         fprintf(stderr, "key [neighbor][message][update][oprt_type] is wrong  [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);
-        return;
+        return 0;
     }
     j_ipv4_uni = json_object_get(j_oprt_type, "ipv4 unicast");
     if (!json_is_object(j_ipv4_uni)) {
         fprintf(stderr, "no ipv4 unicast type prefix [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);
-        return;
+        return 0;
     }
 
     // get next_hop and prefix, then process each msg
@@ -345,7 +380,7 @@ void handle_exabgp_msg(char *msg)
 
     free_route_ptr(&bgp_dsrlz_msg.p_route);
     json_decref(j_root);
-    return;
+    return g_crnt_route_id;
 }
 
 void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
@@ -354,6 +389,7 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
     json_error_t j_err;
     const char *msg_type, *con_type, *announcement, *prefix;
     uint32_t asid, *p_reach, i;
+    g_crnt_route_id = -1;
 
     // message parsing
     j_root = json_loads(msg, 0, &j_err);
@@ -452,6 +488,10 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
 #else
             get_sdn_reach_by_prefix_wo_sgx(*p_con_id, prefix);
 #endif
+        }
+        if (g_first_sdn_reach_counter < g_msg_states.as_size) {
+            g_first_sdn_reach_counter++;
+            create_start_signal();
         }
     }
 

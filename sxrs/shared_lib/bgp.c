@@ -730,7 +730,7 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
     // previous set is empty, directly add asid
     if (!(*pp_set)->size) {
         while (p_tmp_rn) {
-            printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
+            //printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
             if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
                 set_add(*pp_set, p_tmp_rn->advertiser_asid);
             }
@@ -746,7 +746,7 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
         original_set[i] = 0;
     }
     while (p_tmp_rn) {
-        printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
+        //printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
         if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
             if (set_update(*pp_set, p_tmp_rn->advertiser_asid, original_set, original_size)) updated_flag = 1;
         }
@@ -763,4 +763,41 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
     // delete the unaccessed original ASes
     set_delete(*pp_set, original_set, original_size);
     return updated_flag;
+}
+
+void queue_put(queue_t *p_q, void *ptr)
+{
+    if (!p_q) return;
+    p_q->size++;
+    queue_node_t *p_qn = malloc(sizeof *p_qn);
+    p_qn->ptr = ptr;
+    if (!p_q->head) {
+        p_q->head = p_qn;
+        p_qn->prev = p_qn;
+        p_qn->next = p_qn;
+    } else {
+        p_q->head->prev->next = p_qn;
+        p_qn->prev = p_q->head->prev;
+        p_qn->next = p_q->head;
+        p_q->head->prev = p_qn;
+        p_q->head = p_qn;
+    }
+}
+
+void *queue_get(queue_t *p_q)
+{
+    if (!p_q || !p_q->size) return NULL;
+    void *ptr = p_q->head->ptr;
+    if (p_q->size == 1) {
+        SAFE_FREE(p_q->head);
+        p_q->head = NULL;
+    } else {
+        queue_node_t *p_qn = p_q->head;
+        p_q->head->prev->next = p_q->head->next;
+        p_q->head->next->prev = p_q->head->prev;
+        p_q->head = p_q->head->next;
+        SAFE_FREE(p_qn);
+    }
+    p_q->size--;
+    return ptr;
 }

@@ -71,6 +71,7 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
     const uint8_t *u8_msg = NULL;
     server_read_closure_t *closure = h->closure;
     uint64_t start_time, end_time;
+    int route_id;
 
     //fprintf(stdout, "\nread event for sfd:%d client_id:%d [%s]\n", h->fd, closure->id, __FUNCTION__);
 
@@ -120,15 +121,15 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         s_msg[msg_size - 2] = '\0';
         if (h->fd == g_bgp_clnt_sfd) {
             //printf("handle_exabgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
-            handle_exabgp_msg(s_msg);
+            route_id = handle_exabgp_msg(s_msg);
+            end_time = get_us_time();
+            fprintf(g_result_fp, "route_id:%d start_time:%lu end_time:%lu\n", route_id, start_time, end_time);
+            fflush(g_result_fp);
         } else {
             //printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
             handle_pctrlr_msg(s_msg, h->fd, &closure->id);
         }
         SAFE_FREE(s_msg);
-        end_time = get_us_time();
-        fprintf(g_result_fp, "latency: %lu\n", end_time - start_time);
-        fflush(g_result_fp);
         // -----------------------------------------
     }
 }

@@ -14,7 +14,7 @@
 #define ANNOUNCE                1
 #define WITHDRAW                2
 
-#define ENABLE_SDX              0
+#define ENABLE_SDX              1
 
 #ifndef SAFE_FREE
 #define SAFE_FREE(ptr)     {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
@@ -70,6 +70,20 @@ typedef struct {
     int size;
     set_node_t *head;
 } set_t;
+
+// FILO queue type
+typedef struct _queue_node_t queue_node_t;
+
+struct _queue_node_t {
+    void *ptr;
+    queue_node_t *prev;
+    queue_node_t *next;
+};
+
+typedef struct {
+    int size;
+    queue_node_t *head;
+} queue_t;
 
 // rib type
 typedef struct _rib_map rib_map_t;
@@ -132,5 +146,7 @@ int rl_del_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, ui
 void set_free(set_t **pp_set);
 void set_write_elmnts_to_array(uint32_t *p, set_t *p_set);
 int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_reach);
+void queue_put(queue_t *p_q, void *ptr);
+void *queue_get(queue_t *p_q);
 
 #endif

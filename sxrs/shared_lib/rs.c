@@ -51,6 +51,9 @@ uint32_t load_asmap(rt_state_t **pp_rt_states, uint32_t as_size, uint32_t *as_id
         printf("malloc error for (*pp_rt_states) rest states [%s]\n", __FUNCTION__);
         return MALLOC_ERROR;
     }
+    for (i = 0; i < as_size; i++) {
+        (*pp_rt_states)->ribs[i] = NULL;
+    }
     for (i = 0; i < as_size * as_size; i++) {
         // set default value false
         (*pp_rt_states)->sdn_orgnl_reach[i] = 0;
@@ -183,7 +186,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
             }
             if (ENABLE_SDX) {
                 reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach + i * p_rt_states->as_size);
-                printf("reach_changed[%d]:%d [%s]\n", i, reach_changed[i], __FUNCTION__);
+                //printf("reach_changed[%d]:%d [%s]\n", i, reach_changed[i], __FUNCTION__);
                 *p_sdn_output_msg_num += reach_changed[i];
             }
         }
@@ -247,16 +250,39 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
     return SUCCESS;
 }
 
-uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type)
+uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type, uint32_t asid, rib_map_t *p_rib, sdn_reach_output_dsrlz_msg_t **pp_sdn_output_msgs, size_t *p_sdn_output_msg_num)
 {
     if (!p_sdn_reach || !p_reach) return SUCCESS;
     uint32_t i;
     uint8_t v = (oprt_type == ANNOUNCE) ? 1 : 0;
 
+    printf("asid:%u [%s]\n", asid, __FUNCTION__);
     for (i = 0; i < reach_size; i++) {
-        printf("updated p_reach[%u]:%u,%u [%s]\n", i, p_reach[i], v, __FUNCTION__);
+        //printf("updated p_reach[%u]:%u,%u [%s]\n", i, p_reach[i], v, __FUNCTION__);
         p_sdn_reach[p_reach[i]] = v;
     }
+
+    if (!p_rib) return SUCCESS;
+    rib_map_t *p_rib_entry = NULL, *tmp_p_rib_entry = NULL;
+    queue_t q_changed_entries = {0, NULL};
+    HASH_ITER(hh, p_rib, p_rib_entry, tmp_p_rib_entry) {
+        if (update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_sdn_reach)) {
+            queue_put(&q_changed_entries, (void *) p_rib_entry);
+        }
+    }
+
+    if (!q_changed_entries.size) return SUCCESS;
+    *p_sdn_output_msg_num = q_changed_entries.size;
+    *pp_sdn_output_msgs = malloc(*p_sdn_output_msg_num * sizeof **pp_sdn_output_msgs);
+    for (i = 0; i < *p_sdn_output_msg_num; i++) {
+        (*pp_sdn_output_msgs)[i].asid = asid;
+        p_rib_entry = (rib_map_t *) queue_get(&q_changed_entries);
+        (*pp_sdn_output_msgs)[i].prefix = my_strdup(p_rib_entry->key);
+        (*pp_sdn_output_msgs)[i].reach_size = p_rib_entry->augmented_reach->size;
+        (*pp_sdn_output_msgs)[i].reachability = malloc((*pp_sdn_output_msgs)[i].reach_size * sizeof *(*pp_sdn_output_msgs)[i].reachability);
+        set_write_elmnts_to_array((*pp_sdn_output_msgs)[i].reachability, p_rib_entry->augmented_reach);
+    }
+    assert(q_changed_entries.size == 0);
 
     return SUCCESS;
 }

@@ -331,17 +331,6 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     if (g_cfg.rib_file_dir) p_as_cfg->rib_file_dir = strdup(g_cfg.rib_file_dir);
 }
 
-static void send_start_sig_to_gen()
-{
-    FILE *fp;
-
-    if ((fp = fopen(GEN_SIG_FILE, "w+")) == NULL) {
-        fprintf(stderr, "can not open file: %s [%s]\n", GEN_SIG_FILE, __FUNCTION__);
-        exit(-1);
-    }
-    fclose(fp);
-}
-
 int main(int argc, char *argv[])
 {
     int efd;
@@ -367,7 +356,7 @@ int main(int argc, char *argv[])
     msg_handler_init(&as_cfg);
     efd = epoll_init();
     server_init(efd, &g_cfg.net);
-    send_start_sig_to_gen();
+    create_start_signal();
 
     // run
     epoll_run(efd);

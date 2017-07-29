@@ -85,6 +85,7 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
             }
         }
         fclose(fp);
+        fprintf(stdout, "rib_%d loaded [%s]\n", i, __FUNCTION__);
     }
     SAFE_FREE(line);
     fprintf(stderr, "load rib from file done [%s]\n", __FUNCTION__);
