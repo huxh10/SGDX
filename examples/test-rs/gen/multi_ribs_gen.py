@@ -3,10 +3,11 @@
 import json
 import argparse
 
-BASE_RIB_FILE = '../ribs/rib_'
 
 
-def duplicate_and_filter_ribs(rib_file, asn_2_id_json_file, filter_policy_file):
+def duplicate_and_filter_ribs(rib_file, asn_2_id_json_file, filter_policy_file, rib_dir):
+    BASE_RIB_FILE = '../ribs/rib_'
+
     with open(filter_policy_file, 'r') as f:
         as_num = int(f.readline()[:-1])
         export_policies = []
@@ -37,6 +38,8 @@ def duplicate_and_filter_ribs(rib_file, asn_2_id_json_file, filter_policy_file):
                     ribs[dest_as_id] += tmp_entry
                 tmp_entry = []
 
+    if rib_dir:
+        BASE_RIB_FILE = rib_dir + BASE_RIB_FILE.split('/')[-1]
     for i in range(0, as_num):
         with open(BASE_RIB_FILE + '%d' % i, 'w+') as seperate_rib_file:
             seperate_rib_file.writelines(ribs[i])
@@ -46,7 +49,8 @@ if __name__ == '__main__':
     parser.add_argument('rib_file', type=str, help='specify the rib file, e.g. ../ribs/bview')
     parser.add_argument('-f', '--filter_policy', type=str, help='specify the filtering policy file')
     parser.add_argument('-a', '--asn_2_id_json', type=str, help='specify the asn_2_id json file')
+    parser.add_argument('-d', '--rib_dir', type=str, help='specify the generated rib directory')
     args = parser.parse_args()
 
     if args.asn_2_id_json and args.filter_policy:
-        duplicate_and_filter_ribs(args.rib_file, args.asn_2_id_json, args.filter_policy)
+        duplicate_and_filter_ribs(args.rib_file, args.asn_2_id_json, args.filter_policy, args.rib_dir)

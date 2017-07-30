@@ -6,6 +6,7 @@
 import argparse
 import atexit
 import json
+import socket
 from multiprocessing.connection import Listener, Client
 import os
 from signal import signal, SIGTERM
@@ -28,13 +29,15 @@ from supersets import SuperSets
 import pprint
 
 
-TIMING = True
+TIMING = False
+RESULT_FILE = 'result/result_'
 
 
 class ParticipantController(object):
     def __init__(self, id, config_file, policy_file, logger):
         # participant id
         self.id = id
+        self.result_file = open(RESULT_FILE + str(id), 'w+')
         # print ID for logging
         self.logger = logger
 
@@ -85,13 +88,15 @@ class ParticipantController(object):
         self.supersets.run_rulecounts(self)
         self.xrs_client.send({'msgType': 'sdn-reach', 'add': self.supersets.rulecounts.keys()}, add_header=True)
 
-        self.arp_client = self.cfg.get_arp_client(self.logger)
-        self.arp_client.send({'msgType': 'hello', 'macs': self.cfg.get_macs()})
+        # NOTE: Fake arp_client for testing
+        self.arp_client = None
+        #self.arp_client = self.cfg.get_arp_client(self.logger)
+        #self.arp_client.send({'msgType': 'hello', 'macs': self.cfg.get_macs()})
 
         # Participant Server for dynamic route updates
-        self.participant_server = self.cfg.get_participant_server(self.id, self.logger)
-        if self.participant_server is not None:
-            self.participant_server.start(self)
+        #self.participant_server = self.cfg.get_participant_server(self.id, self.logger)
+        #if self.participant_server is not None:
+        #    self.participant_server.start(self)
 
         self.refmon_client = self.cfg.get_refmon_client(self.logger)
 
@@ -100,15 +105,15 @@ class ParticipantController(object):
         self.push_dp()
 
         # Start the event handlers
-        ps_thread_arp = Thread(target=self.start_eh_arp)
-        ps_thread_arp.daemon = True
-        ps_thread_arp.start()
+        #ps_thread_arp = Thread(target=self.start_eh_arp)
+        #ps_thread_arp.daemon = True
+        #ps_thread_arp.start()
 
         ps_thread_xrs = Thread(target=self.start_eh_xrs)
         ps_thread_xrs.daemon = True
         ps_thread_xrs.start()
 
-        ps_thread_arp.join()
+        #ps_thread_arp.join()
         ps_thread_xrs.join()
         self.logger.debug("Return from ps_thread.join()")
 
@@ -185,7 +190,7 @@ class ParticipantController(object):
         # it is crucial that dp_queued is traversed chronologically
         fm_builder = FlowModMsgBuilder(self.id, self.refmon_client.key)
         for flowmod in self.dp_queued:
-            self.logger.debug("MOD: "+str(flowmod))
+            #self.logger.debug("MOD: "+str(flowmod))
             if (flowmod['mod_type'] == 'remove'):
                 fm_builder.delete_flow_mod(flowmod['mod_type'], flowmod['rule_type'], flowmod['cookie'][0], flowmod['cookie'][1])
             elif (flowmod['mod_type'] == 'insert'):
@@ -194,9 +199,11 @@ class ParticipantController(object):
                 self.logger.error("Unhandled flow type: " + flowmod['mod_type'])
                 continue
             self.dp_pushed.append(flowmod)
+            self.dp_pushed = []
 
         self.dp_queued = []
-        self.refmon_client.send(json.dumps(fm_builder.get_msg()))
+        # NOTE: Fake refmon_client for testing
+        #self.refmon_client.send(json.dumps(fm_builder.get_msg()))
 
 
     def stop(self):
@@ -243,12 +250,13 @@ class ParticipantController(object):
         while self.run:
             try:
                 tmp = self.xrs_client.recv()
-            except EOFError:
+            except socket.error, (v, m):
+                self.logger.debug('socket.error' + m)
                 break
 
             if not tmp:
                 break
-            self.logger.debug("XRS Event received " + str(len(tmp)) + " bytes: " + tmp)
+            self.logger.info("XRS Event received " + str(len(tmp)) + " bytes: " + tmp)
             msg_buff += tmp
             offset = 0
             buff_len = len(msg_buff)
@@ -257,11 +265,23 @@ class ParticipantController(object):
                 self.logger.debug("XRS Event msg_len: " + str(msg_len))
                 if buff_len - offset < msg_len:
                     break
-                data = json.loads(msg_buff[offset + 2: offset + msg_len])
-                self.process_event(data)
+                data = msg_buff[offset + 2: offset + msg_len]
+                if data == "stop":
+                    self.logger.info("XRS stop signal received!")
+                    self.run = False
+                    break
+                else:
+                    data = json.loads(data)
+                    self.process_event(data)
                 offset += msg_len
+                if 'route_id' in data:
+                    route_id = data['route_id']
+                    t = time.time()
+                    self.result_file.write('route_id:%d end_time:%0.6f\n' % (route_id, t))
+                    self.result_file.flush()
             msg_buff = msg_buff[offset:]
 
+        self.result_file.close()
         self.xrs_client.close()
         self.logger.debug("Exiting start_eh_xrs")
 
@@ -290,7 +310,7 @@ class ParticipantController(object):
         elif 'arp' in data:
             (requester_srcmac, requested_vnh) = tuple(data['arp'])
             self.logger.debug("Event Received: ARP request for IP "+str(requested_vnh))
-            self.process_arp_request(requester_srcmac, requested_vnh)
+            #self.process_arp_request(requester_srcmac, requested_vnh)
 
         else:
             self.logger.warn("UNKNOWN EVENT TYPE RECEIVED: "+str(data))
@@ -378,13 +398,14 @@ class ParticipantController(object):
 
         # Send gratuitous ARP responses for all
         garp_required_vnhs = self.VNH_2_prefix.keys()
+        '''
         for vnh in garp_required_vnhs:
             self.process_arp_request(None, vnh)
-            
         return
+        '''
 
         # Original code below...
-        
+
         "Process the changes in participants' policies"
         # TODO: Implement the logic of dynamically changing participants' outbound and inbound policy
         '''
@@ -503,8 +524,10 @@ class ParticipantController(object):
         # what if my next_hop changed, while reachability/superset not changed
         self.process_sdn_reach({})
 
+        '''
         if vnh_changed:
             self.process_arp_request(None, route['vnh'])
+        '''
 
 
     def process_sdn_reach(self, parts_set):
@@ -572,8 +595,10 @@ class ParticipantController(object):
         """
 
         # Send gratuitous ARP responses for all them
+        '''
         for vnh in garp_required_vnhs:
             self.process_arp_request(None, vnh)
+        '''
 
         if TIMING:
             elapsed = time.time() - tstart
@@ -590,11 +615,18 @@ def main():
 
     # locate config file
     # TODO: Separate the config files for each participant
-    base_path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                "..","examples",args.dir,"config"))
-    config_file = os.path.join(base_path, "sdx_global.cfg")
+    base_path = "../examples/" + args.dir
+    config_file = base_path + "sdx_global.cfg"
+
+    with open(base_path + "asn_2_id.json", 'r') as f:
+        asn_2_id = json.load(f)
+    asn = ''
+    for elem in asn_2_id:
+        if str(asn_2_id[elem]) == str(args.id):
+            asn = elem
 
     # locate the participant's policy file as well
+    '''
     policy_filenames_file = os.path.join(base_path, "sdx_policies.cfg")
     with open(policy_filenames_file, 'r') as f:
         policy_filenames = json.load(f)
@@ -604,6 +636,13 @@ def main():
                             "..","examples",args.dir,"policies"))
 
     policy_file = os.path.join(policy_path, policy_filename)
+    '''
+
+    policy_filename = "participant_"+ "AS" + str(asn) + ".py"
+    policy_path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            "..", "examples", args.dir, "policies"))
+    policy_file = os.path.join(policy_path, policy_filename)
+
 
     logger = util.log.getLogger("P_" + str(args.id))
 
@@ -615,7 +654,7 @@ def main():
     ctrlr_thread = Thread(target=ctrlr.xstart)
     ctrlr_thread.daemon = True
     ctrlr_thread.start()
-    
+
     atexit.register(ctrlr.stop)
     signal(SIGTERM, lambda signum, stack_frame: exit(1))
 

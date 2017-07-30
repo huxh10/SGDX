@@ -254,6 +254,7 @@ int handle_exabgp_msg(char *msg)
 
     // route assignment
     bgp_dsrlz_msg.p_route = malloc(sizeof *bgp_dsrlz_msg.p_route);
+    init_route_ptr(bgp_dsrlz_msg.p_route);
     bgp_dsrlz_msg.p_route->neighbor = my_strdup(json_string_value(j_neighbor_ip));
     //fprintf(stdout, "neighbor ip: %s [%s]\n", json_string_value(j_neighbor_ip), __FUNCTION__);
 
@@ -281,6 +282,7 @@ int handle_exabgp_msg(char *msg)
     }
     j_attr = json_object_get(j_update, "attribute");
     if (!json_is_object(j_attr)) {
+        // TODO: withdraw announcement could have no attributes
         fprintf(stderr, "fmt error: key [neighbor][message][update][attribute] is wrong [%s]\n", __FUNCTION__);
         free_route_ptr(&bgp_dsrlz_msg.p_route);
         json_decref(j_root);

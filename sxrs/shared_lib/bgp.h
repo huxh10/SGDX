@@ -127,6 +127,7 @@ typedef struct {
 
 
 char *my_strdup(const char *s);
+void init_route_ptr(route_t *p_route);
 void free_route_ptr(route_t **pp_route);
 void reset_route(route_t *p_route);
 void free_bgp_route_output_dsrlz_msg(bgp_route_output_dsrlz_msg_t *p_msg);

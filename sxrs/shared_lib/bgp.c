@@ -15,6 +15,19 @@ char *my_strdup(const char *s)
     return d;
 }
 
+void init_route_ptr(route_t *p_route)
+{
+    if (!p_route) {
+        return;
+    }
+    p_route->prefix = NULL;
+    p_route->neighbor = NULL;
+    p_route->next_hop = NULL;
+    p_route->origin = NULL;
+    p_route->as_path.asns = NULL;
+    p_route->communities = NULL;
+}
+
 void free_route_ptr(route_t **pp_route)
 {
     if (!pp_route || !*pp_route) {

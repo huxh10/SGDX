@@ -29,10 +29,11 @@ update_minutes = 1800
 KEY_LENGTH = 16
 SIX_PACK_RS = 0
 SGX_RS = 1
+ORIGIN_RS = 2
 
 
 class ExaBGPEmulator(object):
-    def __init__(self, rs, address, port, input_file, speed_up, rate, mode):
+    def __init__(self, rs, address, port, input_file, speed_up, rate, mode, seperate_prefix):
         self.logger = util.log.getLogger('xbgp')
         self.logger.debug('init')
         self.route_id_counter = 0
@@ -44,6 +45,7 @@ class ExaBGPEmulator(object):
         self.rs = rs
         self.send_rate = int(rate)
         self.mode = int(mode)
+        self.seperate_prefix = seperate_prefix
 
         self.run = True
         self.fp_thread = None
@@ -56,7 +58,7 @@ class ExaBGPEmulator(object):
             self.logger.debug('connecting to RS2')
             self.conn_rs2 = Client((port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_receive_bgp_messages"]), authkey=None)
             self.logger.debug('connected to RS2')
-        elif self.rs == SGX_RS:
+        elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
             self.logger.debug('connecting to RS')
             self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.conn.connect((address, port))
@@ -145,16 +147,24 @@ class ExaBGPEmulator(object):
                         if not self.run:
                             break
 
-                        if self.rs == SIX_PACK_RS:
-                            routes = self.create_routes_to_be_sent(tmp)
-                        elif self.rs == SGX_RS:
-                            routes = self.create_routes_per_prefix(tmp)
-                        for route in routes:
-                            self.update_queue.put({'route': route, "time": tmp["time"]})
+                        if self.seperate_prefix:
+                            if self.rs == SIX_PACK_RS:
+                                routes = self.create_routes_to_be_sent(tmp)
+                            elif self.rs == SGX_RS:
+                                routes = self.create_routes_per_prefix(tmp)
+                            for route in routes:
+                                self.update_queue.put({'route': route, "time": tmp["time"]})
+                        else:
+                            # NOTE: process announcements only for testing
+                            if "announce" in tmp["neighbor"]["message"]["update"]:
+                                tmp["route_id"] = self.route_id_counter
+                                self.route_id_counter += 1
+                                self.logger.debug(str(tmp))
+                                self.update_queue.put({'route': tmp, "time": tmp["time"]})
 
                         while self.update_queue.qsize() > 32000:
                             self.logger.debug('queue is full - taking a break')
-                            sleep(self.sleep_time(tmp["time"])/2)
+                            sleep(self.sleep_time(tmp["time"])/2 + 0.001)
                             if not self.run:
                                 break
                         flag = 0
@@ -243,8 +253,8 @@ class ExaBGPEmulator(object):
             if self.rs == SIX_PACK_RS:
                 self.send_update_rs1(msg["route"])
                 self.send_update_rs2(msg["route"])
-            elif self.rs == SGX_RS:
-                self.send_update(msg["route"])
+            elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
+                self.send_update_sgx(msg["route"])
 
         self.stop()
 
@@ -274,8 +284,8 @@ class ExaBGPEmulator(object):
             if self.rs == SIX_PACK_RS:
                 self.send_update_rs1(msg["route"])
                 self.send_update_rs2(msg["route"])
-            elif self.rs == SGX_RS:
-                self.send_update(msg["route"])
+            elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
+                self.send_update_sgx(msg["route"])
 
         self.stop()
 
@@ -290,8 +300,8 @@ class ExaBGPEmulator(object):
             if self.rs == SIX_PACK_RS:
                 self.send_update_rs1(msg["route"])
                 self.send_update_rs2(msg["route"])
-            elif self.rs == SGX_RS:
-                self.send_update(msg["route"])
+            elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
+                self.send_update_sgx(msg["route"])
 
         print "total sent announcements: " + str(count)
         self.stop()
@@ -305,6 +315,9 @@ class ExaBGPEmulator(object):
         return sleep_time
 
     def send_update(self, update):
+        self.conn.send(json.dumps(update))
+
+    def send_update_sgx(self, update):
         s = json.dumps(update)
         self.conn.send(struct.pack("H", len(s) + 2) + s)
 
@@ -332,11 +345,12 @@ class ExaBGPEmulator(object):
 
     def stop(self):
         self.logger.debug('terminate')
+        print "send stop signal"
         if self.rs == SIX_PACK_RS:
             self.send_update_rs1({"stop": 1})
             self.send_update_rs2({"stop": 1})
-        elif self.rs == SGX_RS:
-            self.send_update({"stop": 1})
+        elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
+            self.send_update_sgx({"stop": 1})
 
         if self.run == True:
             self.run = False
@@ -349,14 +363,14 @@ class ExaBGPEmulator(object):
         if self.rs == SIX_PACK_RS:
             self.conn_rs1.close()
             self.conn_rs2.close()
-        elif self.rs == SGX_RS:
+        elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
             self.conn.close()
 
 
 def main(args):
     speedup = args.speedup if args.speedup else 1
 
-    exabgp_instance = ExaBGPEmulator(args.rs, args.ip, args.port, args.input, speedup, args.rate, args.mode)
+    exabgp_instance = ExaBGPEmulator(args.rs, args.ip, args.port, args.input, speedup, args.rate, args.mode, args.seperate_prefix)
     exabgp_instance.start()
 
     while exabgp_instance.run:
@@ -369,12 +383,13 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('rs', help='0: six-pack rs, 1: sgx rs', type=int)
+    parser.add_argument('rs', help='0: six-pack rs, 1: sgx rs, 2: orignl rs', type=int)
     parser.add_argument('ip', help='ip address of the xrs')
     parser.add_argument('port', help='port of the xrs', type=int)
     parser.add_argument('input', help='bgp input file')
     parser.add_argument('rate', help='bgp updates rate/second')
     parser.add_argument('mode', help='xbgp mode 0: bgp update time based 1: bgp update rate based 2: as fast as possible')
+    parser.add_argument('--seperate_prefix', help='whether seperate prefix', action='store_true')
     parser.add_argument('--speedup', help='speed up of replay', type=float)
     args = parser.parse_args()
     main(args)
