@@ -542,6 +542,7 @@ int rl_add_route(route_list_t **pp_rl, uint32_t src_asid, route_t *src_route, ui
     if (!(*pp_rl)->head) {
         (*pp_rl)->head = p_rn;
         p_rn->flag.is_selected = 1;
+        (*pp_rl)->route_num++;
         return 0;
     }
     p_rn->next = (*pp_rl)->head;

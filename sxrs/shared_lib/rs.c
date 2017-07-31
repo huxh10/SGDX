@@ -154,6 +154,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
         // update ribs
         HASH_FIND_STR(p_rt_states->ribs[i], p_bgp_input_msg->p_route->prefix, p_rib_entry);
         if (!p_rib_entry) {
+            //printf("asid:%u new p_rib_entry for prefix:%s [%s]\n", i, p_bgp_input_msg->p_route->prefix, __FUNCTION__);
             assert(p_bgp_input_msg->oprt_type == ANNOUNCE);
             p_rib_entry = malloc(sizeof *p_rib_entry);
             if (!p_rib_entry) {
@@ -168,6 +169,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
             p_new_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
             HASH_ADD_KEYPTR(hh, p_rt_states->ribs[i], p_rib_entry->key, strlen(p_rib_entry->key), p_rib_entry);
         } else {
+            //printf("asid:%u p_rib_entry exists for prefix:%s [%s]\n", i, p_bgp_input_msg->p_route->prefix, __FUNCTION__);
             // get next hop asid before processing
             p_old_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
             // update route
@@ -179,17 +181,18 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
             p_new_rn[i] = rl_get_selected_route_node(p_rib_entry->rl);
         }
         // get change status
-        if (i != p_bgp_input_msg->asid) {
-            if (p_old_rn[i] != p_new_rn[i]) {
-                next_hop_changed[i] = 1;
-                (*p_bgp_output_msg_num)++;
-            }
-            if (ENABLE_SDX) {
-                reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach + i * p_rt_states->as_size);
-                //printf("reach_changed[%d]:%d [%s]\n", i, reach_changed[i], __FUNCTION__);
-                *p_sdn_output_msg_num += reach_changed[i];
-            }
+        //if (i != p_bgp_input_msg->asid) {
+        // we also process the bgp-nh and sdn-reach info for the advertiser
+        if (p_old_rn[i] != p_new_rn[i]) {
+            next_hop_changed[i] = 1;
+            (*p_bgp_output_msg_num)++;
         }
+        if (ENABLE_SDX) {
+            reach_changed[i] = update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_rt_states->sdn_orgnl_reach + i * p_rt_states->as_size);
+            //printf("reach_changed[%d]:%d [%s]\n", i, reach_changed[i], __FUNCTION__);
+            *p_sdn_output_msg_num += reach_changed[i];
+        }
+        //}
     }
 
     // return bgp route output msg
@@ -250,7 +253,7 @@ uint32_t process_non_transit_route(const bgp_route_input_dsrlz_msg_t *p_bgp_inpu
     return SUCCESS;
 }
 
-uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type, uint32_t asid, rib_map_t *p_rib, sdn_reach_output_dsrlz_msg_t **pp_sdn_output_msgs, size_t *p_sdn_output_msg_num)
+uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32_t reach_size, uint8_t oprt_type, uint32_t asid, rib_map_t *p_rib, bgp_route_output_dsrlz_msg_t **pp_bgp_output_msgs, size_t *p_bgp_output_msg_num, sdn_reach_output_dsrlz_msg_t **pp_sdn_output_msgs, size_t *p_sdn_output_msg_num)
 {
     if (!p_sdn_reach || !p_reach) return SUCCESS;
     uint32_t i;
@@ -264,19 +267,38 @@ uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32
 
     if (!p_rib) return SUCCESS;
     rib_map_t *p_rib_entry = NULL, *tmp_p_rib_entry = NULL;
+    route_node_t *p_rn = NULL;
     queue_t q_changed_entries = {0, NULL};
+    uint32_t rib_size = 0;
     HASH_ITER(hh, p_rib, p_rib_entry, tmp_p_rib_entry) {
         if (update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_sdn_reach)) {
             queue_put(&q_changed_entries, (void *) p_rib_entry);
         }
+        rib_size++;
+    }
+
+    if (!rib_size) return SUCCESS;
+    *p_bgp_output_msg_num = rib_size;
+    *pp_bgp_output_msgs = malloc(*p_bgp_output_msg_num * sizeof **pp_bgp_output_msgs);
+    i = 0;
+    HASH_ITER(hh, p_rib, p_rib_entry, tmp_p_rib_entry) {
+        p_rn = rl_get_selected_route_node(p_rib_entry->rl);
+        (*pp_bgp_output_msgs)[i].asid = asid;
+        (*pp_bgp_output_msgs)[i].nh_asid = p_rn->advertiser_asid;
+        (*pp_bgp_output_msgs)[i].oprt_type = ANNOUNCE;
+        (*pp_bgp_output_msgs)[i].prefix = my_strdup(p_rib_entry->key);
+        (*pp_bgp_output_msgs)[i].next_hop = my_strdup(p_rn->route->next_hop);
+        (*pp_bgp_output_msgs)[i].as_path.length = 0;
+        (*pp_bgp_output_msgs)[i].as_path.asns = NULL;
+        i++;
     }
 
     if (!q_changed_entries.size) return SUCCESS;
     *p_sdn_output_msg_num = q_changed_entries.size;
     *pp_sdn_output_msgs = malloc(*p_sdn_output_msg_num * sizeof **pp_sdn_output_msgs);
     for (i = 0; i < *p_sdn_output_msg_num; i++) {
-        (*pp_sdn_output_msgs)[i].asid = asid;
         p_rib_entry = (rib_map_t *) queue_get(&q_changed_entries);
+        (*pp_sdn_output_msgs)[i].asid = asid;
         (*pp_sdn_output_msgs)[i].prefix = my_strdup(p_rib_entry->key);
         (*pp_sdn_output_msgs)[i].reach_size = p_rib_entry->augmented_reach->size;
         (*pp_sdn_output_msgs)[i].reachability = malloc((*pp_sdn_output_msgs)[i].reach_size * sizeof *(*pp_sdn_output_msgs)[i].reachability);

@@ -80,7 +80,7 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         bytes = read(h->fd, buffer, BUFFER_SIZE);
 
         if (bytes == 0) {
-            fprintf(stderr, "socket from sfd:%d client_id:%d closed [%s]\n", h->fd, closure->id, __FUNCTION__);
+            fprintf(stderr, "socket from sfd:%d client_id:%d closed by peer [%s]\n", h->fd, closure->id, __FUNCTION__);
             // TODO clean up sfd ?
             break;
         }
@@ -91,7 +91,8 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         }
 
         // read error or the remote as is close
-        if (bytes == -1 || bytes == 0) {
+        if (bytes == -1) {
+            fprintf(stderr, "socket from sfd:%d client_id:%d err:%s [%s]\n", h->fd, closure->id, strerror(errno), __FUNCTION__);
             close(h->fd);
             free_ds(&closure->p_ds);
             free(closure);

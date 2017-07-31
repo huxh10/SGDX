@@ -28,7 +28,7 @@ sgx_enclave_id_t load_enclave()
         fprintf(stderr, "sgx_create_enclave failed, errno:%d [%s]\n", ret, __FUNCTION__);
         exit(-1);
     } else {
-        fprintf(stderr, "enclave - id %lu [%s]\n", enclave_id, __FUNCTION__);
+        fprintf(stdout, "enclave - id %lu [%s]\n", enclave_id, __FUNCTION__);
         return enclave_id;
     }
 }
@@ -43,7 +43,7 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
     // as map
     call_status = enclave_ecall_load_asmap(g_enclave_id, &ret_status, p_as_cfg->as_size, (void *) p_as_cfg->as_id_2_n, p_as_cfg->as_size * sizeof *p_as_cfg->as_id_2_n);
     if (ret_status == SUCCESS) {
-        fprintf(stderr, "load as id map done [%s]\n", __FUNCTION__);
+        fprintf(stdout, "load as id map done [%s]\n", __FUNCTION__);
     } else {
         fprintf(stderr, "enclave_load_asmap failed, errno:%u [%s]\n", ret_status, __FUNCTION__);
     }
@@ -62,7 +62,7 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
         SAFE_FREE(p_as_cfg->as_policies[i].export_policy);
         SAFE_FREE(p_as_cfg->as_policies[i].selection_policy);
     }
-    fprintf(stderr, "load as policies done [%s]\n", __FUNCTION__);
+    fprintf(stdout, "load as policies done [%s]\n", __FUNCTION__);
 
     // ribs
     if (!p_as_cfg->rib_file_dir) return;
@@ -88,7 +88,7 @@ void init_w_sgx(as_cfg_t *p_as_cfg, int verbose)
         fprintf(stdout, "rib_%d loaded [%s]\n", i, __FUNCTION__);
     }
     SAFE_FREE(line);
-    fprintf(stderr, "load rib from file done [%s]\n", __FUNCTION__);
+    fprintf(stdout, "load rib from file done [%s]\n", __FUNCTION__);
 }
 
 void process_bgp_route_w_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
@@ -162,7 +162,30 @@ uint32_t ocall_send_bgp_ret(void *msg, size_t msg_size)
     return SUCCESS;
 }
 
-uint32_t ocall_send_sdn_ret(uint32_t *p_sdn_reach, uint32_t reach_size, uint32_t asid, const char *prefix)
+uint32_t ocall_send_init_sdn_ret(void *msg, size_t msg_size)
+{
+    uint32_t i = 0;
+    bgp_route_output_dsrlz_msg_t *p_bgp_route_output_dsrlz_msgs = NULL;
+    sdn_reach_output_dsrlz_msg_t *p_sdn_reach_output_dsrlz_msgs = NULL;
+    size_t bgp_msg_num = 0, sdn_msg_num = 0;
+
+    assert(parse_bgp_ret_from_stream(&p_bgp_route_output_dsrlz_msgs, &bgp_msg_num, &p_sdn_reach_output_dsrlz_msgs, &sdn_msg_num, (uint8_t *) msg) == msg_size);
+
+    for (i = 0; i < bgp_msg_num; i++) {
+        handle_bgp_route_for_pctrl(&p_bgp_route_output_dsrlz_msgs[i]);
+        free_bgp_route_output_dsrlz_msg(&p_bgp_route_output_dsrlz_msgs[i]);
+    }
+    SAFE_FREE(p_bgp_route_output_dsrlz_msgs);
+    for (i = 0; i < sdn_msg_num; i++) {
+        handle_sdn_reach(p_sdn_reach_output_dsrlz_msgs[i].asid, p_sdn_reach_output_dsrlz_msgs[i].prefix, p_sdn_reach_output_dsrlz_msgs[i].reachability, p_sdn_reach_output_dsrlz_msgs[i].reach_size);
+        free_sdn_reach_output_dsrlz_msg(&p_sdn_reach_output_dsrlz_msgs[i]);
+    }
+    SAFE_FREE(p_sdn_reach_output_dsrlz_msgs);
+
+    return SUCCESS;
+}
+
+uint32_t ocall_send_get_sdn_ret(uint32_t *p_sdn_reach, uint32_t reach_size, uint32_t asid, const char *prefix)
 {
     handle_sdn_reach(asid, prefix, p_sdn_reach, reach_size);
 }

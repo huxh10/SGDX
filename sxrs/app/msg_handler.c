@@ -73,6 +73,52 @@ void handle_sdn_reach(uint32_t asid, const char *prefix, const uint32_t *p_sdn_r
     json_decref(j_root);
 }
 
+void handle_bgp_route_for_pctrl(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
+{
+    char *next_hop, *oprt_type, *msg_to_pctrlr;
+    vnh_map_t *vnh_entry;
+    struct in_addr ip_addr;
+
+    if (p_bgp_msg->oprt_type == ANNOUNCE) {
+        oprt_type = "announce";
+    } else if (p_bgp_msg->oprt_type == WITHDRAW) {
+        oprt_type = "withdraw";
+    } else {
+        return;
+    }
+
+    HASH_FIND_STR(g_msg_states.vnh_states.vnh_map, p_bgp_msg->prefix, vnh_entry);
+    if (vnh_entry) {
+        next_hop = vnh_entry->vnh;
+    } else {
+        // new vnh assignment
+        vnh_entry = malloc(sizeof *vnh_entry);
+        g_msg_states.vnh_states.crnt_vnh++;
+        ip_addr.s_addr = htonl(g_msg_states.vnh_states.crnt_vnh);
+        next_hop = strdup(inet_ntoa(ip_addr));
+        vnh_entry->prefix = strdup(p_bgp_msg->prefix);
+        vnh_entry->vnh = next_hop;
+        HASH_ADD_KEYPTR(hh, g_msg_states.vnh_states.vnh_map, vnh_entry->prefix, strlen(vnh_entry->prefix), vnh_entry);
+    }
+
+    json_t *j_root = json_object();
+    json_t *j_msg = json_object();
+
+    json_object_set_new(j_msg, "oprt-type", json_string(oprt_type));
+    json_object_set_new(j_msg, "prefix", json_string(p_bgp_msg->prefix));
+    json_object_set_new(j_msg, "vnh", json_string(next_hop));
+    json_object_set_new(j_msg, "nh-asid", json_integer(p_bgp_msg->nh_asid));
+
+    json_object_set(j_root, "bgp-nh", j_msg);
+    json_decref(j_msg);
+
+    msg_to_pctrlr = json_dumps(j_root, 0);
+    //fprintf(stdout, "prepare to send bgp-nh msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
+    send_msg_to_pctrlr(msg_to_pctrlr, g_msg_states.pctrlr_sfds[p_bgp_msg->asid]);
+    SAFE_FREE(msg_to_pctrlr);
+    json_decref(j_root);
+}
+
 void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
 {
     uint32_t i, j, msg_size, offset;

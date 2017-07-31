@@ -10,6 +10,8 @@ void msg_handler_init(as_cfg_t *p_as_cfg);
 
 void handle_sdn_reach(uint32_t asn, const char *prefix, const uint32_t *p_sdn_reach, uint32_t reach_size);
 
+void handle_bgp_route_for_pctrl(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
+
 void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
 
 int handle_exabgp_msg(char *msg);
