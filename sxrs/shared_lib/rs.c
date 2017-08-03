@@ -259,7 +259,7 @@ uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32
     uint32_t i;
     uint8_t v = (oprt_type == ANNOUNCE) ? 1 : 0;
 
-    printf("asid:%u [%s]\n", asid, __FUNCTION__);
+    //printf("asid:%u [%s]\n", asid, __FUNCTION__);
     for (i = 0; i < reach_size; i++) {
         //printf("updated p_reach[%u]:%u,%u [%s]\n", i, p_reach[i], v, __FUNCTION__);
         p_sdn_reach[p_reach[i]] = v;
@@ -272,25 +272,28 @@ uint32_t process_sdn_reach(uint8_t *p_sdn_reach, const uint32_t *p_reach, uint32
     uint32_t rib_size = 0;
     HASH_ITER(hh, p_rib, p_rib_entry, tmp_p_rib_entry) {
         if (update_augmented_reach(&p_rib_entry->augmented_reach, p_rib_entry->rl, p_sdn_reach)) {
+            //printf("queue_put new entry: prefix:%s [%s]\n", p_rib_entry->key, __FUNCTION__);
             queue_put(&q_changed_entries, (void *) p_rib_entry);
         }
+        //printf("HASH_ITER rib_size:%u prefix:%s [%s]\n", rib_size, p_rib_entry->key, __FUNCTION__);
         rib_size++;
     }
 
-    if (!rib_size) return SUCCESS;
-    *p_bgp_output_msg_num = rib_size;
-    *pp_bgp_output_msgs = malloc(*p_bgp_output_msg_num * sizeof **pp_bgp_output_msgs);
-    i = 0;
-    HASH_ITER(hh, p_rib, p_rib_entry, tmp_p_rib_entry) {
-        p_rn = rl_get_selected_route_node(p_rib_entry->rl);
-        (*pp_bgp_output_msgs)[i].asid = asid;
-        (*pp_bgp_output_msgs)[i].nh_asid = p_rn->advertiser_asid;
-        (*pp_bgp_output_msgs)[i].oprt_type = ANNOUNCE;
-        (*pp_bgp_output_msgs)[i].prefix = my_strdup(p_rib_entry->key);
-        (*pp_bgp_output_msgs)[i].next_hop = my_strdup(p_rn->route->next_hop);
-        (*pp_bgp_output_msgs)[i].as_path.length = 0;
-        (*pp_bgp_output_msgs)[i].as_path.asns = NULL;
-        i++;
+    if (rib_size) {
+        *p_bgp_output_msg_num = rib_size;
+        *pp_bgp_output_msgs = malloc(*p_bgp_output_msg_num * sizeof **pp_bgp_output_msgs);
+        i = 0;
+        HASH_ITER(hh, p_rib, p_rib_entry, tmp_p_rib_entry) {
+            p_rn = rl_get_selected_route_node(p_rib_entry->rl);
+            (*pp_bgp_output_msgs)[i].asid = asid;
+            (*pp_bgp_output_msgs)[i].nh_asid = p_rn->advertiser_asid;
+            (*pp_bgp_output_msgs)[i].oprt_type = ANNOUNCE;
+            (*pp_bgp_output_msgs)[i].prefix = my_strdup(p_rib_entry->key);
+            (*pp_bgp_output_msgs)[i].next_hop = my_strdup(p_rn->route->next_hop);
+            (*pp_bgp_output_msgs)[i].as_path.length = 0;
+            (*pp_bgp_output_msgs)[i].as_path.asns = NULL;
+            i++;
+        }
     }
 
     if (!q_changed_entries.size) return SUCCESS;

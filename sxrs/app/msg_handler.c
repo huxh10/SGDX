@@ -257,6 +257,7 @@ int handle_exabgp_msg(char *msg)
                 send_msg_to_pctrlr("stop", g_msg_states.pctrlr_sfds[i]);
                 close(g_msg_states.pctrlr_sfds[i]);
             }
+            write_sdx_log_time();
         }
         exit(0);
     }

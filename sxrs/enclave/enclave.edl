@@ -12,6 +12,8 @@ enclave {
 
     untrusted {
         uint32_t ocall_send_bgp_ret([in, size = msg_size] void *msg, size_t msg_size);
+        uint32_t ocall_send_buffer([in, size = msg_size] void *msg, size_t msg_size, size_t offset, size_t all_size);
+        uint32_t ocall_process_buffer_for_init_sdn_ret(size_t all_size);
         uint32_t ocall_send_init_sdn_ret([in, size = msg_size] void *msg, size_t msg_size);
         uint32_t ocall_send_get_sdn_ret([in, count = reach_size] uint32_t *p_sdn_reach, uint32_t reach_size, uint32_t asid, [in, string] const char *prefix);
         void ocall_print_string([in, string] const char *str);

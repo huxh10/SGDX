@@ -59,10 +59,10 @@ class ExaBGPEmulator(object):
             self.conn_rs2 = Client((port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_receive_bgp_messages"]), authkey=None)
             self.logger.debug('connected to RS2')
         elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
-            self.logger.debug('connecting to RS')
+            self.logger.info('connecting to RS')
             self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.conn.connect((address, port))
-            self.logger.debug('connected to RS')
+            self.logger.info('connected to RS')
 
     def file_processor(self):
         with open(self.input_file) as infile:
@@ -150,9 +150,11 @@ class ExaBGPEmulator(object):
                         if self.seperate_prefix:
                             if self.rs == SIX_PACK_RS:
                                 routes = self.create_routes_to_be_sent(tmp)
-                            elif self.rs == SGX_RS:
+                            elif self.rs == SGX_RS or self.rs == ORIGIN_RS:
                                 routes = self.create_routes_per_prefix(tmp)
                             for route in routes:
+                                route["route_id"] = self.route_id_counter
+                                self.route_id_counter += 1
                                 self.update_queue.put({'route': route, "time": tmp["time"]})
                         else:
                             # NOTE: process announcements only for testing
@@ -161,9 +163,10 @@ class ExaBGPEmulator(object):
                                 self.route_id_counter += 1
                                 self.logger.debug(str(tmp))
                                 self.update_queue.put({'route': tmp, "time": tmp["time"]})
+                                #self.logger.info("update_queue.qsize:" + str(self.update_queue.qsize()) + "route_id:%d" % tmp["route_id"])
 
                         while self.update_queue.qsize() > 32000:
-                            self.logger.debug('queue is full - taking a break')
+                            self.logger.info('queue is full - taking a break')
                             sleep(self.sleep_time(tmp["time"])/2 + 0.001)
                             if not self.run:
                                 break
@@ -249,6 +252,7 @@ class ExaBGPEmulator(object):
 
             sleep_time = self.sleep_time(msg["time"])
             sleep(sleep_time)
+            #self.logger.info("route_id:%d " % msg["route"]["route_id"] + "Peer asn:%s " % msg["route"]["neighbor"]["asn"]["peer"] + "time(s):" + str(msg["time"]) + "sleep_time(s):" + str(sleep_time))
 
             if self.rs == SIX_PACK_RS:
                 self.send_update_rs1(msg["route"])

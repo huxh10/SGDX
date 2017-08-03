@@ -125,17 +125,27 @@ uint32_t ecall_process_sdn_reach(uint32_t asid, const uint32_t *p_reach, uint32_
 {
     bgp_route_output_dsrlz_msg_t *p_bgp_route_output_dsrlz_msgs = NULL;
     sdn_reach_output_dsrlz_msg_t *p_sdn_reach_output_dsrlz_msgs = NULL;
-    size_t i, bgp_output_msg_num = 0, sdn_output_msg_num = 0, ret_msg_size = 0;
+    size_t i, bgp_output_msg_num = 0, sdn_output_msg_num = 0, ret_msg_size = 0, offset = 0;
     uint8_t *ret_msg = NULL;
     uint32_t call_status, ret_status;
 
     process_sdn_reach(gp_rt_states->sdn_orgnl_reach + asid * gp_rt_states->as_size, p_reach, reach_size, oprt_type, asid, gp_rt_states->ribs[asid], &p_bgp_route_output_dsrlz_msgs, &bgp_output_msg_num, &p_sdn_reach_output_dsrlz_msgs, &sdn_output_msg_num);
 
     // return messages
-    if (!sdn_output_msg_num) return SUCCESS;
+    if (!sdn_output_msg_num && !bgp_output_msg_num) return SUCCESS;
     if ((ret_msg_size = write_bgp_ret_to_stream(&ret_msg, p_bgp_route_output_dsrlz_msgs, bgp_output_msg_num, p_sdn_reach_output_dsrlz_msgs, sdn_output_msg_num)) == -1) return MALLOC_ERROR;
     if (ret_msg_size == 0) return SUCCESS;
-    call_status = ocall_send_init_sdn_ret(&ret_status, (void *) ret_msg, ret_msg_size);
+    offset = 0;
+    if (ret_msg_size > CALL_BUFF_MAX) {
+        while (ret_msg_size - offset > CALL_BUFF_MAX) {
+            call_status = ocall_send_buffer(&ret_status, (void *) (ret_msg + offset), CALL_BUFF_MAX, offset, ret_msg_size);
+            offset += CALL_BUFF_MAX;
+        }
+        call_status = ocall_send_buffer(&ret_status, (void *) (ret_msg + offset), ret_msg_size - offset, offset, ret_msg_size);
+        call_status = ocall_process_buffer_for_init_sdn_ret(&ret_status, ret_msg_size);
+    } else {
+        call_status = ocall_send_init_sdn_ret(&ret_status, (void *) ret_msg, ret_msg_size);
+    }
     SAFE_FREE(ret_msg);
     for (i = 0; i < bgp_output_msg_num; i++) {
         free_bgp_route_output_dsrlz_msg(&p_bgp_route_output_dsrlz_msgs[i]);

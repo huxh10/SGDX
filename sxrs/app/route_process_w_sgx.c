@@ -14,6 +14,8 @@
 
 sgx_enclave_id_t g_enclave_id;
 int g_verbose = 0;
+uint8_t *g_call_buff = NULL;
+uint32_t g_call_size = 0;
 
 sgx_enclave_id_t load_enclave()
 {
@@ -188,4 +190,24 @@ uint32_t ocall_send_init_sdn_ret(void *msg, size_t msg_size)
 uint32_t ocall_send_get_sdn_ret(uint32_t *p_sdn_reach, uint32_t reach_size, uint32_t asid, const char *prefix)
 {
     handle_sdn_reach(asid, prefix, p_sdn_reach, reach_size);
+}
+
+uint32_t ocall_send_buffer(void *msg, size_t msg_size, size_t offset, size_t all_size)
+{
+    if (offset == 0) {
+        g_call_buff = malloc(all_size);
+    }
+    //printf("get buffer %lu(B) [%s]\n", msg_size, __FUNCTION__);
+    memcpy(g_call_buff + offset, msg, msg_size);
+    g_call_size = all_size;
+    return SUCCESS;
+}
+
+uint32_t ocall_process_buffer_for_init_sdn_ret(size_t all_size)
+{
+    assert(all_size == g_call_size);
+    ocall_send_init_sdn_ret(g_call_buff, g_call_size);
+    //printf("ocall_send_init_sdn_ret done [%s]\n", __FUNCTION__);
+    SAFE_FREE(g_call_buff);
+    return SUCCESS;
 }

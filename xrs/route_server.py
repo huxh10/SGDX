@@ -14,6 +14,8 @@ import Queue
 import sys
 from threading import Thread, Lock
 import time
+import socket
+import struct
 
 np = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if np not in sys.path:
@@ -38,28 +40,59 @@ clientPoolLock = Lock()
 clientActivePool = dict()
 clientDeadPool = set()
 
+count_lock = Lock()
+
+def create_sig():
+    with open('sig', 'w+') as f:
+        pass
 
 class PctrlClient(object):
     def __init__(self, conn, addr):
         self.conn = conn
         self.addr = addr
 
+        self.run = True
         self.id = None
         self.peers_in = []
         self.peers_out = []
 
     def start(self):
         logger.info('BGP PctrlClient started for client ip %s.', self.addr)
-        while True:
+        msg_buff = ''
+        while self.run:
             try:
-                rv = self.conn.recv()
+                rv = self.conn.recv(4096)
             except EOFError as ee:
                 break
 
-            logger.info('\n PctrlClient: Trace: Got rv, original route: %s\n', rv)
-            logger.info('\n PctrlClient: Trace: Got rv, json route: %s\n', json.loads(rv))
-            if not (rv and self.process_message(**json.loads(rv))):
+            if not rv:
                 break
+
+            logger.debug('PctrlClient: Trace: Got rv, original route: %s', rv)
+            msg_buff += rv
+            offset = 0
+            buff_len = len(msg_buff)
+            while buff_len - offset >= 2:
+                msg_len = ord(msg_buff[offset]) | ord(msg_buff[offset + 1]) << 8
+                if buff_len - offset < msg_len:
+                    break
+                data = msg_buff[offset + 2: offset + msg_len]
+                if data == 'stop':
+                    with count_lock:
+                        bgpListener.stop_counts += 1
+                        logger.info("stop_counts:%d" % bgpListener.stop_counts)
+                    if bgpListener.stop_counts == bgpListener.as_num:
+                        logger.info("last stop signal received, exiting...")
+                        with open('result', 'w+') as f:
+                            f.write('route_count:%d start_time:%0.6f end_time:%0.6f' % (bgpListener.route_id + 1, bgpListener.start_time, bgpListener.end_time))
+                        bgpListener.run = False
+                    self.run = False
+                    break
+                else:
+                    data = json.loads(data)
+                    self.process_message(**data)
+                offset += msg_len
+            msg_buff = msg_buff[offset:]
 
         self.conn.close()
 
@@ -118,10 +151,12 @@ class PctrlClient(object):
             logger.debug('Trace: PctrlClient.hello: portip2participant after: %s', portip2participant)
             logger.debug('Trace: PctrlClient.hello: participants after: %s', participants)
 
+        create_sig()
+
         return True
 
 
-    def process_bgp_message(self, announcement=None, **data):
+    def process_bgp_message(self, announcement = None, **data):
         if announcement:
             bgpListener.send(announcement)
         return True
@@ -129,13 +164,20 @@ class PctrlClient(object):
 
     def send(self, route):
         logger.debug('Sending a route update to participant %d', self.id)
-        self.conn.send(json.dumps({'bgp': route}))
+        if route:
+            msg = json.dumps({'bgp': route, 'route_id': route['route_id']})
+        else:
+            msg = 'stop'
+        self.conn.send(struct.pack('H', len(msg) + 2) + msg)
 
 
 class PctrlListener(object):
     def __init__(self):
         logger.info("Initializing the BGP PctrlListener")
-        self.listener = Listener(config.ah_socket, authkey=None, backlog=100)
+        self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.listener.bind(config.ah_socket)
+        self.listener.listen(600)
         self.run = True
 
 
@@ -143,23 +185,29 @@ class PctrlListener(object):
         logger.info("Starting the BGP PctrlListener")
 
         while self.run:
-            conn = self.listener.accept()
+            try:
+                self.listener.settimeout(1)
+                (conn, addr) = self.listener.accept()
 
-            pc = PctrlClient(conn, self.listener.last_accepted)
-            t = Thread(target=pc.start)
+                pc = PctrlClient(conn, addr)
+                t = Thread(target=pc.start)
 
-            with clientPoolLock:
-                logger.debug('Trace: PctrlListener.start: clientActivePool before: %s', clientActivePool)
-                logger.debug('Trace: PctrlListener.start: clientDeadPool before: %s', clientDeadPool)
-                clientActivePool[pc] = t
+                with clientPoolLock:
+                    logger.debug('Trace: PctrlListener.start: clientActivePool before: %s', clientActivePool)
+                    logger.debug('Trace: PctrlListener.start: clientDeadPool before: %s', clientDeadPool)
+                    clientActivePool[pc] = t
 
-                # while here, join dead threads.
-                while clientDeadPool:
-                    clientDeadPool.pop().join()
-                logger.debug('Trace: PctrlListener.start: clientActivePool after: %s', clientActivePool)
-                logger.debug('Trace: PctrlListener.start: clientDeadPool after: %s', clientDeadPool)
+                    # while here, join dead threads.
+                    while clientDeadPool:
+                        clientDeadPool.pop().join()
+                    logger.debug('Trace: PctrlListener.start: clientActivePool after: %s', clientActivePool)
+                    logger.debug('Trace: PctrlListener.start: clientDeadPool after: %s', clientDeadPool)
 
-            t.start()
+                t.start()
+            except socket.timeout:
+                pass
+        logger.info("listener socket close")
+        self.listener.close()
 
 
     def stop(self):
@@ -168,13 +216,17 @@ class PctrlListener(object):
 
 
 class BGPListener(object):
-    def __init__(self):
+    def __init__(self, as_num):
         logger.info('Initializing the BGPListener')
 
         # Initialize XRS Server
         self.server = Server(logger)
         self.run = True
-
+        self.route_id = 0
+        self.start_time = 0
+        self.end_time = 0
+        self.as_num = int(as_num)
+        self.stop_counts = 0
 
     def start(self):
         logger.info("Starting the Server to handle incoming BGP Updates.")
@@ -193,11 +245,20 @@ class BGPListener(object):
                 waiting = (waiting+1) % 30
                 continue
 
+            if self.start_time == 0:
+                self.start_time = time.time()
+
             waiting = 0
-            logger.info("\n BGPListener: Got original route from ExaBGP: %s\n", route)
+            logger.debug("\n BGPListener: Got original route from ExaBGP: %s\n", route)
             route = json.loads(route)
 
-            logger.info("\n BGPListener: Got json route from ExaBGP: %s\n", route)
+            if 'stop' in route:
+                logger.info("BGPListener: stop signal received from ExaBGP")
+                peers = participants.values()
+                for peer in peers:
+                    peer.send([])
+                continue
+            self.route_id = route["route_id"]
 
             # Received BGP route advertisement from ExaBGP
             try:
@@ -222,9 +283,12 @@ class BGPListener(object):
                 # Now send this route to participant `id`'s controller'
                 peer.send(route)
 
+            self.end_time = time.time()
+
 
     def send(self, announcement):
-        self.server.sender_queue.put(announcement)
+        self.end_time = time.time()
+        #self.server.sender_queue.put(announcement)
 
 
     def stop(self):
@@ -251,22 +315,25 @@ def main():
     global bgpListener, pctrlListener, config
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('as_num', help='the as number')
     parser.add_argument('dir', help='the directory of the example')
     args = parser.parse_args()
 
     # locate config file
-    config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","examples",args.dir,"config","sdx_global.cfg")
+    config_file = "../examples/" + args.dir + "sdx_global.cfg"
 
     logger.info("Reading config file %s", config_file)
     config = parse_config(config_file)
 
-    bgpListener = BGPListener()
+    bgpListener = BGPListener(args.as_num)
     bp_thread = Thread(target=bgpListener.start)
     bp_thread.start()
 
     pctrlListener = PctrlListener()
     pp_thread = Thread(target=pctrlListener.start)
     pp_thread.start()
+
+    create_sig()
 
     while bp_thread.is_alive():
         try:

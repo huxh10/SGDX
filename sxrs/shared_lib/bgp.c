@@ -652,6 +652,10 @@ static int set_add(set_t *p_set, uint32_t id)
     set_node_t *p_tmp_set = p_set->head;
     if (!p_tmp_set) {
         p_tmp_set = malloc(sizeof *p_tmp_set);
+        if (!p_tmp_set) {
+            printf("malloc error for p_tmp_set (head) [%s]\n", __FUNCTION__);
+            return 0;
+        }
         p_tmp_set->id = id;
         p_tmp_set->prev = p_tmp_set;
         p_tmp_set->next = p_tmp_set;
@@ -664,6 +668,10 @@ static int set_add(set_t *p_set, uint32_t id)
         p_tmp_set = p_tmp_set->next;
     }
     p_tmp_set = malloc(sizeof *p_tmp_set);
+    if (!p_tmp_set) {
+        printf("malloc error for p_tmp_set [%s]\n", __FUNCTION__);
+        return 0;
+    }
     p_tmp_set->id = id;
     p_tmp_set->next = p_set->head;
     p_tmp_set->prev = p_set->head->prev;
@@ -736,6 +744,10 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
     if (!p_rl || !pp_set) return 0;
     if (!*pp_set) {
         *pp_set = malloc(sizeof **pp_set);
+        if (!*pp_set) {
+            printf("malloc error for *pp_set [%s]\n", __FUNCTION__);
+            return 0;
+        }
         (*pp_set)->size = 0;
         (*pp_set)->head = NULL;
     }
@@ -744,7 +756,7 @@ int update_augmented_reach(set_t **pp_set, route_list_t *p_rl, uint8_t *p_sdn_re
     // previous set is empty, directly add asid
     if (!(*pp_set)->size) {
         while (p_tmp_rn) {
-            //printf("p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
+            //printf("set size is 0: p_sdn_reach[%d]:%d [%s]\n", p_tmp_rn->advertiser_asid, p_sdn_reach[p_tmp_rn->advertiser_asid], __FUNCTION__);
             if (p_sdn_reach[p_tmp_rn->advertiser_asid]) {
                 set_add(*pp_set, p_tmp_rn->advertiser_asid);
             }
@@ -784,6 +796,10 @@ void queue_put(queue_t *p_q, void *ptr)
     if (!p_q) return;
     p_q->size++;
     queue_node_t *p_qn = malloc(sizeof *p_qn);
+    if (!p_qn) {
+        printf("malloc error for queue_node [%s]\n", __FUNCTION__);
+        return;
+    }
     p_qn->ptr = ptr;
     if (!p_q->head) {
         p_q->head = p_qn;

@@ -15,6 +15,7 @@
 #include "app_types.h"
 #include "msg_handler.h"
 #include "server.h"
+#include "bgp.h"
 
 typedef struct {
     uint32_t id;
@@ -23,6 +24,16 @@ typedef struct {
 
 int g_bgp_serv_sfd, g_bgp_clnt_sfd;
 FILE *g_result_fp;
+uint32_t g_route_id = 0;
+uint64_t g_start_time = 0, g_end_time = 0;
+
+void write_sdx_log_time()
+{
+    double start_time = g_start_time / 1000000;
+    double end_time = g_end_time / 1000000;
+    fprintf(g_result_fp, "route_count:%u start_time:%.6f end_time:%.6f\n", g_route_id + 1, start_time, end_time);
+    fclose(g_result_fp);
+}
 
 static inline void send_msg(const char *msg, int msg_size, int sfd)
 {
@@ -70,8 +81,6 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
     char buffer[BUFFER_SIZE], *s_msg;
     const uint8_t *u8_msg = NULL;
     server_read_closure_t *closure = h->closure;
-    uint64_t start_time, end_time;
-    int route_id;
 
     //fprintf(stdout, "\nread event for sfd:%d client_id:%d [%s]\n", h->fd, closure->id, __FUNCTION__);
 
@@ -116,18 +125,26 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
         }
 
         // ---------- message processing -----------
-        start_time = get_us_time();
+        if (ENABLE_SDX) {
+            if (g_start_time == 0) {
+                g_start_time = get_us_time();
+            }
+        } else {
+            g_start_time = get_us_time();
+        }
         s_msg = malloc((msg_size - 2 + 1) * sizeof *s_msg);
         memcpy(s_msg, u8_msg + 2, msg_size -2);
         s_msg[msg_size - 2] = '\0';
         if (h->fd == g_bgp_clnt_sfd) {
             //printf("handle_exabgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
-            route_id = handle_exabgp_msg(s_msg);
-            end_time = get_us_time();
-            fprintf(g_result_fp, "route_id:%d start_time:%lu end_time:%lu\n", route_id, start_time, end_time);
-            fflush(g_result_fp);
+            g_route_id = handle_exabgp_msg(s_msg);
+            g_end_time = get_us_time();
+            if (!ENABLE_SDX) {
+                fprintf(g_result_fp, "route_id:%d start_time:%lu end_time:%lu\n", g_route_id, g_start_time, g_end_time);
+                fflush(g_result_fp);
+            }
         } else {
-            //printf("handle_pctrlr_msg:%s [%s]\n", s_msg, __FUNCTION__);
+            //printf("handle_pctrlr_msg for asid:%u msg:%s [%s]\n", closure->id, s_msg, __FUNCTION__);
             handle_pctrlr_msg(s_msg, h->fd, &closure->id);
         }
         SAFE_FREE(s_msg);

@@ -5,6 +5,7 @@
 #include "bgp.h"
 #include "uthash.h"
 
+#define CALL_BUFF_MAX 100000
 
 // next hop policy type
 //

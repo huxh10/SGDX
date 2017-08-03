@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "app_types.h"
 
+void write_sdx_log_time();
+
 void server_init(int efd, net_conf_t *p_ncf);
 
 void send_msg_to_pctrlr(const char *msg, int sfd);
