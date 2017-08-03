@@ -107,7 +107,7 @@ def generate_global_config(asn_2_ip, asn_2_id, peer_file, cfg_dir):
             tmp["MAC"] = ""
             tmp["IP"] = str(nhip)
             config["Participants"][part_id]["Ports"].append(tmp)
-        config["Participants"][part_id]["ASN"] = "AS" + part
+        config["Participants"][part_id]["ASN"] = int(part)
         config["Participants"][part_id]["Peers"] = asid_2_peers[part_id]
         config["Participants"][part_id]["Inbound Rules"] = "true"
         config["Participants"][part_id]["Outbound Rules"] = "true"
