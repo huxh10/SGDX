@@ -140,7 +140,7 @@ static void server_handle_read_event(epoll_event_handler_t *h, uint32_t events)
             g_route_id = handle_exabgp_msg(s_msg);
             g_end_time = get_us_time();
             if (!ENABLE_SDX) {
-                fprintf(g_result_fp, "route_id:%d start_time:%lu end_time:%lu\n", g_route_id, g_start_time, g_end_time);
+                fprintf(g_result_fp, "latency: %lu\n", g_end_time - g_start_time);
                 fflush(g_result_fp);
             }
         } else {
