@@ -919,7 +919,7 @@ int32_t init_ixp_circuit(e_role role, char* address, seclvl seclvl, uint32_t num
                 if (mode == 2 || mode == 3) {
                     // assume max num_routes for each prefix is num_as + 1
                     // FIXME: how many gates do we actually need?
-		            party = new ABYParty(role, address, seclvl, 32, 1, mt_alg, 1000 * num_as * (num_as + 1), port);
+		            party = new ABYParty(role, address, seclvl, 32, 1, mt_alg, 10 * num_as * (num_as + 1), port);
                 }
             }
 		}
