@@ -6,7 +6,7 @@ import time
 import multiprocessing as mp
 from multiprocessing import Process
 import argparse
-from ribm import rib, RibTuple
+from ribh import rib, RibTuple
 from decision_process import best_path_selection
 
 
@@ -60,9 +60,9 @@ class Peer:
                     #    print "## ",self.asn, " entry: ", ind
                     self.updateRibEntry(tmp)
                     # NOTE: cheat with reduced size
-                    if ind > 100:
-                        break
-                    ind += 1
+                    #if ind > 1000:
+                    #    break
+                    #ind += 1
                 else:
                     x = line.split("\n")[0].split(": ")
                     if len(x) >= 2:
@@ -153,15 +153,14 @@ class Peer:
 
 def processRibIter(asn, asn_2_ip, asn_2_id, prefrn, path):
     peer = Peer(asn, asn_2_ip, asn_2_id, prefrns, path)
-    #print "Peer::", asn
+    print "Peer::", asn
     start = time.time()
     peer.updateInputRib(asn_2_id[asn])
-    #print "##", id, "Prefix number %d" % len(peer.prefixes), "Time to update the input Rib ", time.time()-start
+    #print "##", asn_2_id[asn], "Prefix number %d" % len(peer.prefixes), "Time to update the input Rib %0.6f" % (time.time()-start)
     start = time.time()
     peer.updateLocalOutboundRib()
-    #print "##", id, "Time to update the local/output Rib ", time.time()-start
-    #peer.save_ribs()
-    peer.test_ribs()
+    #print "##", asn_2_id[asn], "Time to update the local/output Rib %0.6f " % float(time.time()-start)
+    #peer.test_ribs()
 
 
 ''' main '''

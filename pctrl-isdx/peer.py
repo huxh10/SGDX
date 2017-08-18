@@ -16,7 +16,7 @@ if np not in sys.path:
 import util.log
 
 from decision_process import decision_process, best_path_selection
-from ribm import rib, RibTuple
+from ribh import rib, RibTuple
 
 
 class BGPPeer(object):
