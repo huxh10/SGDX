@@ -6,4 +6,6 @@
 void print_current_time_with_us(char *func);
 uint64_t get_us_time();
 
+void sleep_nano(long nsec);
+
 #endif

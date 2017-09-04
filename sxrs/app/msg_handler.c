@@ -8,6 +8,7 @@
 #include "bgp.h"
 #include "app_types.h"
 #include "msg_handler.h"
+#include "epoll_utils.h"
 
 #ifdef W_SGX
 #include "route_process_w_sgx.h"
@@ -67,8 +68,8 @@ void handle_sdn_reach(uint32_t asid, const char *prefix, const uint32_t *p_sdn_r
     }
 
     s_sdn_reach = json_dumps(j_root, 0);
-    //fprintf(stdout, "prepare to send s_sdn_reach:%s to asid:%d pctrlr [%s]\n", s_sdn_reach, asid, __FUNCTION__);
-    send_msg_to_pctrlr((const char *) s_sdn_reach, g_msg_states.pctrlr_sfds[asid]);
+    //fprintf(stdout, "prepare to send s_sdn_reach:%s %lu bytes to asid:%d pctrlr [%s]\n", s_sdn_reach, strlen(s_sdn_reach), asid, __FUNCTION__);
+    send_msg_to_pctrlr((const char *) s_sdn_reach, asid);
     SAFE_FREE(s_sdn_reach);
     json_decref(j_root);
 }
@@ -114,7 +115,7 @@ void handle_bgp_route_for_pctrl(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
 
     msg_to_pctrlr = json_dumps(j_root, 0);
     //fprintf(stdout, "prepare to send bgp-nh msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
-    send_msg_to_pctrlr(msg_to_pctrlr, g_msg_states.pctrlr_sfds[p_bgp_msg->asid]);
+    send_msg_to_pctrlr(msg_to_pctrlr, p_bgp_msg->asid);
     SAFE_FREE(msg_to_pctrlr);
     json_decref(j_root);
 }
@@ -220,7 +221,7 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg)
 
     msg_to_pctrlr = json_dumps(j_root, 0);
     //fprintf(stdout, "prepare to send msg:%s to asid:%d pctrlr [%s]\n", msg_to_pctrlr, p_bgp_msg->asid, __FUNCTION__);
-    send_msg_to_pctrlr(msg_to_pctrlr, g_msg_states.pctrlr_sfds[p_bgp_msg->asid]);
+    send_msg_to_pctrlr(msg_to_pctrlr, p_bgp_msg->asid);
     SAFE_FREE(msg_to_pctrlr);
     json_decref(j_root);
 }
@@ -254,7 +255,7 @@ int handle_exabgp_msg(char *msg)
         // FIXME: brute force exiting
         if (ENABLE_SDX) {
             for (i = 0; i < g_msg_states.as_size; i++) {
-                send_msg_to_pctrlr("stop", g_msg_states.pctrlr_sfds[i]);
+                send_msg_to_pctrlr("stop", i);
                 close(g_msg_states.pctrlr_sfds[i]);
             }
             write_sdx_log_time();
@@ -432,7 +433,7 @@ int handle_exabgp_msg(char *msg)
     return g_crnt_route_id;
 }
 
-void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
+void handle_pctrlr_msg(char *msg, uint32_t *p_con_id, epoll_event_handler_t *h, epoll_event_handler_t **pp_ehs)
 {
     json_t *j_root, *j_msg_type, *j_asid, *j_con_type, *j_announcement, *j_reach, *j_reach_elmnt, *j_prefix;
     json_error_t j_err;
@@ -476,7 +477,9 @@ void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id)
         assert(asid < g_msg_states.as_size && asid >= 0);
         assert(*p_con_id == -1);
         *p_con_id = asid;
-        g_msg_states.pctrlr_sfds[asid] = src_sfd;
+        g_msg_states.pctrlr_sfds[asid] = h->fd;
+        pp_ehs[asid] = h;
+        fprintf(stdout, "sfd:%u, asid:%u [%s]\n", h->fd, asid, __FUNCTION__);
     } else if (!strcmp(msg_type, "sdn-reach")) {
         j_reach = json_object_get(j_root, "add");
         if (json_is_array(j_reach)) {

@@ -6,9 +6,9 @@
 
 void write_sdx_log_time();
 
-void server_init(int efd, net_conf_t *p_ncf);
+void server_init(int efd, net_conf_t *p_ncf, int as_size);
 
-void send_msg_to_pctrlr(const char *msg, int sfd);
+void send_msg_to_pctrlr(const char *msg, int id);
 
 void send_msg_to_as(const char *msg);
 

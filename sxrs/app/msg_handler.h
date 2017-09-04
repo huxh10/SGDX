@@ -3,6 +3,7 @@
 
 #include "bgp.h"
 #include "app_types.h"
+#include "epoll_utils.h"
 
 void create_start_signal();
 
@@ -16,6 +17,6 @@ void handle_bgp_route(bgp_route_output_dsrlz_msg_t *p_bgp_msg);
 
 int handle_exabgp_msg(char *msg);
 
-void handle_pctrlr_msg(char *msg, int src_sfd, uint32_t *p_con_id);
+void handle_pctrlr_msg(char *msg, uint32_t *p_con_id, epoll_event_handler_t *h, epoll_event_handler_t **pp_ehs);
 
 #endif

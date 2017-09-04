@@ -23,3 +23,8 @@ uint64_t get_us_time()
     clock_gettime(CLOCK_REALTIME, &spec);
     return spec.tv_sec * 1000000ul + spec.tv_nsec / 1.0e3;
 }
+
+void sleep_nano(long nsec)
+{
+    nanosleep((const struct timespec[]){{0, nsec}}, NULL);
+}

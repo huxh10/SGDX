@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
 #endif
     msg_handler_init(&as_cfg);
     efd = epoll_init();
-    server_init(efd, &g_cfg.net);
+    server_init(efd, &g_cfg.net, as_cfg.as_size);
     create_start_signal();
 
     // run
