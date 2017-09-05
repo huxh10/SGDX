@@ -39,9 +39,72 @@ class BGPPeer(object):
         self.asn_2_id = None
         self.prefrns = None
 
-    def init_mapping(self, asn_2_id, prefrns):
+    def init(self, asn_2_id, prefrns, rib_file):
         self.asn_2_id = asn_2_id
         self.prefrns = prefrns
+        self.logger.info("loading RIB from file")
+        self.updateInputRib(rib_file)
+        self.updateLocalOutboundRib()
+
+    def updateInputRib(self, rib_file):
+        tmp = {}
+        with open(rib_file, 'r') as f:
+            for line in f:
+                if line.startswith("TIME"):
+                    tmp = {}
+                    x = line.split("\n")[0].split(": ")
+                    tmp[x[0]] = x[1]
+                elif line.startswith("\n"):
+                    self.updateRibEntry(tmp)
+                else:
+                    x = line.split("\n")[0].split(": ")
+                    if len(x) >= 2:
+                        tmp[x[0]] = x[1]
+
+    def updateRibEntry(self, elem):
+        if "IPV4_UNICAST" in elem["TYPE"]:
+            # Get the prefix
+            prefix = elem["PREFIX"]
+            neighbor = elem["FROM"].split(" ")[0]
+            asn = elem["FROM"].split(" ")[1][2:]
+
+            # Get the attributes
+            #origin = elem['ORIGIN'] if 'ORIGIN' in elem else ''
+            origin = ''
+            as_path = elem['ASPATH'] if 'ASPATH' in elem else ''
+
+            #med = elem["MULTI_EXIT_DISC"] if "MULTI_EXIT_DISC" in elem else ''
+            med = ''
+
+            #communities = elem["COMMUNITY"] if "COMMUNITY" in elem else ''
+            communities = ''
+
+            atomic_aggregate = ''
+
+            # TODO: Current logic currently misses the case where there are two next hops
+            next_hop = elem["NEXT_HOP"]
+
+            atrributes = RibTuple(prefix, neighbor, next_hop, origin, as_path, communities, med, atomic_aggregate, self.asn_2_id[asn])
+
+            # Add this entry to the input rib for this participant
+            self.add_route("input", atrributes)
+
+    def updateLocalOutboundRib(self):
+        for prefix in self.prefix_lock:
+            routes = self.get_routes('input', prefix)
+            #routes = self.local_rib["input"][prefix]
+            #print routes
+            #print "For prefix ", prefix, " # of routes ", len(routes)
+            best_route = best_path_selection(routes, self.prefrns)
+            #print "Best route: ", best_route
+
+            # Update the local rib
+            self.update_route('local', best_route)
+            #self.local_rib["local"][prefix] = best_route
+
+            # Update the output rib
+            self.update_route('output', best_route)
+            #self.local_rib["output"][prefix] = best_route
 
     def update(self,route):
         updates = []

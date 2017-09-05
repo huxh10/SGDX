@@ -33,9 +33,9 @@ RESULT_FILE = 'result/result_'
 
 
 class ParticipantController(object):
-    def __init__(self, id, config_file, policy_file, logger, asn_2_id, prefrns):
+    def __init__(self, pid, config_file, policy_file, rib_file, logger, asn_2_id, prefrns):
         # participant id
-        self.id = id
+        self.id = pid
         # print ID for logging
         self.route_id = 0
         self.end_time = 0
@@ -54,7 +54,7 @@ class ParticipantController(object):
 
         # ExaBGP Peering Instance
         self.bgp_instance = self.cfg.get_bgp_instance()
-        self.bgp_instance.init_mapping(asn_2_id, prefrns)
+        self.bgp_instance.init(asn_2_id, prefrns, rib_file)
 
         self.policies = self.load_policies(policy_file)
 
@@ -711,13 +711,15 @@ def main():
     policy_path = base_path + args.rib_name + "/policies/"
     policy_file = policy_path + policy_filename
 
+    rib_file = base_path + args.rib_name + "/rib_" + str(args.id)
+
     logger = util.log.getLogger("P_" + str(args.id))
 
     logger.info("Starting controller with config file: "+str(config_file))
     logger.info("and policy file: "+str(policy_file))
 
     # start controller
-    ctrlr = ParticipantController(args.id, config_file, policy_file, logger, asn_2_id, prefrns[args.id])
+    ctrlr = ParticipantController(args.id, config_file, policy_file, rib_file, logger, asn_2_id, prefrns[args.id])
     ctrlr_thread = Thread(target=ctrlr.xstart)
     ctrlr_thread.daemon = True
     ctrlr_thread.start()
