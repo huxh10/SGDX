@@ -33,9 +33,9 @@ RESULT_FILE = 'result/result_'
 
 
 class ParticipantController(object):
-    def __init__(self, id, config_file, policy_file, logger):
+    def __init__(self, pid, config_file, policy_file, logger):
         # participant id
-        self.id = id
+        self.id = pid
         self.route_id = 0
         self.end_time = 0
         # print ID for logging
@@ -266,14 +266,19 @@ class ParticipantController(object):
                 if buff_len - offset < msg_len:
                     break
                 data = msg_buff[offset + 2: offset + msg_len]
+                #self.logger.info("data:" + data)
                 if data == "stop":
-                    with open(RESULT_FILE + str(id), 'w+') as f:
+                    with open(RESULT_FILE + str(self.id), 'w+') as f:
                         f.write('route_count:%d end_time:%0.6f\n' % (self.route_id + 1, self.end_time))
-                    self.logger.info("XRS stop signal received!")
+                    self.logger.info('XRS stop signal received! route_count:%d end_time:%0.6f' % (self.route_id + 1, self.end_time))
                     self.run = False
                     break
                 else:
-                    data = json.loads(data)
+                    try:
+                        data = json.loads(data)
+                    except:
+                        self.logger.info("json loads error, data:" + data)
+                        self.run = False
                     self.process_event(data)
                 offset += msg_len
                 if 'route_id' in data:
