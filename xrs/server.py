@@ -23,49 +23,54 @@ class server(object):
     def start(self):
         self.logger.debug('waiting for connection')
         (self.conn, addr) = self.listener.accept()
+        self.conn.settimeout(5)
+        self.run = True
 
-        self.sender = Thread(target=_sender, args=(self.conn,self.sender_queue))
+        self.sender = Thread(target=self._sender, args=(self.conn,self.sender_queue))
         self.sender.setName("sender server " + str(self.port))
         self.sender.start()
 
-        self.receiver = Thread(target=_receiver, args=(self.conn,self.receiver_queue))
+        self.receiver = Thread(target=self._receiver, args=(self.conn,self.receiver_queue))
         self.receiver.setName("receiver server " + str(self.port))
         self.receiver.start()
 
-''' sender '''
-def _sender(conn,queue):
-    while True:
-        try:
-            line = queue.get()
-            conn.send(struct.pack("H", len(line) + 2) + line)
-        except:
-            break
+    def stop(self):
+        self.run = False
 
-''' receiver '''
-def _receiver(conn,queue):
-    msg_buff = ''
-    while True:
-        try:
-            line = conn.recv(4096)
-            if not line:
-                conn.close()
-                print "socket closed by sender"
-                exit(0)
+    ''' sender '''
+    def _sender(self, conn, queue):
+        while self.run:
+            try:
+                line = queue.get(timeout=5)
+                conn.send(struct.pack("H", len(line) + 2) + line)
+            except:
+                pass
 
-            msg_buff += line
-            offset = 0
-            buff_len = len(msg_buff)
-            while buff_len - offset >= 2:
-                msg_len = ord(msg_buff[offset]) | ord(msg_buff[offset + 1]) << 8
-                if buff_len - offset < msg_len:
-                    break
+    ''' receiver '''
+    def _receiver(self, conn, queue):
+        msg_buff = ''
+        while self.run:
+            try:
+                line = conn.recv(4096)
+                if not line:
+                    conn.close()
+                    print "socket closed by sender"
+                    exit(0)
 
-                queue.put(msg_buff[offset + 2: offset + msg_len])
-                offset += msg_len
-            msg_buff = msg_buff[offset:]
+                msg_buff += line
+                offset = 0
+                buff_len = len(msg_buff)
+                while buff_len - offset >= 2:
+                    msg_len = ord(msg_buff[offset]) | ord(msg_buff[offset + 1]) << 8
+                    if buff_len - offset < msg_len:
+                        break
 
-        except socket.error, (value, message):
-            print "socket.error" + message
+                    queue.put(msg_buff[offset + 2: offset + msg_len])
+                    offset += msg_len
+                msg_buff = msg_buff[offset:]
+
+            except socket.timeout:
+                pass
 
 ''' main '''
 if __name__ == '__main__':

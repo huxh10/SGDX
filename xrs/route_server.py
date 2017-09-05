@@ -177,7 +177,7 @@ class PctrlListener(object):
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.listener.bind(config.ah_socket)
-        self.listener.listen(600)
+        self.listener.listen(128)
         self.run = True
 
 
@@ -284,6 +284,7 @@ class BGPListener(object):
                 peer.send(route)
 
             self.end_time = time.time()
+        self.server.stop()
 
 
     def send(self, announcement):
@@ -344,6 +345,7 @@ def main():
     bp_thread.join()
     pctrlListener.stop()
     pp_thread.join()
+    logger.info("route server exits.")
 
 
 if __name__ == '__main__':
