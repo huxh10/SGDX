@@ -1,31 +1,48 @@
-## Installation
-1. ripencc bgpdump
+# Scalable Synthetic Dataset Generator
 
-## Inputs
+## Installation
+Install [ripencc bgpdump](https://bitbucket.org/ripencc/bgpdump/wiki/Home) to convert binary MRT files to readable(parseable) files.
+
+## Seed Inputs
+
+``` Bash
 mkdir ribs-<ixp-name> && cd ribs-<ixp-name>
+
+# download updates.<time>.gz and bview.<time>.gz (RIBs, i.e. historical updates)
 wget [RIS Raw Data](https://www.ripe.net/analyse/internet-measurements/routing-information-service-ris/ris-raw-data)
 
-## Configuration
-cd ../gen/
+# conversion
+bgpdump updates.<time>.gz -O updates
+bgpdump bview.<time>.gz -O bview
+```
 
-BGP Policies
+## Configuration
+
+``` Bash
+cd .. && mkdir bgp_policies && cd gen
+
+# generate routing policies
 ./bgp_policy_gen.py AS_SIZE --rank_policies --filter_policies
 
-Splitted Policies
-cd ~/iSDX/pprs/
-./split_policy.py -f ../examples/test-rs/bgp_policies/peers_uni_500_020.cfg -r ../examples/test-rs/bgp_policies/prefer_rand_500.cfg
-cd -
+# generate participant mapping (asn_2_id.json, asn_2_id.cfg, as_ips.cfg)
+# extend participants if the specified AS_SIZE is larger than current participant number
+./as_map_gen.py ../ribs-<ixp-name>/bview --as_num AS_SIZE --cfg_dir ../ribs-<ixp-name>/
 
-AS Mappings
-./as_map_gen.py ../ribs-ams/bview --as_num 500 --cfg_dir ../ribs-ams/
+# Truncate Rib if neccessary (one rib entry costs around 400B, max heap size using SGX is around 50GB in our 64GB RAM server)
+./truncate_rib.py ../ribs-<ixp-name>/bview 8
 
-Truncate Rib if neccessary (one rib entry costs around 400B, max heap size using SGX is around 33GB in our 64GB RAM server)
-./truncate_rib.py ../ribs-ams/bview 8
-
-Seperated Ribs
-./multi_ribs_gen.py ../ribs-ams/bview -f ../bgp_policies/peers_uni_500_020.cfg -a ../ribs-ams/asn_2_id.json -d ../ribs-ams/
+# Proagate the RIB to each participant to generate participants' own RIBs
+./multi_ribs_gen.py ../ribs-<ixp-name>/bview -f ../bgp_policies/peers_uni_500_020.cfg -a ../ribs-<ixp-name>/asn_2_id.json -d ../ribs-<ixp-name>/
+```
 
 ## Execution
-cd ~/iSDX/
+
+``` Bash
+cd ~/iSDX/sxrs/
+# modify arguements
 ./run_sgx_rs.sh
-./run_six_pack_rs.sh
+
+cd ~/iSDX/pprs/
+# modify arguements
+./run_sixpack_rs.sh
+```
