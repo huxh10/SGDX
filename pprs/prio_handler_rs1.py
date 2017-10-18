@@ -14,7 +14,7 @@ np = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if np not in sys.path:
     sys.path.append(np)
 import util.log
-from xrs.server import server as Server
+from server_pprs import server as Server
 import random
 import os
 import pickle
@@ -44,7 +44,7 @@ class PrioHandlerRs1:
         self.prefix_2_nh_id_2_route = load_ribs(rib_file, self.asn_2_id, RS1_MODE) if rib_file else {}
 
         # Initialize a XRS Server
-        self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_receive_bgp_messages"]),authkey=None)
+        self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_receive_bgp_messages"]), authkey=None)
         # NOTE: fake sending, only for performance test
         #self.server_send_mpc_output = Server(logger, endpoint=(port_config.process_assignement["rs1"], port_config.ports_assignment["rs1_send_mpc_output"]),authkey=None)
         self.rs1_to_rs2_client = Client((port_config.process_assignement["rs2"], port_config.ports_assignment["rs1_rs2"]), authkey=None)

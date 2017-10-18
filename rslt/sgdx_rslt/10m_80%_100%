@@ -1,0 +1,2 @@
+process:rs_wo_sgx routes:32545 total_time(s):2234.000000 per_route_time(s):0.068643
+process:rs_w_sgx routes:32545 total_time(s):2793.000000 per_route_time(s):0.085820

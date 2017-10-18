@@ -1,0 +1,11 @@
+start
+200
+routes:32545 total_time(s):295.028876 per_route_time(s):0.009065
+400
+routes:32545 total_time(s):303.395572 per_route_time(s):0.009322
+600
+routes:32545 total_time(s):467.534098 per_route_time(s):0.014366
+800
+routes:32545 total_time(s):733.163227 per_route_time(s):0.022528
+1000
+routes:32545 total_time(s):1051.889601 per_route_time(s):0.032321

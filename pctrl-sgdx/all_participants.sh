@@ -2,64 +2,73 @@
 
 INSTALL_ROOT='/home/xiaohe/iSDX'
 EXAMPLE_NAME='test-sdx'
-RIB_NAME='ribs-500'
-RS='rs_w_sgx'
-UPDATE_FILE='../examples/test-sdx/ribs-500/update'
-ITERATIONS=1
-FRAC=( 0.2 )
-RATE=5
+RIB_NAME='ribs-ams-scale'   # scale or frac
+PROCS=( 'rs_w_sgx' 'rs_wo_sgx' )
+ASNUMS=( 200 400 600 800 1000 )
+FRACS=( 20 )
 MODE=0
-AS_NUM=500
+rate=20
 
-#cd $INSTALL_ROOT/examples/$EXAMPLE_NAME; python generate_configs.py; cp $INSTALL_ROOT/examples/$EXAMPLE_NAME/config/asn_2_* $INSTALL_ROOT/pctrl
+touch time
+echo "start" > time
 
-for iter in `seq 1 $ITERATIONS`
+for process in "${PROCS[@]}"
 do
-	echo "#### Running for Iteration $iter ####"
-	for fraction in "${FRAC[@]}"
-	do
-
-		# Generate Policies & Copy asn json files
-		#echo "Generating policies for $fraction"
-		#cd $INSTALL_ROOT/examples/$EXAMPLE_NAME; python generate_policies.py $fraction
-	
-        killall python
-        pkill rs_.*
-
-		echo "Starting Reflog..."
-		cd $INSTALL_ROOT/flanc;  ./reflog.py 0.0.0.0 5555 sdx logger.txt &
-
-		echo "Starting RouteServer..."
-		cd $INSTALL_ROOT/sxrs;
-        if [ -f sig ]
-        then
-            rm sig
-        fi
-        #valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes ./$RS -a $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/asn_2_id.cfg -i $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/as_ips.cfg -f $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/peers_uni_500_020.cfg -r $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/prefer_rand_500.cfg -d $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/ > vallog 2>&1 &
-        ./$RS -a $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/asn_2_id.cfg -i $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/as_ips.cfg -f $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/peers_uni_500_020.cfg -r $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/prefer_rand_500.cfg -d $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/ &
-        #./$RS -a $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/asn_2_id.cfg -i $INSTALL_ROOT/examples/$EXAMPLE_NAME/$RIB_NAME/as_ips.cfg -f $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/peers_uni_500_020.cfg -r $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/prefer_rand_500.cfg &
-        while [ ! -f sig ]
+    echo $process >> time
+    for as_num in "${ASNUMS[@]}"
+    do
+        for fraction in "${FRACS[@]}"
         do
-            sleep 2
-        done
-        rm sig
-		#fi
-	
-		# Start Participant controller
-        AS_NUM_RANGE=`expr $AS_NUM - 1`
-        for i in $(seq 0 $AS_NUM_RANGE)
-		do
-			echo "Starting Participant $i Controller..."
-			cd $INSTALL_ROOT/pctrl-sgdx; python participant_controller.py $EXAMPLE_NAME/$RIB_NAME/ $i &
-            while [ ! -f $INSTALL_ROOT/sxrs/sig ]
-            do
-                sleep 0.01
-            done
-            rm $INSTALL_ROOT/sxrs/sig
-		done
-        sleep 3
+            echo $as_num >> time
+            echo "#### Running for as_num $as_num ####"
 
-		echo "Starting XBGP..."
-		cd $INSTALL_ROOT/xbgp; ./xbgp.py 2 localhost 6000 $UPDATE_FILE $RATE $MODE --seperate_prefix &
-	done
+            killall python
+            pkill rs_.*
+
+            if [ $process = 'rs_w_sgx' ]
+            then
+                cd $INSTALL_ROOT/sxrs; cp enclave/enclave.config.xml.${as_num} enclave/enclave.config.xml
+                make clean && make
+            fi
+
+            echo "Starting Reflog..."
+            cd $INSTALL_ROOT/flanc;  ./reflog.py 0.0.0.0 5555 sdx logger.txt &
+
+            echo "Starting RouteServer..."
+            cd $INSTALL_ROOT/sxrs;
+            if [ -f sig ]
+            then
+                rm sig
+            fi
+            ./$process -a $INSTALL_ROOT/examples/$EXAMPLE_NAME/${RIB_NAME}-${as_num}-${fraction}/asn_2_id.cfg -i $INSTALL_ROOT/examples/$EXAMPLE_NAME/${RIB_NAME}-${as_num}-${fraction}/as_ips.cfg -f $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/peers_uni_${as_num}_0${fraction}.cfg -r $INSTALL_ROOT/examples/$EXAMPLE_NAME/bgp_policies/prefer_rand_${as_num}.cfg -d $INSTALL_ROOT/examples/$EXAMPLE_NAME/${RIB_NAME}-${as_num}-${fraction}/ &
+            while [ ! -f sig ]
+            do
+                sleep 2
+            done
+            rm sig
+
+            # Start Participant controller
+            AS_NUM_RANGE=`expr $as_num - 1`
+            for i in $(seq 0 $AS_NUM_RANGE)
+            do
+            	echo "Starting Participant $i Controller..."
+            	cd $INSTALL_ROOT/pctrl-sgdx; python participant_controller.py $EXAMPLE_NAME/${RIB_NAME}-${as_num}-${fraction}/ $i &
+                while [ ! -f $INSTALL_ROOT/sxrs/sig ]
+                do
+                    sleep 0.01
+                done
+                rm $INSTALL_ROOT/sxrs/sig
+            done
+            sleep 3
+
+            echo "Starting XBGP..."
+            cd $INSTALL_ROOT/xbgp; ./xbgp.py 2 localhost 6000 $INSTALL_ROOT/examples/$EXAMPLE_NAME/${RIB_NAME}-${as_num}-${fraction}/update $rate $MODE --seperate_prefix &
+            while [ `ps auxf | grep python | wc -l` -ne 2 ]
+            do
+                sleep 5
+            done
+            cd $INSTALL_ROOT/pctrl-sgdx
+            ../plot/get_sgdx_time.py ${as_num} ../sxrs/result result/ >> time
+        done
+    done
 done

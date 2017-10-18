@@ -14,7 +14,7 @@ if np not in sys.path:
 import util.log
 import subprocess
 import json
-from util.crypto_util import AESCipher
+from crypto_util import AESCipher
 import multiprocessing as mp
 import port_config
 

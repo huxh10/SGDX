@@ -1,0 +1,3 @@
+process:isdx routes:32545 total_time(s):20558.621356 per_route_time(s):0.631698
+process:rs_wo_sgx routes:32545 total_time(s):914.000000 per_route_time(s):0.028084
+process:rs_w_sgx routes:32545 total_time(s):1136.000000 per_route_time(s):0.034906

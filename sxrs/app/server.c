@@ -22,18 +22,29 @@ typedef struct {
     ds_t *p_ds;
 } server_read_closure_t;
 
+int g_as_size = 0;
 int g_bgp_serv_sfd, g_bgp_clnt_sfd;
 FILE *g_result_fp;
-uint32_t g_route_id = 0;
+int g_route_id = 0;
 uint64_t g_start_time = 0, g_end_time = 0;
 sender_queue_t *gp_sender_queues = NULL;
 epoll_event_handler_t **gpp_ehs = NULL;
+
+static void check_to_exit()
+{
+    if (g_route_id != -1) return;
+    int i;
+    for (i = 0; i < g_as_size; i++) {
+        if (gp_sender_queues[i].msg_num != 0) return;
+    }
+    exit(0);
+}
 
 void write_sdx_log_time()
 {
     double start_time = g_start_time / 1000000;
     double end_time = g_end_time / 1000000;
-    fprintf(g_result_fp, "route_count:%u start_time:%.6f end_time:%.6f\n", g_route_id + 1, start_time, end_time);
+    fprintf(g_result_fp, "route_count:%d start_time:%.6f end_time:%.6f\n", g_route_id + 1, start_time, end_time);
     fclose(g_result_fp);
 }
 
@@ -79,6 +90,7 @@ static inline int send_msg(int id, int sfd)
             gp_sender_queues[id].msg_num--;
         }
     }
+    check_to_exit();
     return 1;
 }
 
@@ -144,7 +156,7 @@ static void server_handle_comm_event(epoll_event_handler_t *h, uint32_t events)
 
         if (bytes == 0) {
             fprintf(stderr, "socket from sfd:%d client_id:%d closed by peer [%s]\n", h->fd, closure->id, __FUNCTION__);
-            // TODO clean up sfd ?
+            close(h->fd);
             break;
         }
 
@@ -192,6 +204,7 @@ static void server_handle_comm_event(epoll_event_handler_t *h, uint32_t events)
         if (h->fd == g_bgp_clnt_sfd) {
             //printf("handle_exabgp_msg:%s [%s]\n", s_msg, __FUNCTION__);
             g_route_id = handle_exabgp_msg(s_msg);
+            check_to_exit();
             g_end_time = get_us_time();
             if (!ENABLE_SDX) {
                 fprintf(g_result_fp, "latency: %lu\n", g_end_time - g_start_time);
@@ -297,6 +310,7 @@ void server_init(int efd, net_conf_t *p_ncf, int as_size)
         fprintf(stderr, "can not open file: %s [%s]\n", RESULT_FILE, __FUNCTION__);
         exit(-1);
     }
+    g_as_size = as_size;
     gp_sender_queues = malloc(as_size * sizeof *gp_sender_queues);
     gpp_ehs = malloc(as_size * sizeof * gpp_ehs);
     int i;

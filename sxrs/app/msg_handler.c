@@ -254,13 +254,14 @@ int handle_exabgp_msg(char *msg)
         json_decref(j_root);
         // FIXME: brute force exiting
         if (ENABLE_SDX) {
+            //fprintf(stdout, "stop received, send it to pctrlrs [%s]\n", __FUNCTION__);
             for (i = 0; i < g_msg_states.as_size; i++) {
                 send_msg_to_pctrlr("stop", i);
-                close(g_msg_states.pctrlr_sfds[i]);
+                //close(g_msg_states.pctrlr_sfds[i]);
             }
             write_sdx_log_time();
         }
-        exit(0);
+        return -1;
     }
 
     // get route_id

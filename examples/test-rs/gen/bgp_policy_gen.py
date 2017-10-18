@@ -6,7 +6,7 @@ from collections import defaultdict
 
 MAX_AS_NUM = 1000
 BASE_FILTER_FILE = '../bgp_policies/peers'      # filtering for export/import policies
-BASE_RANK_FILE = '../bgp_policies/prefer'       # local preference for selection policies
+BASE_RANK_FILE = '../bgp_policies/prefer'       # local preference for ranking policies
 
 
 class BGPPolicyGenerator(object):
@@ -68,7 +68,7 @@ class BGPPolicyGenerator(object):
 
 def restricted_float(x):
     x = float(x)
-    if x > 0.0 and x < 1.0:
+    if x > 0.0 and x <= 1.0:
         return x
     else:
         raise argparse.ArgumentTypeError("fraction %r should in range (0, 1)" % x)
@@ -76,7 +76,7 @@ def restricted_float(x):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('as_num', type=int, help='AS member number')
-    parser.add_argument('--rank_policies', action='store_true', help='generate random preference policies')
+    parser.add_argument('--rank_policies', action='store_true', help='generate random ranking policies')
     parser.add_argument('--filter_policies', action='store_true', help='generate random filtering policies')
     parser.add_argument('-d', '--distribution', choices=['uni'], default='uni', help='the distribution of AS peering number: [uni] (the uniform peering number is specified by -f parameter, default is 0.2*AS_NUM)')
     parser.add_argument('-f', '--fraction', type=restricted_float, default=0.2, help='the fraction is the uniform peering number divided by the as number')

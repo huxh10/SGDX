@@ -24,7 +24,7 @@ import pprs.port_config as port_config
 from copy import deepcopy
 
 # Run each iteration for half an hour duration
-update_minutes = 1800
+update_minutes = 300
 
 KEY_LENGTH = 16
 SIX_PACK_RS = 0
@@ -249,8 +249,9 @@ class ExaBGPEmulator(object):
             if elapsed > update_minutes:
                 print "start: current", self.simulation_start_time, current_bgp_update
                 break
-
             sleep_time = self.sleep_time(msg["time"])
+            if sleep_time != 0:
+                print "current_bgp_update:", current_bgp_update, ", elapsed:", elapsed, ", sleep_time:", sleep_time
             sleep(sleep_time)
             #self.logger.info("route_id:%d " % msg["route"]["route_id"] + "Peer asn:%s " % msg["route"]["neighbor"]["asn"]["peer"] + "time(s):" + str(msg["time"]) + "sleep_time(s):" + str(sleep_time))
 
@@ -275,15 +276,16 @@ class ExaBGPEmulator(object):
 
             current_bgp_update = msg["time"]
             elapsed = current_bgp_update - self.simulation_start_time
-            if elapsed > update_minutes:
-                print "start: current", self.simulation_start_time, current_bgp_update
+            if count > update_minutes:
+                print "start, current_msg_time, current_time", self.simulation_start_time, current_bgp_update, count
                 break
 
             if current_count == self.send_rate:
                 current_count = 0
+                count += 1
+                print "elapsed:", count
                 sleep(1)
             current_count += 1
-            count += 1
 
             if self.rs == SIX_PACK_RS:
                 self.send_update_rs1(msg["route"])

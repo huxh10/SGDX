@@ -14,7 +14,7 @@ if np not in sys.path:
     sys.path.append(np)
 import json
 import util.log
-from xrs.server import server as Server
+from server_pprs import server as Server
 import random
 import os
 import pickle

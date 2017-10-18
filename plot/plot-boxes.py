@@ -32,7 +32,7 @@ def setBoxColors(bp):
 
 
 if len(sys.argv) == 1:
-    print "please input latency files: ./plot.py [file1] [label1] [file2] [label2] .."
+    print "please input latency files: ./plot.py [file1] [file2] [file3] [label1] ..."
     exit(0)
 
 data = []
@@ -64,17 +64,17 @@ for i in range(0, group_num):
 #plt.boxplot(data, notch = 0, sym = '', vert = 1, whis = 1.4, labels = labels)
 plt.gca().yaxis.grid(True)
 plt.yscale('log')
-plt.plot([], c='darkgreen', label='six-pack')
-plt.plot([], c='red', label='sgx')
-plt.plot([], c='blue', label='baseline')
+plt.plot([], c='darkgreen', label='SIXPACK')
+plt.plot([], c='red', label='SGRS')
+plt.plot([], c='blue', label='Baseline')
 plt.legend(loc=2, prop={'size':10})
 #plt.legend(prop={'size':6})
 
 plt.xticks(xrange(2, group_num * (groups + 1), (groups + 1)), labels)
 plt.xlim(-2, group_num * (groups + 1) + 2)
-plt.xlabel('AS Number')
+plt.xlabel('RIB Entry Number (million)')
 plt.ylabel('Time (us)')
-plt.title('Per BGP announcement compute time')
+#plt.title('Per BGP announcement compute time')
 #plt.show()
 
 f.savefig('result_box.pdf', bbox_inches='tight')
