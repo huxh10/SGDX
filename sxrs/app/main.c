@@ -20,10 +20,8 @@ static struct {
     char *asn_2_id_file;
     char *as_ips_file;
     char *filter_file;
-    char *rank_file;
-    char *rib_file_dir;
     int verbose;
-} g_cfg = {{NULL, 0, NULL, 0}, NULL, NULL, NULL, NULL, NULL, VERBOSE};
+} g_cfg = {{NULL, 0, NULL, 0}, NULL, NULL, NULL, VERBOSE};
 
 static void print_help(void)
 {
@@ -39,8 +37,6 @@ static void print_help(void)
         "   -a, --asn_2_id_file FILE    specify an asn to id configuration file, e.g. ../examples/test-rs/config/asn_2_id.cfg\n"
         "   -i, --as_ips_file   FILE    specify as connected port ips file, e.g. ../examples/test-rs/config/as_ips.cfg\n"
         "   -f, --filter_file   FILE    specify filtering policy file, e.g. ../examples/test-rs/bgp_policies/peers_uni_62_020.cfg\n"
-        "   -r, --rank_file     FILE    specify ranking policy file, e.g. ../examples/test-rs/bgp_policies/prefer_rand_62.cfg\n"
-        "   -d, --rib_file_dir  DIR     specify rib directory name to load ribs from file, e.g. ../examples/test-rs/ribs/\n"
         "\n";
 
     printf("%s\n", help);
@@ -50,7 +46,7 @@ static void print_help(void)
 static void parse_args(int argc, char *argv[])
 {
     int option;
-    static const char *optstr = "hb:p:c:t:v:a:i:f:r:d:";
+    static const char *optstr = "hb:p:c:t:v:a:i:f:";
     static struct option longopts[] = {
         {"help", no_argument, NULL, 'h'},
         {"bgp_serv_addr", required_argument, NULL, 'b'},
@@ -61,8 +57,6 @@ static void parse_args(int argc, char *argv[])
         {"asn_2_id_file", required_argument, NULL, 'a'},
         {"as_ips_file", required_argument, NULL, 'i'},
         {"filter_file", required_argument, NULL, 'f'},
-        {"rank_file", required_argument, NULL, 'r'},
-        {"rib_file_dir", required_argument, NULL, 'd'},
         {NULL, 0, NULL, 0}
     };
 
@@ -117,19 +111,6 @@ static void parse_args(int argc, char *argv[])
                     g_cfg.filter_file = optarg;
                     break;
                 }
-
-            case 'r':
-                if (access(optarg, F_OK) == -1) {
-                    perror(optarg);
-                    exit(-1);
-                } else {
-                    g_cfg.rank_file = optarg;
-                    break;
-                }
-
-            case 'd':
-                g_cfg.rib_file_dir = optarg;
-                break;
 
             default:
                 print_help();
@@ -276,31 +257,6 @@ static void load_cfg(as_cfg_t *p_as_cfg)
     }
     fclose(fp);
 
-    // FILE#4: rank_file
-    if ((fp = fopen(g_cfg.rank_file, "r")) == NULL) {
-        fprintf(stderr, "can not open file: %s [%s]\n", g_cfg.rank_file, __FUNCTION__);
-        exit(-1);
-    }
-    // the first line is about the as size
-    if (fscanf(fp, "%u\n", &tmp_size) != 1) {
-        fprintf(stderr, "illegal as number format [%s]\n", __FUNCTION__);
-        exit(-1);
-    }
-    assert(tmp_size == p_as_cfg->as_size);
-    // the next lines are about advertiser preference of each ASes
-    for (i = 0; i < p_as_cfg->as_size; i++) {
-        // selection policy
-        for (j = 0; j < p_as_cfg->as_size; j++) {
-            // tmp_id represents priority
-            fscanf_ret = fscanf(fp, " %u", &tmp_id);
-            assert(fscanf_ret == 1);
-            p_as_cfg->as_policies[i].selection_policy[j] = tmp_id;
-        }
-        fscanf_ret = fscanf(fp, "\n");
-        assert(fscanf_ret == 0);
-    }
-    fclose(fp);
-
     if (g_cfg.verbose == 5) {
         for (i = 0; i < p_as_cfg->as_size; i++) {
             printf("AS %u asn %u ips:\n", i, p_as_cfg->as_id_2_n[i]);
@@ -318,26 +274,18 @@ static void load_cfg(as_cfg_t *p_as_cfg)
                 printf("%u ", p_as_cfg->as_policies[i].export_policy[j]);
             }
             printf("\n");
-            printf("AS %u selection_policy:\n", i);
-            for (j = 0; j < p_as_cfg->as_size; j++) {
-                printf("%u ", p_as_cfg->as_policies[i].selection_policy[j]);
-            }
-            printf("\n");
             printf("\n");
         }
     }
-
-    // FILE#5: rib files, contents processed inside enclave
-    if (g_cfg.rib_file_dir) p_as_cfg->rib_file_dir = strdup(g_cfg.rib_file_dir);
 }
 
 int main(int argc, char *argv[])
 {
     int efd;
-    as_cfg_t as_cfg = {0, NULL, NULL, NULL, NULL};
+    as_cfg_t as_cfg = {0, NULL, NULL, NULL};
 
     parse_args(argc, argv);
-    if (!g_cfg.asn_2_id_file || !g_cfg.filter_file || !g_cfg.rank_file) {
+    if (!g_cfg.asn_2_id_file || !g_cfg.filter_file) {
         printf("Please input configuration file name\n");
         exit(-1);
     }

@@ -33,7 +33,6 @@ typedef struct {
     uint32_t *as_id_2_n;
     as_ips_t *as_ips;
     as_policy_t *as_policies;
-    char *rib_file_dir;
 } as_cfg_t;
 
 typedef struct {

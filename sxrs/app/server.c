@@ -40,14 +40,6 @@ static void check_to_exit()
     exit(0);
 }
 
-void write_sdx_log_time()
-{
-    double start_time = g_start_time / 1000000;
-    double end_time = g_end_time / 1000000;
-    fprintf(g_result_fp, "route_count:%d start_time:%.6f end_time:%.6f\n", g_route_id + 1, start_time, end_time);
-    fclose(g_result_fp);
-}
-
 static inline int send_msg(int id, int sfd)
 {
     // return value: 1, stop EPOLLOUT; 0, continue EPOLLOUT
@@ -92,31 +84,6 @@ static inline int send_msg(int id, int sfd)
     }
     check_to_exit();
     return 1;
-}
-
-void send_msg_to_pctrlr(const char *msg, int id)
-{
-    uint32_t msg_len = strlen(msg) + 2;
-    char *msg_with_header = malloc(msg_len);
-    memcpy(msg_with_header, &msg_len, 2);
-    memcpy(msg_with_header + 2, msg, msg_len - 2);
-
-    send_msg_node_t *p_mn = malloc(sizeof *p_mn);
-    p_mn->msg = msg_with_header;
-    p_mn->msg_length = msg_len;
-    gp_sender_queues[id].msg_num++;
-    if (!gp_sender_queues[id].head) {
-        p_mn->prev = p_mn;
-        p_mn->next = p_mn;
-        gp_sender_queues[id].head = p_mn;
-        // start EPOLLOUT
-        epoll_ctl_handler(gpp_ehs[id], EPOLL_CTL_MOD, EPOLLIN | EPOLLOUT | EPOLLET | EPOLLRDHUP);
-    } else {
-        gp_sender_queues[id].head->prev->next = p_mn;
-        p_mn->prev = gp_sender_queues[id].head->prev;
-        p_mn->next = gp_sender_queues[id].head;
-        gp_sender_queues[id].head->prev = p_mn;
-    }
 }
 
 void send_msg_to_as(const char *msg)
@@ -191,13 +158,7 @@ static void server_handle_comm_event(epoll_event_handler_t *h, uint32_t events)
         }
 
         // ---------- message processing -----------
-        if (ENABLE_SDX) {
-            if (g_start_time == 0) {
-                g_start_time = get_us_time();
-            }
-        } else {
-            g_start_time = get_us_time();
-        }
+        g_start_time = get_us_time();
         s_msg = malloc((msg_size - 2 + 1) * sizeof *s_msg);
         memcpy(s_msg, u8_msg + 2, msg_size -2);
         s_msg[msg_size - 2] = '\0';
@@ -206,15 +167,9 @@ static void server_handle_comm_event(epoll_event_handler_t *h, uint32_t events)
             g_route_id = handle_exabgp_msg(s_msg);
             check_to_exit();
             g_end_time = get_us_time();
-            if (!ENABLE_SDX) {
-                fprintf(g_result_fp, "latency: %lu\n", g_end_time - g_start_time);
-                fflush(g_result_fp);
-            }
-        } else {
-            //printf("handle_pctrlr_msg for asid:%u msg:%s [%s]\n", closure->id, s_msg, __FUNCTION__);
-            handle_pctrlr_msg(s_msg, &closure->id, h, gpp_ehs);
+            fprintf(g_result_fp, "latency: %lu\n", g_end_time - g_start_time);
+            fflush(g_result_fp);
         }
-        SAFE_FREE(s_msg);
         // -----------------------------------------
     }
 }
