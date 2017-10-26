@@ -48,7 +48,7 @@ void msg_handler_init(as_cfg_t *p_as_cfg)
     g_msg_states.vnh_states.vnh_map = NULL;
 }
 
-void handle_bgp_route(bgp_route_input_dsrlz_msg_t *p_bgp_msg, uint32_t *p_bgp_output_asids, size_t bgp_output_as_num)
+void handle_bgp_route(const bgp_route_input_dsrlz_msg_t *p_bgp_msg, uint32_t *p_bgp_output_asids, size_t bgp_output_as_num)
 {
     uint32_t i, j, k, msg_size, offset;
     char *route = NULL, *oprt_type = NULL;
@@ -94,7 +94,7 @@ void handle_bgp_route(bgp_route_input_dsrlz_msg_t *p_bgp_msg, uint32_t *p_bgp_ou
             offset += 10;
             memcpy(msg_to_as + offset, p_bgp_msg->p_route->next_hop, strlen(p_bgp_msg->p_route->next_hop));
             offset += strlen(p_bgp_msg->p_route->next_hop);
-            if (p_bgp_msg->p_route->oprt_type == ANNOUNCE) {
+            if (p_bgp_msg->oprt_type == ANNOUNCE) {
                 memcpy(msg_to_as + offset, " as-path [ ( ", 13);
                 offset += 13;
                 for (j = 0; j < p_bgp_msg->p_route->as_path.length; j++) {
@@ -105,7 +105,7 @@ void handle_bgp_route(bgp_route_input_dsrlz_msg_t *p_bgp_msg, uint32_t *p_bgp_ou
             }
             msg_to_as[offset] = 0;
             // send to exabgp's client.py
-            //fprintf(stdout, "prepare to send msg:%s to asid:%d router [%s]\n", msg_to_as, p_bgp_msg->asid, __FUNCTION__);
+            //fprintf(stdout, "prepare to send msg:%s to asid:%d router [%s]\n", msg_to_as, p_bgp_output_asids[k], __FUNCTION__);
             send_msg_to_as(msg_to_as);
             SAFE_FREE(msg_to_as);
         }

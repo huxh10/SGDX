@@ -6,7 +6,7 @@ enclave {
     };
 
     untrusted {
-        uint32_t ocall_send_bgp_ret([in, size = msg_size] uint32_t *msg, size_t msg_size);
+        uint32_t ocall_send_bgp_ret([in, count = msg_size] uint32_t *msg, size_t msg_size);
         void ocall_print_string([in, string] const char *str);
     };
 };

@@ -60,7 +60,7 @@ uint32_t ecall_filter_route(uint32_t asn)
     size_t bgp_output_as_num = 0;
     uint32_t call_status, ret_status;
 
-    if ((ret_status = filter_route(gp_rt_states, &p_bgp_output_asids, &bgp_output_as_num)) != SUCCESS) {
+    if ((ret_status = filter_route(gp_rt_states, asn, &p_bgp_output_asids, &bgp_output_as_num)) != SUCCESS) {
         return ret_status;
     }
 

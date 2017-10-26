@@ -16,7 +16,7 @@ sgx_enclave_id_t g_enclave_id;
 int g_verbose = 0;
 uint8_t *g_call_buff = NULL;
 uint32_t g_call_size = 0;
-bgp_route_input_dsrlz_msg_t *gp_current_input_msg = NULL;
+const bgp_route_input_dsrlz_msg_t *gp_current_input_msg = NULL;
 
 static sgx_enclave_id_t load_enclave()
 {
@@ -71,7 +71,7 @@ void process_bgp_route_w_sgx(const bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
 {
     uint32_t call_status, ret_status;
     gp_current_input_msg = p_bgp_dsrlz_msg;
-    call_status = enclave_ecall_filter_route(g_enclave_id, p_bgp_dsrlz_msg->asn);
+    call_status = enclave_ecall_filter_route(g_enclave_id, &ret_status, p_bgp_dsrlz_msg->asn);
     if (ret_status != SUCCESS) {
         fprintf(stderr, "enclave_ecall_process_non_transit_route, errno: %d [%s]\n", ret_status, __FUNCTION__);
     }

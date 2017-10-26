@@ -29,7 +29,7 @@ void process_bgp_route_wo_sgx(bgp_route_input_dsrlz_msg_t *p_bgp_dsrlz_msg)
     uint32_t *p_bgp_output_asids = NULL;
     size_t bgp_output_as_num = 0;
 
-    if (filter_route(gp_rt_states, &p_bgp_output_asids, &bgp_output_as_num) != SUCCESS) exit(-1);
+    if (filter_route(gp_rt_states, p_bgp_dsrlz_msg->asn, &p_bgp_output_asids, &bgp_output_as_num) != SUCCESS) exit(-1);
     handle_bgp_route(p_bgp_dsrlz_msg, p_bgp_output_asids, bgp_output_as_num);
     return;
 }

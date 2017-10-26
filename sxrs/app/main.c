@@ -223,11 +223,6 @@ static void load_cfg(as_cfg_t *p_as_cfg)
         }
         // self is true
         p_as_cfg->as_policies[i].export_policy[i] = 1;
-        p_as_cfg->as_policies[i].selection_policy = malloc(p_as_cfg->as_size * sizeof *p_as_cfg->as_policies[i].selection_policy);
-        if (!p_as_cfg->as_policies[i].selection_policy) {
-            fprintf(stderr, "Malloc error for p_as_cfg->as_policies[%d].selection_policy [%s]\n", i, __FUNCTION__);
-            exit(-1);
-        }
     }
 
     // FILE#3: filter_file

@@ -62,7 +62,7 @@ uint32_t filter_route(rt_state_t *p_rt_states, uint32_t asn, uint32_t **pp_bgp_o
     *p_bgp_output_as_num = 0;
 
     // get original route from input message
-    HASH_FIND_INT(gp_rt_states->as_n_2_id, asn, asmap_entry);
+    HASH_FIND_INT(p_rt_states->as_n_2_id, &asn, asmap_entry);
     asid = asmap_entry->as_id;
 
     for (i = 0; i < p_rt_states->as_size; i++) {
