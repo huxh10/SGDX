@@ -33,14 +33,14 @@ logger = util.log.getLogger('prio-handler-rs2')
 RS2_MODE = 2
 
 class PrioHandlerRs2(object):
-    def __init__(self, asn_2_id_file, rib_file, number_of_processes):
+    def __init__(self, asn_2_id_file, number_of_processes):
         logger.info("Initializing the All Handler for RS2.")
 
         self.number_of_processes = number_of_processes
         with open(asn_2_id_file, 'r') as f:
             self.asn_2_id = json.load(f)
 
-        self.prefix_2_nh_id_2_route_id = load_ribs(rib_file, self.asn_2_id, RS2_MODE) if rib_file else {}
+        self.prefix_2_nh_id_2_route_id = {}
 
         # Initialize a XRS Server
         self.server_receive_bgp_messages = Server(logger, endpoint=(port_config.process_assignement["rs2"], port_config.ports_assignment["rs2_receive_bgp_messages"]))
@@ -123,8 +123,7 @@ class PrioHandlerRs2(object):
                     self.id_2_port[announcement_id] = msg["worker_port"]
                     if announcement_id in self.id_2_msg:
                         #send message to the correct worker
-                        if self.id_2_msg[announcement_id]["prefix"] not in self.prefix_2_nh_id_2_route_id.keys():
-                            self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]={}
+                        self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]={}
                         as_id = self.asn_2_id[self.id_2_msg[announcement_id]["asn"]]
                         self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]][as_id] = announcement_id
                         self.handler_2_worker_queues[self.id_2_port[announcement_id]].put({"announcement_id" : msg["announcement_id"], "as_id" : as_id, "messages" : self.prefix_2_nh_id_2_route_id[self.id_2_msg[announcement_id]["prefix"]]})
@@ -189,8 +188,7 @@ class PrioHandlerRs2(object):
                     self.id_2_msg[announcement_id] = msg
                     if announcement_id in self.id_2_port:
                         #send message to the correct worker
-                        if msg["prefix"] not in self.prefix_2_nh_id_2_route_id.keys():
-                            self.prefix_2_nh_id_2_route_id[msg["prefix"]]={}
+                        self.prefix_2_nh_id_2_route_id[msg["prefix"]]={}
                         as_id = self.asn_2_id[msg["asn"]]
                         self.prefix_2_nh_id_2_route_id[msg["prefix"]][as_id] = announcement_id
                         self.handler_2_worker_queues[self.id_2_port[announcement_id]].put({"announcement_id" : announcement_id, "as_id": as_id, "messages" : self.prefix_2_nh_id_2_route_id[msg["prefix"]]})
@@ -253,11 +251,10 @@ class PrioHandlerRs2(object):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("asn_2_id_file", type=str, help="specify asn_2_id json file")
-    parser.add_argument('-r', '--rib_file', type=str, help='specify the rib file, eg.g. ../examples/test-rs/ribs/bview')
     parser.add_argument("-p","--processes", help="number of parallel SMPC processes", type=int, default=1)
     args = parser.parse_args()
 
-    pprs = PrioHandlerRs2(args.asn_2_id_file, args.rib_file, args.processes)
+    pprs = PrioHandlerRs2(args.asn_2_id_file, args.processes)
     rs_thread = Thread(target=pprs.start)
     rs_thread.setName("PrioHandler2")
     rs_thread.daemon = True

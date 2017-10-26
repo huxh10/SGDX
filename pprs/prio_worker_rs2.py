@@ -28,8 +28,6 @@ FIRST_PORT=7760
 
 FILTER_SHARE = 'filter_share2.json'
 
-RANK_SHARE = 'rank_share2.json'
-
 RESULT_FILE = 'result_2_'
 
 GEN_SIG_FILE = 'sig_2'
@@ -62,10 +60,6 @@ class PrioWorker2(object):
         with open(FILTER_SHARE, 'r') as f:
             self.export_policies = json.load(f)
         self.number_of_participants = len(self.export_policies)
-        # rank
-        with open(RANK_SHARE, 'r') as f:
-            self.selection_policies = json.load(f)
-        assert self.number_of_participants == len(self.selection_policies)
 
     def send_export_policy_to_mpc(self):
         export_rows_strings = [ "" for i in xrange(0, self.number_of_participants)]
@@ -112,15 +106,8 @@ class PrioWorker2(object):
                 keys_str += '{num:0{width}x}'.format(num = 0, width= KEY_ID_SIZE / 4)
                 i += 1
 
-            if len(list_of_route_ids) > 1:
-                local_prefs = ""
-                for as_id in xrange(0, self.number_of_participants):
-                    local_prefs += "0000"   # indicator
-                    for nh_id in list_of_msg_for_prefix.keys():
-                        local_prefs += "0000" if nh_id == as_id else self.selection_policies[as_id][nh_id]
-                myinput = "4" + "\n" + str(number_of_routes) + "\n" + str(msg["as_id"]) + "\n" + keys_str + "\n" + local_prefs + "\n" + "0"
-            else:
-                myinput = "3" + "\n" + str(number_of_routes) + "\n" + str(msg["as_id"]) + "\n" + keys_str + "\n" + "0"
+            assert len(list_of_route_ids) is 1
+            myinput = "3" + "\n" + str(number_of_routes) + "\n" + str(msg["as_id"]) + "\n" + keys_str + "\n" + "0"
 
             # invoking the MPC
             print >> self.p.stdin, myinput # write input
