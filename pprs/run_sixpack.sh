@@ -2,9 +2,9 @@
 
 # RIB name fmt: ribs-<ixp-name>-<test-metric:scale,rib,frac,rate>-<as_num>-<rib_size>-<frac>
 RIB='ribs-ams-scale'
-ASNUMS=( 500 )
+ASNUMS=( 100 )
 RIBSIZES=( 'm' )      # for participant scalablity test, rib_size depends on participant number, set RIBSIZES 'm'
-FRACS=( 100 )
+FRACS=( 20 )
 XBGP_MODE=0             # 0: time based updates, 1: rate based updates
 RATES=( 1 )
 
@@ -28,8 +28,8 @@ do
                 fi
 
                 ./split_policy.py -f ../examples/test-rs/bgp_policies/peers_uni_${as_num}_0${fraction}.cfg -r ../examples/test-rs/bgp_policies/prefer_rand_${as_num}.cfg
-                python prio_handler_rs2.py ../examples/test-rs/${RIB}-${as_num}-${rib_size}-${fraction}/asn_2_id.json -r ../examples/test-rs/${RIB}-${as_num}-${rib_size}-${fraction}/bview &
-                python prio_handler_rs1.py ../examples/test-rs/${RIB}-${as_num}-${rib_size}-${fraction}/asn_2_id.json -r ../examples/test-rs/${RIB}-${as_num}-${rib_size}-${fraction}/bview &
+                python prio_handler_rs2.py ../examples/test-rs/${RIB}-${as_num}-${rib_size}-${fraction}/asn_2_id.json &
+                python prio_handler_rs1.py ../examples/test-rs/${RIB}-${as_num}-${rib_size}-${fraction}/asn_2_id.json &
 
                 while [[ ( ! -f sig_1 ) || ( ! -f sig_2 ) ]]
                 do

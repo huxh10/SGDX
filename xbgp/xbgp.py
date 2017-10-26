@@ -17,7 +17,7 @@ from threading import Thread
 from Queue import Queue, Empty
 from multiprocessing.connection import Client
 import util.log
-from util.crypto_util import AESCipher
+from pprs.crypto_util import AESCipher
 from pprs.route import Route
 import pickle
 import pprs.port_config as port_config
