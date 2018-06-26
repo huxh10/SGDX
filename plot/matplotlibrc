@@ -1,0 +1,3 @@
+ps.useafm : True
+pdf.use14corefonts : True
+text.usetex : True
